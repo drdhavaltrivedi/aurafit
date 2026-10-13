@@ -9,7 +9,8 @@
     "web": "expo start --web",
     "typecheck": "tsc --noEmit",
     "doctor": "expo-doctor",
-    "test": "vitest run --config vitest.config.mts"
+    "test": "vitest run --config vitest.config.mts",
+    "eas-build-post-install": "npm --prefix ../../packages/shared run build"
   },
   "dependencies": {
     "@aurafit/shared": "file:../../packages/shared",
