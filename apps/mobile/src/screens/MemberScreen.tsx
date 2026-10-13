@@ -1,24 +1,24 @@
 import React from 'react';
-import { ScrollView, StyleSheet, Text, View, type RefreshControlProps } from 'react-native';
+import { ScrollView, StyleSheet, View, type RefreshControlProps } from 'react-native';
 import {
   INITIAL_WORKOUT_DROPS,
-  getRankFromAura,
   hasPermission,
   type Quest,
   type UserProfile,
   type UserRole,
   type WorkoutDrop,
 } from '@aurafit/shared';
-import { Flame, ScrollText, Swords } from '../components/icons';
-import { AppIcon } from '../components/AppIcon';
-import { Card } from '../components/Card';
-import { ProgressBar } from '../components/ProgressBar';
+import { Flame, ScrollText } from '../components/icons';
+import { DailyQuestHeroCard } from '../components/DailyQuestHeroCard';
+import { HunterHeroCard } from '../components/HunterHeroCard';
 import { QuestCard } from '../components/QuestCard';
+import { QuickActionsRow } from '../components/QuickActionsRow';
 import { SectionHeader } from '../components/SectionHeader';
-import { StatGrid } from '../components/StatGrid';
+import { StatCardsRow } from '../components/StatCardsRow';
+import { TodaySummaryCard } from '../components/TodaySummaryCard';
 import { WorkoutDropCard } from '../components/WorkoutDropCard';
 import { useTheme } from '../theme/ThemeProvider';
-import { fontSize, radius, spacing } from '../theme/tokens';
+import { spacing } from '../theme/tokens';
 
 interface MemberScreenProps {
   role: UserRole;
@@ -32,6 +32,9 @@ interface MemberScreenProps {
   header?: React.ReactNode;
   /** Pull-to-refresh control (server mode). */
   refreshControl?: React.ReactElement<RefreshControlProps>;
+  /** Navigation handler for the 5 quick actions */
+  onNavigateAction?: (actionKey: 'snacks' | 'hunter_card' | 'guild' | 'leaderboard' | 'rewards') => void;
+  onOpenAccount?: () => void;
 }
 
 export function MemberScreen({
@@ -43,14 +46,15 @@ export function MemberScreen({
   drops = INITIAL_WORKOUT_DROPS,
   header,
   refreshControl,
+  onNavigateAction,
+  onOpenAccount,
 }: MemberScreenProps) {
   const { colors } = useTheme();
-  const rankInfo = getRankFromAura(user.auraPoints);
   const canDoQuests = hasPermission(role, 'DO_QUESTS');
   const canStartWorkout = hasPermission(role, 'START_WORKOUT');
-  const progressLabel = rankInfo.nextRank
-    ? `${rankInfo.progressToNext}% to ${rankInfo.nextRank}`
-    : 'Max rank reached';
+
+  // Find the first uncompleted quest or fallback to first quest
+  const primaryDailyQuest = quests.find((q) => !q.completed) || quests[0];
 
   return (
     <ScrollView
@@ -60,58 +64,57 @@ export function MemberScreen({
       refreshControl={refreshControl}
     >
       {header}
-      <Card>
-        <View style={styles.cardHeader}>
-          <View style={styles.cardHeaderText}>
-            <View style={[styles.rankBadge, { backgroundColor: colors.primarySubtle, borderColor: colors.primary }]}>
-              {/* Rank is derived from aura so it updates as soon as a threshold is crossed. */}
-              <Text style={[styles.rankBadgeText, { color: colors.primary }]}>{rankInfo.rank} HUNTER</Text>
-            </View>
-            <Text accessibilityRole="header" style={[styles.name, { color: colors.textPrimary }]}>
-              {user.username}
-            </Text>
-            <Text style={[styles.handle, { color: colors.textSecondary }]}>
-              {user.handle} • LV. {user.level}
-            </Text>
-          </View>
-          <View
-            style={[styles.avatar, { borderColor: colors.primary }]}
-            accessible={false}
-            importantForAccessibility="no-hide-descendants"
-          >
-            <AppIcon icon={Swords} size={22} color={colors.primary} strokeWidth={2.25} />
-          </View>
-        </View>
 
-        <View style={[styles.progressWrap, { backgroundColor: colors.bgElevated }]}>
-          <View style={styles.progressLabels}>
-            <Text style={[styles.progressText, { color: colors.textSecondary }]}>Rank Ascendance</Text>
-            <Text style={[styles.progressPct, { color: colors.primary }]}>{progressLabel}</Text>
-          </View>
-          <ProgressBar value={rankInfo.progressToNext} label={`Rank progress, ${progressLabel}`} />
-        </View>
+      {/* Screen 1: Hunter Hero Profile Card */}
+      <HunterHeroCard
+        user={user}
+        onEditProfile={onOpenAccount}
+        onViewRankDetails={onOpenAccount}
+      />
 
-        <View style={styles.statWrap}>
-          <StatGrid
-            items={[
-              { label: 'STR (Strength)', value: user.attributes.str },
-              { label: 'AGI (Agility)', value: user.attributes.agi },
-              { label: 'END (Stamina)', value: user.attributes.end },
-              { label: 'REC (Mobility)', value: user.attributes.rec },
-            ]}
-          />
-        </View>
-      </Card>
+      {/* Screen 1: 4 Stat Cards in a Row (STR, AGI, END, REC) */}
+      <StatCardsRow attributes={user.attributes} />
 
+      {/* Screen 1: Daily Quest Hero Card */}
+      <DailyQuestHeroCard
+        quest={primaryDailyQuest}
+        onStartQuest={onCompleteQuest}
+      />
+
+      {/* Screen 1: 5 Quick Action Shortcuts */}
+      <QuickActionsRow
+        onPressAction={(act) => onNavigateAction ? onNavigateAction(act) : undefined}
+      />
+
+      {/* Screen 1: Today's Summary */}
+      <TodaySummaryCard
+        auraPoints={user.auraPoints}
+        workoutsCompleted={1}
+        workoutsTarget={1}
+        streakDays={user.streakDays}
+        onViewAll={() => onNavigateAction ? onNavigateAction('snacks') : undefined}
+      />
+
+      {/* Hunter Quests Section */}
       <View style={styles.section}>
-        <SectionHeader icon={ScrollText} title="Daily Hunter Quests" subtitle="Complete to boost stats & prevent aura decay" />
+        <SectionHeader
+          icon={ScrollText}
+          title="Daily Hunter Quests"
+          subtitle="Complete to boost stats & prevent aura decay"
+        />
         {quests.map((q) => (
           <QuestCard key={q.id} quest={q} canComplete={canDoQuests} onComplete={onCompleteQuest} />
         ))}
       </View>
 
+      {/* Trending Workout Drops Section */}
       <View style={styles.section}>
-        <SectionHeader icon={Flame} iconColor={colors.orange} title="Trending Workout Drops" subtitle="Curated routines with boosted Aura multipliers" />
+        <SectionHeader
+          icon={Flame}
+          iconColor={colors.orange}
+          title="Trending Workout Drops"
+          subtitle="Curated routines with boosted Aura multipliers"
+        />
         {drops.map((drop) => (
           <WorkoutDropCard key={drop.id} drop={drop} canStart={canStartWorkout} onStart={onStartWorkout} />
         ))}
@@ -123,67 +126,11 @@ export function MemberScreen({
 const styles = StyleSheet.create({
   content: {
     padding: spacing.lg,
-    paddingBottom: spacing.xxl + spacing.sm,
-    gap: spacing.lg + 2,
-  },
-  cardHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    gap: spacing.md,
-  },
-  cardHeaderText: {
-    flex: 1,
-  },
-  rankBadge: {
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 3,
-    borderRadius: radius.sm,
-    alignSelf: 'flex-start',
-    borderWidth: 1,
-  },
-  rankBadgeText: {
-    fontSize: fontSize.caption - 1,
-    fontWeight: '900',
-  },
-  name: {
-    fontSize: fontSize.headline,
-    fontWeight: '900',
-    marginTop: spacing.xs,
-  },
-  handle: {
-    fontSize: fontSize.caption,
-  },
-  avatar: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    borderWidth: 2,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  progressWrap: {
-    marginTop: spacing.md + 2,
-    padding: spacing.sm + 2,
-    borderRadius: radius.md,
-    gap: 6,
-  },
-  progressLabels: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    gap: spacing.sm,
-  },
-  progressText: {
-    fontSize: fontSize.caption,
-  },
-  progressPct: {
-    fontSize: fontSize.caption,
-    fontWeight: '700',
-  },
-  statWrap: {
-    marginTop: spacing.md + 2,
+    paddingBottom: spacing.xxl + 40,
+    gap: spacing.lg,
   },
   section: {
-    gap: spacing.sm + 2,
+    gap: spacing.md,
+    marginTop: spacing.xs,
   },
 });

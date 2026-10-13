@@ -9,6 +9,7 @@ import { AuthProvider, useAuth } from './src/auth/AuthProvider';
 import { AppButton } from './src/components/AppButton';
 import { AppHeader } from './src/components/AppHeader';
 import { FormMessage } from './src/components/AuthLayout';
+import { BottomTabBar, type MainTabKey } from './src/components/BottomTabBar';
 import { DemoBanner } from './src/components/DemoBanner';
 import { RoleSwitcher } from './src/components/RoleSwitcher';
 import { WorkoutSessionModal } from './src/components/WorkoutSessionModal';
@@ -16,7 +17,9 @@ import { useCompleteQuest, useCompleteWorkout, useDrops, useLeaderboard, useMe }
 import { useGameStore, type GameStore } from './src/hooks/useGameStore';
 import { AdminScreen } from './src/screens/AdminScreen';
 import { CreatorScreen } from './src/screens/CreatorScreen';
+import { GuildScreen } from './src/screens/GuildScreen';
 import { MemberScreen } from './src/screens/MemberScreen';
+import { MovementSnacksScreen } from './src/screens/MovementSnacksScreen';
 import { AccountScreen } from './src/screens/account/AccountScreen';
 import { AuthNavigator } from './src/screens/auth/AuthNavigator';
 import { ResetPasswordScreen } from './src/screens/auth/ResetPasswordScreen';
@@ -86,6 +89,7 @@ function DemoShell({ store, onToggleTheme }: { store: GameStore; onToggleTheme: 
   const auth = useAuth();
   const { state, setRole, completeQuest, finishWorkout, resetGame } = store;
   const { role, user, quests } = state;
+  const [activeTab, setActiveTab] = useState<MainTabKey>('home');
   const [activeWorkout, setActiveWorkout] = useState<WorkoutDrop | null>(null);
   const [accountOpen, setAccountOpen] = useState(false);
   const openAccount = useCallback(() => setAccountOpen(true), []);
@@ -123,12 +127,53 @@ function DemoShell({ store, onToggleTheme }: { store: GameStore; onToggleTheme: 
       <RoleSwitcher value={role} onChange={setRole} />
 
       <View style={styles.body}>
-        {role === 'MEMBER' && (
-          <MemberScreen role={role} user={user} quests={quests} onCompleteQuest={completeQuest} onStartWorkout={startWorkout} />
+        {activeTab === 'home' && (
+          <>
+            {role === 'MEMBER' && (
+              <MemberScreen
+                role={role}
+                user={user}
+                quests={quests}
+                onCompleteQuest={completeQuest}
+                onStartWorkout={startWorkout}
+                onNavigateAction={(key) => {
+                  if (key === 'snacks') setActiveTab('workouts');
+                  else if (key === 'guild') setActiveTab('guild');
+                  else if (key === 'hunter_card' || key === 'rewards') openAccount();
+                  else if (key === 'leaderboard') setActiveTab('guild');
+                }}
+                onOpenAccount={openAccount}
+              />
+            )}
+            {role === 'CREATOR' && <CreatorScreen role={role} sample />}
+            {role === 'ADMIN' && <AdminScreen role={role} sample />}
+          </>
         )}
-        {role === 'CREATOR' && <CreatorScreen role={role} sample />}
-        {role === 'ADMIN' && <AdminScreen role={role} sample />}
+        {activeTab === 'guild' && (
+          <GuildScreen onBack={() => setActiveTab('home')} onOpenSettings={openAccount} />
+        )}
+        {activeTab === 'workouts' && (
+          <MovementSnacksScreen onBack={() => setActiveTab('home')} onStartWorkout={startWorkout} />
+        )}
+        {activeTab === 'quests' && (
+          <MemberScreen
+            role={role}
+            user={user}
+            quests={quests}
+            onCompleteQuest={completeQuest}
+            onStartWorkout={startWorkout}
+            onOpenAccount={openAccount}
+          />
+        )}
       </View>
+
+      <BottomTabBar
+        activeTab={activeTab}
+        onSelectTab={(tab) => {
+          if (tab === 'profile') openAccount();
+          else setActiveTab(tab);
+        }}
+      />
 
       <WorkoutSessionModal drop={activeWorkout} onClose={closeWorkout} onClaim={claimWorkout} />
     </>
@@ -150,6 +195,7 @@ function ServerShell({ store, onToggleTheme }: { store: GameStore; onToggleTheme
   const leaderboard = useLeaderboard(!!profile && role === 'ADMIN');
   const completeQuest = useCompleteQuest(me);
   const completeWorkout = useCompleteWorkout(me);
+  const [activeTab, setActiveTab] = useState<MainTabKey>('home');
   const [activeWorkout, setActiveWorkout] = useState<WorkoutDrop | null>(null);
 
   const startWorkout = useCallback(
@@ -227,7 +273,62 @@ function ServerShell({ store, onToggleTheme }: { store: GameStore; onToggleTheme
         onOpenAccount={openAccount}
       />
       <View style={styles.body}>
-        {role === 'MEMBER' && (
+        {activeTab === 'home' && (
+          <>
+            {role === 'MEMBER' && (
+              <MemberScreen
+                role={role}
+                user={user}
+                quests={quests}
+                drops={drops.data ?? []}
+                onCompleteQuest={onQuest}
+                onStartWorkout={startWorkout}
+                refreshControl={refresh}
+                onNavigateAction={(key) => {
+                  if (key === 'snacks') setActiveTab('workouts');
+                  else if (key === 'guild') setActiveTab('guild');
+                  else if (key === 'hunter_card' || key === 'rewards') openAccount();
+                  else if (key === 'leaderboard') setActiveTab('guild');
+                }}
+                onOpenAccount={openAccount}
+                header={
+                  me.error || drops.error ? (
+                    <FormMessage tone="error" message={me.error ?? drops.error ?? ''} />
+                  ) : drops.loading ? (
+                    <Text style={{ color: colors.textMuted }}>Loading workout drops…</Text>
+                  ) : null
+                }
+              />
+            )}
+            {role === 'CREATOR' && (
+              <CreatorScreen
+                role={role}
+                sample={false}
+                profile={user}
+                drops={drops.data ?? []}
+                dropsLoading={drops.loading}
+                dropsError={drops.error}
+              />
+            )}
+            {role === 'ADMIN' && (
+              <AdminScreen
+                role={role}
+                sample={false}
+                hunters={leaderboard.data?.hunters ?? []}
+                huntersLoading={leaderboard.loading}
+                huntersError={leaderboard.error}
+                onRetry={() => void leaderboard.refetch()}
+              />
+            )}
+          </>
+        )}
+        {activeTab === 'guild' && (
+          <GuildScreen onBack={() => setActiveTab('home')} onOpenSettings={openAccount} />
+        )}
+        {activeTab === 'workouts' && (
+          <MovementSnacksScreen onBack={() => setActiveTab('home')} onStartWorkout={startWorkout} />
+        )}
+        {activeTab === 'quests' && (
           <MemberScreen
             role={role}
             user={user}
@@ -236,36 +337,19 @@ function ServerShell({ store, onToggleTheme }: { store: GameStore; onToggleTheme
             onCompleteQuest={onQuest}
             onStartWorkout={startWorkout}
             refreshControl={refresh}
-            header={
-              me.error || drops.error ? (
-                <FormMessage tone="error" message={me.error ?? drops.error ?? ''} />
-              ) : drops.loading ? (
-                <Text style={{ color: colors.textMuted }}>Loading workout drops…</Text>
-              ) : null
-            }
-          />
-        )}
-        {role === 'CREATOR' && (
-          <CreatorScreen
-            role={role}
-            sample={false}
-            profile={user}
-            drops={drops.data ?? []}
-            dropsLoading={drops.loading}
-            dropsError={drops.error}
-          />
-        )}
-        {role === 'ADMIN' && (
-          <AdminScreen
-            role={role}
-            sample={false}
-            hunters={leaderboard.data?.hunters ?? []}
-            huntersLoading={leaderboard.loading}
-            huntersError={leaderboard.error}
-            onRetry={() => void leaderboard.refetch()}
+            onOpenAccount={openAccount}
           />
         )}
       </View>
+
+      <BottomTabBar
+        activeTab={activeTab}
+        onSelectTab={(tab) => {
+          if (tab === 'profile') openAccount();
+          else setActiveTab(tab);
+        }}
+      />
+
       <WorkoutSessionModal drop={activeWorkout} onClose={closeWorkout} onClaim={claimWorkout} />
     </>
   );

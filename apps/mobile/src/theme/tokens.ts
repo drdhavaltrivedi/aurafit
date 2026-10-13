@@ -27,33 +27,41 @@ export interface Palette {
   emeraldSubtle: string;
   orange: string;
   orangeSubtle: string;
+  cyan: string;
+  cyanSubtle: string;
+  danger: string;
+  dangerSubtle: string;
   pink: string;
   pinkSubtle: string;
 }
 
 export const palettes: Record<ColorSchemeName, Palette> = {
   dark: {
-    bgPage: '#0A0C14',
-    bgSurface: '#111420',
-    bgElevated: '#181B2B',
-    bgInput: '#151827',
+    bgPage: '#070A12',
+    bgSurface: '#0D1322',
+    bgElevated: '#131B2E',
+    bgInput: '#101726',
     border: 'rgba(255, 255, 255, 0.08)',
-    borderFocus: '#7C3AED',
-    textPrimary: '#F8FAFC',
+    borderFocus: '#8B5CF6',
+    textPrimary: '#FFFFFF',
     textSecondary: '#94A3B8',
     textMuted: '#64748B',
-    primary: '#A78BFA', // lighter violet so accent *text* on #111420 meets AA
+    primary: '#8B5CF6',
     primaryStrong: '#7C3AED',
-    primarySubtle: 'rgba(124, 58, 237, 0.15)',
+    primarySubtle: 'rgba(139, 92, 246, 0.16)',
     onPrimary: '#FFFFFF',
-    blue: '#2563EB',
+    blue: '#38BDF8',
+    cyan: '#06B6D4',
+    cyanSubtle: 'rgba(6, 182, 212, 0.16)',
     emerald: '#10B981',
-    emeraldStrong: '#047857',
-    emeraldSubtle: 'rgba(16, 185, 129, 0.12)',
+    emeraldStrong: '#059669',
+    emeraldSubtle: 'rgba(16, 185, 129, 0.16)',
+    danger: '#EF4444',
+    dangerSubtle: 'rgba(239, 68, 68, 0.16)',
     orange: '#FB923C',
-    orangeSubtle: 'rgba(234, 88, 12, 0.12)',
+    orangeSubtle: 'rgba(251, 146, 60, 0.14)',
     pink: '#F472B6',
-    pinkSubtle: 'rgba(219, 39, 119, 0.12)',
+    pinkSubtle: 'rgba(244, 114, 182, 0.14)',
   },
   light: {
     bgPage: '#F8FAFC',
@@ -70,9 +78,13 @@ export const palettes: Record<ColorSchemeName, Palette> = {
     primarySubtle: 'rgba(99, 102, 241, 0.1)',
     onPrimary: '#FFFFFF',
     blue: '#2563EB',
+    cyan: '#0891B2',
+    cyanSubtle: 'rgba(8, 145, 178, 0.08)',
     emerald: '#047857',
     emeraldStrong: '#047857',
     emeraldSubtle: 'rgba(5, 150, 105, 0.08)',
+    danger: '#DC2626',
+    dangerSubtle: 'rgba(220, 38, 38, 0.08)',
     orange: '#C2410C',
     orangeSubtle: 'rgba(194, 65, 12, 0.08)',
     pink: '#BE185D',
