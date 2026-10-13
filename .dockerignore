@@ -1,0 +1,21 @@
+# Keep the Docker build context small and free of secrets.
+**/node_modules
+**/.next
+**/dist
+**/coverage
+**/*.tsbuildinfo
+**/.expo
+**/.DS_Store
+**/*.log
+.git
+.github
+.vscode
+.idea
+.env
+.env.*
+!.env.example
+apps/mobile/ios
+apps/mobile/android
+apps/mobile/assets
+.dockerignore
+README.md

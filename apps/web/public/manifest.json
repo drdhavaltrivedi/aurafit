@@ -1,0 +1,19 @@
+{
+  "name": "AuraFit — Gen Z & Gen Alpha RPG Fitness",
+  "short_name": "AuraFit",
+  "description": "Level up your physical stats, earn Aura points, lock in daily quests, and climb the hunter ranks.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#090A0F",
+  "theme_color": "#8B5CF6",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["fitness", "health", "games", "lifestyle"]
+}

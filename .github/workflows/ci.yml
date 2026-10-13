@@ -1,0 +1,97 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  NEXT_TELEMETRY_DISABLED: 1
+
+jobs:
+  verify:
+    name: Typecheck, test, lint, build
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci --no-audit --no-fund
+
+      # packages/shared is consumed via dist/ (main: dist/index.js), so it
+      # must be built before anything that imports it.
+      - name: Build shared package
+        run: npm run build --workspace=packages/shared
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Test
+        run: npm test
+
+      - name: Lint web
+        run: npm run lint --workspace=apps/web
+
+      - name: Build web
+        run: npm run build --workspace=apps/web
+
+  docker:
+    name: Docker image (web)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs: verify
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - name: Build image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: apps/web/Dockerfile
+          push: false
+          load: true
+          tags: aurafit-web:ci
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      - name: Smoke test /api/health
+        run: |
+          docker run -d --name aurafit-web -p 3000:3000 aurafit-web:ci
+          for i in $(seq 1 30); do
+            if curl -fsS http://127.0.0.1:3000/api/health; then exit 0; fi
+            sleep 1
+          done
+          docker logs aurafit-web
+          exit 1
+      - name: Stop container
+        if: always()
+        run: docker rm -f aurafit-web || true
+
+  expo-doctor:
+    name: Expo doctor (mobile)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - run: npm run build --workspace=packages/shared
+      - name: expo-doctor
+        working-directory: apps/mobile
+        run: npx --yes expo-doctor

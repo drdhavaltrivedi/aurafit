@@ -1,0 +1,44 @@
+{
+  "expo": {
+    "name": "AuraFit",
+    "slug": "aurafit",
+    "owner": "brilworksdigital",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/logo.jpg",
+    "userInterfaceStyle": "dark",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/logo.jpg",
+      "resizeMode": "contain",
+      "backgroundColor": "#0A0C14"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.brilworks.aurafit",
+      "buildNumber": "1",
+      "infoPlist": {
+        "UIBackgroundModes": [
+          "audio"
+        ]
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/logo.jpg",
+        "backgroundColor": "#0A0C14"
+      },
+      "package": "com.brilworks.aurafit",
+      "versionCode": 1
+    },
+    "web": {
+      "favicon": "./assets/logo.jpg"
+    },
+    "scheme": "aurafit",
+    "extra": {
+      "eas": {
+        "projectId": "c7bd98e1-88bb-4e9c-8b56-76b0bf04bdb9"
+      }
+    }
+  }
+}
