@@ -85,12 +85,14 @@ export function HunterHeroCard({ user, onEditProfile, onViewRankDetails }: Hunte
         </View>
 
         {/* E-Rank Crest Shield Badge on Right */}
-        <View style={[styles.crestBadge, { borderColor: colors.primary, backgroundColor: colors.primarySubtle }]}>
-          <AppIcon icon={Shield} size={28} color={colors.primary} />
-          <Text style={[styles.crestLetter, { color: colors.primary }]}>
-            {rankInfo.rank.charAt(0)}
-          </Text>
-          <Text style={[styles.crestRankName, { color: colors.primary }]}>
+        <View style={styles.crestBadge}>
+          <View style={styles.crestShieldWrap}>
+            <AppIcon icon={Shield} size={32} color="#8B5CF6" />
+            <Text style={styles.crestLetter}>
+              {rankInfo.rank.charAt(0)}
+            </Text>
+          </View>
+          <Text style={styles.crestRankName}>
             {rankInfo.rank}-RANK
           </Text>
         </View>
@@ -193,24 +195,38 @@ const styles = StyleSheet.create({
   },
   crestBadge: {
     width: 68,
-    height: 68,
+    height: 72,
     borderRadius: radius.md,
     borderWidth: 1.5,
+    borderColor: '#7C3AED',
+    backgroundColor: 'rgba(124, 58, 237, 0.22)',
     alignItems: 'center',
     justifyContent: 'center',
     position: 'relative',
-    gap: 2,
+    paddingTop: 4,
+  },
+  crestShieldWrap: {
+    width: 34,
+    height: 34,
+    alignItems: 'center',
+    justifyContent: 'center',
+    position: 'relative',
   },
   crestLetter: {
     position: 'absolute',
+    color: '#FFFFFF',
     fontSize: 14,
     fontWeight: '900',
-    top: 20,
+    textAlign: 'center',
+    textShadowColor: 'rgba(0, 0, 0, 0.95)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 3,
   },
   crestRankName: {
+    color: '#DDD6FE',
     fontSize: 9,
     fontWeight: '900',
     letterSpacing: 0.5,
-    marginTop: 18,
+    marginTop: 4,
   },
 });

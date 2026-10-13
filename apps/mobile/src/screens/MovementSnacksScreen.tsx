@@ -125,25 +125,25 @@ export function MovementSnacksScreen({ onBack, onStartWorkout }: MovementSnacksS
         </View>
 
         {/* Hero Phonk Banner */}
-        <View style={[styles.heroCard, { backgroundColor: colors.bgSurface, borderColor: colors.border }]}>
+        <View style={[styles.heroCard, { borderColor: colors.border }]}>
           <ImageBackground
             source={require('../../assets/hunter-avatar.jpg')}
             style={styles.heroBg}
             imageStyle={styles.heroBgImg}
           >
-            <View style={[styles.heroScrim, { backgroundColor: 'rgba(7, 10, 18, 0.82)' }]} />
+            <View style={styles.heroScrim} />
             <View style={styles.heroContent}>
               <View style={styles.heroTextCol}>
-                <Text style={[styles.phonkLabel, { color: colors.primary }]}>PHONK WORKOUTS</Text>
-                <Text style={[styles.phonkSub, { color: colors.textPrimary }]}>10-15 MIN DROPS + PHONK BEATS</Text>
-                <View style={[styles.badgeSmall, { backgroundColor: 'rgba(255, 255, 255, 0.08)' }]}>
-                  <Text style={[styles.badgeSmallText, { color: colors.textSecondary }]}>SMALL TIME. BIG GAINS.</Text>
+                <Text style={styles.phonkLabel}>PHONK WORKOUTS</Text>
+                <Text style={styles.phonkSub}>10-15 MIN DROPS + PHONK BEATS</Text>
+                <View style={styles.badgeSmall}>
+                  <Text style={styles.badgeSmallText}>SMALL TIME. BIG GAINS.</Text>
                 </View>
               </View>
 
               <Pressable
                 onPress={() => setIsPlayingAudio(!isPlayingAudio)}
-                style={[styles.bigPlayBtn, { backgroundColor: colors.primary }]}
+                style={styles.bigPlayBtn}
               >
                 <AppIcon icon={isPlayingAudio ? Pause : Play} size={22} color="#FFFFFF" />
               </Pressable>
@@ -201,8 +201,8 @@ export function MovementSnacksScreen({ onBack, onStartWorkout }: MovementSnacksS
               {/* Thumbnail with Tag */}
               <View style={styles.thumbnailWrap}>
                 <Image source={require('../../assets/hunter-avatar.jpg')} style={styles.thumbnailImg} />
-                <View style={[styles.tagBadge, { backgroundColor: 'rgba(0, 0, 0, 0.75)', borderColor: d.tagColor }]}>
-                  <Text style={[styles.tagBadgeText, { color: d.tagColor }]}>{d.tag}</Text>
+                <View style={[styles.tagBadge, { backgroundColor: d.tagColor }]}>
+                  <Text style={styles.tagBadgeText}>{d.tag}</Text>
                 </View>
               </View>
 
@@ -233,12 +233,12 @@ export function MovementSnacksScreen({ onBack, onStartWorkout }: MovementSnacksS
       </ScrollView>
 
       {/* Floating Bottom Now-Playing Bar */}
-      <View style={[styles.miniPlayer, { backgroundColor: colors.bgSurface, borderColor: colors.border }]}>
+      <View style={styles.miniPlayer}>
         <Image source={require('../../assets/hunter-avatar.jpg')} style={styles.miniPlayerAvatar} />
 
         <View style={styles.miniPlayerTextCol}>
-          <Text style={[styles.miniSongTitle, { color: colors.textPrimary }]}>Phonk Beat 01</Text>
-          <Text style={[styles.miniSongSub, { color: colors.textSecondary }]}>Workout Mix</Text>
+          <Text style={styles.miniSongTitle}>Phonk Beat 01</Text>
+          <Text style={styles.miniSongSub}>Workout Mix</Text>
         </View>
 
         {/* Animated Waveform */}
@@ -306,6 +306,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.lg,
     borderWidth: 1,
     overflow: 'hidden',
+    backgroundColor: '#0A0F1D',
   },
   heroBg: {
     padding: spacing.lg,
@@ -316,6 +317,7 @@ const styles = StyleSheet.create({
   },
   heroScrim: {
     ...StyleSheet.absoluteFill,
+    backgroundColor: 'rgba(6, 10, 20, 0.90)',
   },
   heroContent: {
     position: 'relative',
@@ -327,14 +329,22 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   phonkLabel: {
+    color: '#C4B5FD',
     fontSize: 18,
     fontWeight: '900',
     fontStyle: 'italic',
     letterSpacing: 0.5,
+    textShadowColor: 'rgba(0, 0, 0, 0.95)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 3,
   },
   phonkSub: {
+    color: '#FFFFFF',
     fontSize: 11,
     fontWeight: '800',
+    textShadowColor: 'rgba(0, 0, 0, 0.95)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 3,
   },
   badgeSmall: {
     paddingHorizontal: 8,
@@ -342,8 +352,12 @@ const styles = StyleSheet.create({
     borderRadius: 4,
     alignSelf: 'flex-start',
     marginTop: 4,
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.25)',
   },
   badgeSmallText: {
+    color: '#FFFFFF',
     fontSize: 9,
     fontWeight: '800',
     letterSpacing: 0.5,
@@ -354,6 +368,12 @@ const styles = StyleSheet.create({
     borderRadius: 24,
     alignItems: 'center',
     justifyContent: 'center',
+    backgroundColor: '#7C3AED',
+    shadowColor: '#7C3AED',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.4,
+    shadowRadius: 8,
+    elevation: 3,
   },
   categoryRow: {
     gap: spacing.sm,
@@ -398,14 +418,23 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 4,
     left: 4,
-    paddingHorizontal: 5,
+    paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 4,
-    borderWidth: 1,
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.5,
+    shadowRadius: 2,
+    elevation: 2,
   },
   tagBadgeText: {
+    color: '#FFFFFF',
     fontSize: 9,
     fontWeight: '900',
+    letterSpacing: 0.5,
+    textShadowColor: 'rgba(0, 0, 0, 0.8)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
   },
   dropInfoCol: {
     flex: 1,
@@ -455,10 +484,12 @@ const styles = StyleSheet.create({
     padding: spacing.sm + 2,
     borderRadius: radius.full,
     borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.16)',
+    backgroundColor: '#0D1322',
     gap: spacing.sm + 2,
     shadowColor: '#000000',
     shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.4,
+    shadowOpacity: 0.45,
     shadowRadius: 10,
     elevation: 8,
   },
@@ -471,10 +502,12 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   miniSongTitle: {
+    color: '#FFFFFF',
     fontSize: 12,
     fontWeight: '800',
   },
   miniSongSub: {
+    color: '#CBD5E1',
     fontSize: 10,
     fontWeight: '600',
   },

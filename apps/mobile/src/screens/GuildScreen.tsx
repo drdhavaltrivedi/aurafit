@@ -76,28 +76,28 @@ export function GuildScreen({ onBack, onOpenSettings }: GuildScreenProps) {
       </View>
 
       {/* Guild Hero Banner */}
-      <View style={[styles.guildHero, { backgroundColor: colors.bgSurface, borderColor: colors.border }]}>
+      <View style={[styles.guildHero, { borderColor: colors.border }]}>
         <ImageBackground
           source={require('../../assets/hunter-avatar.jpg')}
           style={styles.guildBg}
           imageStyle={styles.guildBgImg}
         >
-          <View style={[styles.heroScrim, { backgroundColor: 'rgba(7, 10, 18, 0.88)' }]} />
+          <View style={styles.heroScrim} />
           <View style={styles.guildHeroContent}>
             <View style={styles.guildBadgeRow}>
-              <View style={[styles.crestIcon, { borderColor: colors.primary, backgroundColor: colors.primarySubtle }]}>
-                <AppIcon icon={Crown} size={24} color={colors.primary} />
+              <View style={[styles.crestIcon, { borderColor: '#A78BFA', backgroundColor: 'rgba(124, 58, 237, 0.35)' }]}>
+                <AppIcon icon={Crown} size={24} color="#C4B5FD" />
               </View>
               <View style={styles.guildNameCol}>
-                <Text style={[styles.guildName, { color: colors.textPrimary }]}>Shadow Reapers</Text>
-                <Text style={[styles.guildStats, { color: colors.textSecondary }]}>Lv. 5 • 24/30 Hunters</Text>
-                <Text style={[styles.guildMotto, { color: colors.textMuted }]}>Stronger Together. Higher Forever.</Text>
+                <Text style={styles.guildName}>Shadow Reapers</Text>
+                <Text style={styles.guildStats}>Lv. 5 • 24/30 Hunters</Text>
+                <Text style={styles.guildMotto}>Stronger Together. Higher Forever.</Text>
               </View>
-              <View style={[styles.guildAuraPill, { backgroundColor: colors.primarySubtle, borderColor: colors.primary }]}>
-                <AppIcon icon={Flame} size={14} color={colors.primary} />
+              <View style={styles.guildAuraPill}>
+                <AppIcon icon={Flame} size={15} color="#A78BFA" />
                 <View>
-                  <Text style={[styles.auraPillLabel, { color: colors.textSecondary }]}>Guild Aura</Text>
-                  <Text style={[styles.auraPillVal, { color: colors.primary }]}>48,320</Text>
+                  <Text style={styles.auraPillLabel}>Guild Aura</Text>
+                  <Text style={styles.auraPillVal}>48,320</Text>
                 </View>
               </View>
             </View>
@@ -129,35 +129,35 @@ export function GuildScreen({ onBack, onOpenSettings }: GuildScreenProps) {
       </View>
 
       {/* World Boss Raid Card */}
-      <View style={[styles.bossCard, { backgroundColor: colors.bgSurface, borderColor: colors.border }]}>
+      <View style={[styles.bossCard, { borderColor: colors.border }]}>
         <ImageBackground
           source={require('../../assets/hunter-avatar.jpg')}
           style={styles.bossBg}
           imageStyle={styles.bossBgImg}
         >
-          <View style={[styles.heroScrim, { backgroundColor: 'rgba(9, 13, 24, 0.88)' }]} />
+          <View style={styles.heroScrim} />
           <View style={styles.bossContent}>
             <View style={styles.bossTagRow}>
-              <View style={[styles.raidBadge, { backgroundColor: 'rgba(239, 68, 68, 0.2)' }]}>
-                <Text style={[styles.raidBadgeText, { color: colors.danger }]}>WORLD BOSS RAID</Text>
+              <View style={styles.raidBadge}>
+                <Text style={styles.raidBadgeText}>WORLD BOSS RAID</Text>
               </View>
               <View style={styles.timerRow}>
-                <AppIcon icon={Timer} size={13} color={colors.textSecondary} />
-                <Text style={[styles.timerText, { color: colors.textSecondary }]}>Ends in 2d 14h</Text>
+                <AppIcon icon={Timer} size={13} color="#E2E8F0" />
+                <Text style={styles.timerText}>Ends in 2d 14h</Text>
               </View>
             </View>
 
-            <Text style={[styles.bossName, { color: colors.textPrimary }]}>The Shadow Monarch</Text>
+            <Text style={styles.bossName}>The Shadow Monarch</Text>
 
             <View style={styles.bossBarSection}>
-              <View style={[styles.bossBarTrack, { backgroundColor: colors.bgElevated }]}>
-                <View style={[styles.bossBarFill, { width: `${bossHp}%`, backgroundColor: colors.primary }]} />
+              <View style={styles.bossBarTrack}>
+                <View style={[styles.bossBarFill, { width: `${bossHp}%` }]} />
               </View>
               <View style={styles.damageRow}>
-                <Text style={[styles.damageLabel, { color: colors.textSecondary }]}>
+                <Text style={styles.damageLabel}>
                   Your Guild Damage: {damageDealt}M / 3.5M
                 </Text>
-                <Text style={[styles.damagePct, { color: colors.primary }]}>{bossHp}%</Text>
+                <Text style={styles.damagePct}>{bossHp}%</Text>
               </View>
             </View>
 
@@ -165,7 +165,7 @@ export function GuildScreen({ onBack, onOpenSettings }: GuildScreenProps) {
               onPress={handleAttackBoss}
               style={({ pressed }) => [
                 styles.raidBtn,
-                { backgroundColor: colors.primary, opacity: pressed || raidAttacked ? 0.75 : 1 },
+                { opacity: pressed || raidAttacked ? 0.75 : 1 },
               ]}
             >
               <Text style={styles.raidBtnText}>{raidAttacked ? 'CRITICAL HIT! -100K HP' : 'Join Raid'}</Text>
@@ -279,6 +279,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.lg,
     borderWidth: 1,
     overflow: 'hidden',
+    backgroundColor: '#0A0F1D',
   },
   guildBg: {
     padding: spacing.md + 2,
@@ -289,6 +290,7 @@ const styles = StyleSheet.create({
   },
   heroScrim: {
     ...StyleSheet.absoluteFill,
+    backgroundColor: 'rgba(6, 10, 20, 0.92)',
   },
   guildHeroContent: {
     position: 'relative',
@@ -311,32 +313,42 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   guildName: {
+    color: '#FFFFFF',
     fontSize: fontSize.title,
     fontWeight: '900',
     letterSpacing: -0.2,
+    textShadowColor: 'rgba(0, 0, 0, 0.95)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 3,
   },
   guildStats: {
+    color: '#E2E8F0',
     fontSize: 11,
     fontWeight: '800',
   },
   guildMotto: {
+    color: '#94A3B8',
     fontSize: 10,
-    fontWeight: '600',
+    fontWeight: '700',
   },
   guildAuraPill: {
     paddingHorizontal: 10,
     paddingVertical: 6,
     borderRadius: radius.md,
     borderWidth: 1,
+    borderColor: 'rgba(167, 139, 250, 0.4)',
+    backgroundColor: 'rgba(124, 58, 237, 0.35)',
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
   },
   auraPillLabel: {
+    color: '#CBD5E1',
     fontSize: 9,
     fontWeight: '700',
   },
   auraPillVal: {
+    color: '#FFFFFF',
     fontSize: 13,
     fontWeight: '900',
   },
@@ -367,12 +379,13 @@ const styles = StyleSheet.create({
     borderRadius: radius.lg,
     borderWidth: 1,
     overflow: 'hidden',
+    backgroundColor: '#0A0F1D',
   },
   bossBg: {
     padding: spacing.lg,
   },
   bossBgImg: {
-    opacity: 0.3,
+    opacity: 0.35,
     resizeMode: 'cover',
   },
   bossContent: {
@@ -388,8 +401,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: radius.sm,
+    backgroundColor: 'rgba(239, 68, 68, 0.35)',
+    borderWidth: 1,
+    borderColor: '#EF4444',
   },
   raidBadgeText: {
+    color: '#FCA5A5',
     fontSize: 10,
     fontWeight: '900',
     letterSpacing: 0.5,
@@ -400,12 +417,17 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   timerText: {
+    color: '#E2E8F0',
     fontSize: 11,
     fontWeight: '700',
   },
   bossName: {
-    fontSize: fontSize.title + 1,
+    color: '#FFFFFF',
+    fontSize: fontSize.title + 2,
     fontWeight: '900',
+    textShadowColor: 'rgba(0, 0, 0, 0.95)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 3,
   },
   bossBarSection: {
     gap: 4,
@@ -415,10 +437,12 @@ const styles = StyleSheet.create({
     height: 8,
     borderRadius: 4,
     overflow: 'hidden',
+    backgroundColor: 'rgba(255, 255, 255, 0.12)',
   },
   bossBarFill: {
     height: '100%',
     borderRadius: 4,
+    backgroundColor: '#8B5CF6',
   },
   damageRow: {
     flexDirection: 'row',
@@ -426,10 +450,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   damageLabel: {
+    color: '#E2E8F0',
     fontSize: 11,
     fontWeight: '700',
   },
   damagePct: {
+    color: '#C4B5FD',
     fontSize: 12,
     fontWeight: '900',
   },
@@ -438,11 +464,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 4,
+    backgroundColor: '#7C3AED',
     paddingVertical: 10,
     paddingHorizontal: 20,
     borderRadius: radius.full,
     alignSelf: 'flex-start',
     marginTop: 6,
+    shadowColor: '#7C3AED',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.4,
+    shadowRadius: 8,
+    elevation: 3,
   },
   raidBtnText: {
     color: '#FFFFFF',

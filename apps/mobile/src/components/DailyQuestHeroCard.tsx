@@ -19,42 +19,44 @@ export function DailyQuestHeroCard({ quest, onStartQuest }: DailyQuestHeroCardPr
   const progressText = quest ? (quest.completed ? '5/5' : '0/5') : '0/5';
 
   return (
-    <View style={[styles.card, { borderColor: colors.border, backgroundColor: colors.bgSurface }]}>
+    <View style={[styles.card, { borderColor: colors.border }]}>
       {/* Background artwork overlay */}
       <ImageBackground
         source={require('../../assets/hunter-avatar.jpg')}
         style={styles.bgImg}
         imageStyle={styles.bgImgStyle}
       >
-        <View style={[styles.scrim, { backgroundColor: 'rgba(7, 10, 18, 0.88)' }]} />
+        {/* Solid dark gradient backing scrim ensuring 100% readability */}
+        <View style={styles.scrim} />
 
         <View style={styles.content}>
           <View style={styles.topRow}>
-            <View style={[styles.badge, { backgroundColor: 'rgba(139, 92, 246, 0.25)' }]}>
-              <AppIcon icon={Users} size={13} color={colors.primary} />
-              <Text style={[styles.badgeText, { color: colors.primary }]}>DAILY QUEST</Text>
+            <View style={styles.badge}>
+              <AppIcon icon={Users} size={13} color="#C4B5FD" />
+              <Text style={styles.badgeText}>DAILY QUEST</Text>
             </View>
-            <View style={[styles.counterBadge, { backgroundColor: 'rgba(0, 0, 0, 0.65)', borderColor: colors.border }]}>
-              <Text style={[styles.counterText, { color: colors.textPrimary }]}>{progressText}</Text>
+            <View style={styles.counterBadge}>
+              <Text style={styles.counterText}>{progressText}</Text>
             </View>
           </View>
 
-          <Text style={[styles.title, { color: colors.textPrimary }]}>{title}</Text>
+          {/* Guaranteed crisp white title with subtle shadow */}
+          <Text style={styles.title}>{title}</Text>
 
           <View style={styles.rewardRow}>
-            <AppIcon icon={Flame} size={15} color={colors.primary} />
-            <Text style={[styles.rewardText, { color: colors.primary }]}>
+            <AppIcon icon={Flame} size={16} color="#A78BFA" />
+            <Text style={styles.rewardText}>
               +{auraReward} Aura Points
             </Text>
           </View>
 
           <Pressable
-            onPress={() => quest && onStartQuest ? onStartQuest(quest.id) : null}
+            onPress={() => (quest && onStartQuest ? onStartQuest(quest.id) : null)}
             accessibilityRole="button"
             accessibilityLabel={`Start quest: ${title}`}
             style={({ pressed }) => [
               styles.startBtn,
-              { backgroundColor: colors.primary, opacity: pressed ? 0.85 : 1 },
+              { opacity: pressed ? 0.85 : 1 },
             ]}
           >
             <Text style={styles.startBtnText}>Start Quest</Text>
@@ -71,22 +73,24 @@ const styles = StyleSheet.create({
     borderRadius: radius.lg,
     borderWidth: 1,
     overflow: 'hidden',
+    backgroundColor: '#0A0F1D',
     shadowColor: '#000000',
     shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.35,
+    shadowOpacity: 0.45,
     shadowRadius: 12,
-    elevation: 5,
+    elevation: 6,
   },
   bgImg: {
     width: '100%',
     padding: spacing.lg,
   },
   bgImgStyle: {
-    opacity: 0.25,
+    opacity: 0.35,
     resizeMode: 'cover',
   },
   scrim: {
     ...StyleSheet.absoluteFill,
+    backgroundColor: 'rgba(6, 10, 20, 0.90)',
   },
   content: {
     position: 'relative',
@@ -100,12 +104,16 @@ const styles = StyleSheet.create({
   badge: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 5,
+    gap: 6,
     paddingHorizontal: 10,
-    paddingVertical: 4,
+    paddingVertical: 5,
     borderRadius: radius.full,
+    backgroundColor: 'rgba(124, 58, 237, 0.35)',
+    borderWidth: 1,
+    borderColor: 'rgba(167, 139, 250, 0.4)',
   },
   badgeText: {
+    color: '#DDD6FE',
     fontSize: 10,
     fontWeight: '900',
     letterSpacing: 0.8,
@@ -114,41 +122,59 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: radius.sm,
+    backgroundColor: 'rgba(15, 23, 42, 0.85)',
     borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.2)',
   },
   counterText: {
+    color: '#FFFFFF',
     fontSize: 12,
     fontWeight: '900',
   },
   title: {
-    fontSize: fontSize.title + 1,
+    color: '#FFFFFF',
+    fontSize: fontSize.title + 2,
     fontWeight: '900',
     letterSpacing: -0.3,
     marginTop: 4,
+    textShadowColor: 'rgba(0, 0, 0, 0.95)',
+    textShadowOffset: { width: 0, height: 1.5 },
+    textShadowRadius: 4,
   },
   rewardRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    gap: 5,
   },
   rewardText: {
-    fontSize: fontSize.caption + 1,
+    color: '#C4B5FD',
+    fontSize: fontSize.caption + 2,
     fontWeight: '800',
+    textShadowColor: 'rgba(0, 0, 0, 0.8)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
   },
   startBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 4,
-    paddingVertical: 10,
-    paddingHorizontal: 18,
+    paddingVertical: 11,
+    paddingHorizontal: 20,
     borderRadius: radius.full,
     alignSelf: 'flex-start',
+    backgroundColor: '#7C3AED',
     marginTop: 6,
+    shadowColor: '#7C3AED',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.4,
+    shadowRadius: 8,
+    elevation: 3,
   },
   startBtnText: {
     color: '#FFFFFF',
     fontSize: fontSize.body,
-    fontWeight: '800',
+    fontWeight: '900',
+    letterSpacing: 0.2,
   },
 });
