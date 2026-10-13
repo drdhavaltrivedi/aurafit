@@ -1,9 +1,10 @@
-import { memo } from 'react';
-import { Check, Timer } from 'lucide-react';
+import { memo, type CSSProperties } from 'react';
+import { Check, ScrollText, Timer } from 'lucide-react';
 import type { Quest } from '@aurafit/shared';
 import { Card, CardHeader } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
+import { AppIcon } from '@/components/ui/AppIcon';
 import { cx } from '@/lib/cx';
 
 interface QuestBoardProps {
@@ -20,7 +21,7 @@ export const QuestBoard = memo(function QuestBoard({ quests, canComplete, onComp
         titleId="quests-title"
         title={
           <>
-            <span aria-hidden="true">📜</span> Daily Hunter quests
+            <ScrollText aria-hidden="true" className="icon-inline text-accent" /> Daily Hunter quests
           </>
         }
         subtitle="Complete quests to farm Aura and prevent stat decay."
@@ -33,8 +34,8 @@ export const QuestBoard = memo(function QuestBoard({ quests, canComplete, onComp
       <ul className="stack-3 list-reset">
         {quests.map((quest) => (
           <li key={quest.id} className={cx('quest', quest.completed && 'is-complete')}>
-            <span className="quest__icon" aria-hidden="true">
-              {quest.icon}
+            <span className="quest__icon" aria-hidden="true" style={{ '--quest-accent': quest.accentColor } as CSSProperties}>
+              <AppIcon name={quest.icon} />
             </span>
             <div className="quest__body">
               <h3 className="quest__title">{quest.title}</h3>

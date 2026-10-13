@@ -8,6 +8,7 @@ import {
   type UserRole,
   type WorkoutDrop,
 } from '@aurafit/shared';
+import { Crown } from '../components/icons';
 import { FormMessage } from '../components/AuthLayout';
 import { ComingSoonCard, SampleDataTag } from '../components/DataNotice';
 import { SectionHeader } from '../components/SectionHeader';
@@ -63,7 +64,8 @@ export function CreatorScreen({
   return (
     <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
       <SectionHeader
-        title="👑 Creator Studio"
+        icon={Crown}
+        title="Creator Studio"
         subtitle={`${profile.username} • ${profile.title}`}
       />
       {canViewAnalytics ? (

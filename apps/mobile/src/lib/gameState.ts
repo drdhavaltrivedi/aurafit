@@ -4,6 +4,7 @@ import {
   calculateAuraGain,
   getRankFromAura,
   hasPermission,
+  toIconKey,
   type Quest,
   type UserProfile,
   type UserRole,
@@ -41,7 +42,8 @@ export function createInitialState(today: string): GameState {
     themePreference: null,
     role: INITIAL_USER.role,
     user: withDerivedRank(INITIAL_USER),
-    quests: INITIAL_QUESTS.map((q) => ({ ...q })),
+    // Normalise icons so legacy emoji values can never reach the UI.
+    quests: INITIAL_QUESTS.map((q) => ({ ...q, icon: toIconKey(q.icon) })),
     // Seed profile already has a running streak; treat yesterday as its last active day so the
     // first action today continues it rather than resetting it.
     lastActiveDate: addDays(today, -1),

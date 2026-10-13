@@ -4,12 +4,15 @@ import {
   Pressable,
   StyleSheet,
   Text,
+  View,
   type AccessibilityState,
   type PressableProps,
   type StyleProp,
   type ViewStyle,
 } from 'react-native';
+import type { LucideIcon } from './icons';
 import { useTheme } from '../theme/ThemeProvider';
+import { AppIcon } from './AppIcon';
 import { MIN_TOUCH_TARGET, fontSize, radius, spacing } from '../theme/tokens';
 
 type Variant = 'primary' | 'success' | 'secondary' | 'ghost' | 'danger';
@@ -27,6 +30,8 @@ export interface AppButtonProps extends Omit<PressableProps, 'style' | 'children
   selected?: boolean;
   /** Shows a spinner, disables presses and marks the button busy for screen readers. */
   loading?: boolean;
+  /** Optional decorative icon shown before the label (uses the label colour). */
+  icon?: LucideIcon;
 }
 
 const HIT_SLOP = { top: 8, bottom: 8, left: 8, right: 8 };
@@ -41,6 +46,7 @@ export function AppButton({
   loading = false,
   accessibilityLabel,
   accessibilityHint,
+  icon,
   ...rest
 }: AppButtonProps) {
   const { colors } = useTheme();
@@ -89,13 +95,23 @@ export function AppButton({
       {loading ? (
         <ActivityIndicator color={fg[variant]} accessibilityElementsHidden importantForAccessibility="no" />
       ) : (
-      <Text
-        style={[styles.label, size === 'lg' && styles.labelLg, { color: fg[variant] }]}
-        numberOfLines={1}
-        maxFontSizeMultiplier={1.6}
-      >
-        {label}
-      </Text>
+        <View style={styles.content}>
+          {icon ? (
+            <AppIcon
+              icon={icon}
+              size={size === 'lg' ? fontSize.bodyLg + 3 : fontSize.body + 2}
+              color={fg[variant]}
+              strokeWidth={2.5}
+            />
+          ) : null}
+          <Text
+            style={[styles.label, size === 'lg' && styles.labelLg, { color: fg[variant] }]}
+            numberOfLines={1}
+            maxFontSizeMultiplier={1.6}
+          >
+            {label}
+          </Text>
+        </View>
       )}
     </Pressable>
   );
@@ -116,7 +132,15 @@ const styles = StyleSheet.create({
     minHeight: 52,
     paddingHorizontal: spacing.xl,
   },
+  content: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.sm,
+    flexShrink: 1,
+  },
   label: {
+    flexShrink: 1,
     fontSize: fontSize.body,
     fontWeight: '800',
   },

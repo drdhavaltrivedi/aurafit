@@ -1,11 +1,11 @@
-import { ArrowDown, Zap } from 'lucide-react';
+import { ArrowDown, Rocket, Zap } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 
 export function Hero({ onEnterArena }: { onEnterArena: () => void }) {
   return (
     <section className="hero" aria-labelledby="hero-title">
       <p className="pill pill--accent">
-        <span aria-hidden="true">🚀</span> The next-gen fitness ecosystem for Gen Z &amp; Gen Alpha
+        <Rocket aria-hidden="true" className="icon-inline" /> The next-gen fitness ecosystem for Gen Z &amp; Gen Alpha
       </p>
       <h1 id="hero-title" className="hero__title">
         Level up your physical stats.{' '}

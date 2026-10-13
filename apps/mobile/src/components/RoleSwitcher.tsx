@@ -1,13 +1,15 @@
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Crown, Shield, Zap, type LucideIcon } from './icons';
 import type { UserRole } from '@aurafit/shared';
 import { useTheme } from '../theme/ThemeProvider';
+import { AppIcon } from './AppIcon';
 import { MIN_TOUCH_TARGET, fontSize, radius, spacing } from '../theme/tokens';
 
-const ROLE_OPTIONS: { role: UserRole; icon: string; label: string }[] = [
-  { role: 'MEMBER', icon: '⚡', label: 'Athlete' },
-  { role: 'CREATOR', icon: '👑', label: 'Creator' },
-  { role: 'ADMIN', icon: '🛡️', label: 'Admin' },
+const ROLE_OPTIONS: { role: UserRole; icon: LucideIcon; label: string }[] = [
+  { role: 'MEMBER', icon: Zap, label: 'Athlete' },
+  { role: 'CREATOR', icon: Crown, label: 'Creator' },
+  { role: 'ADMIN', icon: Shield, label: 'Admin' },
 ];
 
 export function RoleSwitcher({ value, onChange }: { value: UserRole; onChange: (role: UserRole) => void }) {
@@ -17,6 +19,7 @@ export function RoleSwitcher({ value, onChange }: { value: UserRole; onChange: (
     <View accessibilityRole="tablist" style={styles.bar}>
       {ROLE_OPTIONS.map(({ role, icon, label }) => {
         const active = role === value;
+        const fg = active ? colors.onPrimary : colors.textSecondary;
         return (
           <Pressable
             key={role}
@@ -34,13 +37,12 @@ export function RoleSwitcher({ value, onChange }: { value: UserRole; onChange: (
               },
             ]}
           >
-            <Text
-              numberOfLines={1}
-              maxFontSizeMultiplier={1.4}
-              style={[styles.text, { color: active ? colors.onPrimary : colors.textSecondary }]}
-            >
-              {icon} {label}
-            </Text>
+            <View style={styles.content}>
+              <AppIcon icon={icon} size={fontSize.body + 1} color={fg} strokeWidth={2.25} />
+              <Text numberOfLines={1} maxFontSizeMultiplier={1.4} style={[styles.text, { color: fg }]}>
+                {label}
+              </Text>
+            </View>
           </Pressable>
         );
       })}
@@ -64,7 +66,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  content: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    flexShrink: 1,
+  },
   text: {
+    flexShrink: 1,
     fontSize: fontSize.body - 1,
     fontWeight: '700',
   },

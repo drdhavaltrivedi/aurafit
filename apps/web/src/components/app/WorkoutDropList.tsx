@@ -20,7 +20,7 @@ export const WorkoutDropList = memo(function WorkoutDropList({ drops, canStart, 
         titleId="drops-title"
         title={
           <>
-            <span aria-hidden="true">🔥</span> Trending workout drops
+            <Flame aria-hidden="true" className="icon-inline text-orange" /> Trending workout drops
           </>
         }
         subtitle="Curated routines from top athletes."

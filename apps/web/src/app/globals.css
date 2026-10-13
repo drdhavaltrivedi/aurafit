@@ -408,6 +408,15 @@ a {
   flex-shrink: 0;
 }
 
+/* Data-driven icons (AppIcon): sized by the parent's font-size, coloured via currentColor. */
+.app-icon {
+  display: block;
+  flex-shrink: 0;
+}
+.app-icon.icon-inline {
+  display: inline-block;
+}
+
 .eyebrow,
 .overline {
   font-size: var(--text-xs);
@@ -1279,9 +1288,17 @@ a {
   color: var(--text-primary);
 }
 
-.role-card__emoji {
-  font-size: 1.5rem;
-  line-height: 1;
+.role-card__icon {
+  display: inline-grid;
+  place-items: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  flex-shrink: 0;
+  border-radius: var(--radius-md);
+  font-size: 1.25rem;
+  color: var(--tone-fg);
+  background: var(--tone-bg);
+  border: 1px solid color-mix(in srgb, var(--tone-fg) 30%, transparent);
 }
 .role-card__title {
   font-size: var(--text-xl);
@@ -1475,8 +1492,23 @@ a {
   border-color: color-mix(in srgb, var(--emerald-fg) 45%, transparent);
 }
 .quest__icon {
-  font-size: 1.5rem;
-  line-height: 1;
+  --quest-accent: var(--accent-fg);
+  display: inline-grid;
+  place-items: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  flex-shrink: 0;
+  border-radius: var(--radius-md);
+  font-size: 1.375rem;
+  /* Pull the raw accent slightly towards the text colour so it reads in both themes. */
+  color: color-mix(in srgb, var(--quest-accent) 80%, var(--text-primary));
+  background: color-mix(in srgb, var(--quest-accent) 16%, transparent);
+  border: 1px solid color-mix(in srgb, var(--quest-accent) 35%, transparent);
+}
+.quest.is-complete .quest__icon {
+  color: var(--emerald-fg);
+  background: color-mix(in srgb, var(--emerald-fg) 16%, transparent);
+  border-color: color-mix(in srgb, var(--emerald-fg) 35%, transparent);
 }
 .quest__body {
   display: flex;

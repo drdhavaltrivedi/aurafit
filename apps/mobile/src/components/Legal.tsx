@@ -1,10 +1,12 @@
 import React from 'react';
 import { Alert, Linking, Pressable, StyleSheet, Text, View } from 'react-native';
 import * as WebBrowser from 'expo-web-browser';
+import { HeartPulse } from './icons';
 import { siteUrl } from '../config/env';
 import { HEALTH_DISCLAIMER, LEGAL_TITLES, legalUrl, type LegalDoc } from '../lib/legal';
 import { useTheme } from '../theme/ThemeProvider';
 import { MIN_TOUCH_TARGET, fontSize, spacing } from '../theme/tokens';
+import { AppIcon } from './AppIcon';
 
 export const legalLinksAvailable = legalUrl(siteUrl, 'terms') !== null;
 
@@ -84,13 +86,21 @@ export function LegalLinks({ align = 'center' }: { align?: 'center' | 'flex-star
 export function HealthDisclaimer({ align = 'center' }: { align?: 'center' | 'left' }) {
   const { colors } = useTheme();
   return (
-    <Text
-      style={[styles.small, { color: colors.textMuted, textAlign: align }]}
-      maxFontSizeMultiplier={1.6}
+    <View
+      style={[styles.disclaimerRow, { justifyContent: align === 'center' ? 'center' : 'flex-start' }]}
+      accessible
       accessibilityLabel={`Health notice: ${HEALTH_DISCLAIMER}`}
     >
-      ⚕️ {HEALTH_DISCLAIMER}
-    </Text>
+      <View style={styles.disclaimerIcon}>
+        <AppIcon icon={HeartPulse} size={fontSize.caption + 2} color={colors.textMuted} />
+      </View>
+      <Text
+        style={[styles.small, styles.disclaimerText, { color: colors.textMuted, textAlign: align }]}
+        maxFontSizeMultiplier={1.6}
+      >
+        {HEALTH_DISCLAIMER}
+      </Text>
+    </View>
   );
 }
 
@@ -99,6 +109,19 @@ const styles = StyleSheet.create({
     fontSize: fontSize.caption,
     lineHeight: fontSize.caption * 1.5,
     textAlign: 'center',
+  },
+  disclaimerRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 6,
+  },
+  // Centres the icon on the first line of text (line height = caption * 1.5).
+  disclaimerIcon: {
+    height: fontSize.caption * 1.5,
+    justifyContent: 'center',
+  },
+  disclaimerText: {
+    flexShrink: 1,
   },
   inlineLink: {
     fontWeight: '700',

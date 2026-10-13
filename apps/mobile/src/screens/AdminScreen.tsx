@@ -1,6 +1,7 @@
 import React from 'react';
 import { ActivityIndicator, FlatList, StyleSheet, Text, View } from 'react-native';
 import { INITIAL_GYM_LEADERBOARD, hasPermission, type GymLeaderboardEntry, type UserRole } from '@aurafit/shared';
+import { Shield, Swords } from '../components/icons';
 import { AppButton } from '../components/AppButton';
 import { FormMessage } from '../components/AuthLayout';
 import { ComingSoonCard, SampleDataTag } from '../components/DataNotice';
@@ -87,7 +88,8 @@ function SampleAdmin({ role }: { role: UserRole }) {
       ListHeaderComponent={
         <View style={styles.header}>
           <SectionHeader
-            title="🛡️ Gym Leaderboard & Platform"
+            icon={Shield}
+            title="Gym Leaderboard & Platform"
             subtitle={
               canManage
                 ? 'Global gym competitions and aura retention health'
@@ -117,7 +119,7 @@ function LiveAdmin({ hunters = [], huntersLoading = false, huntersError = null, 
       showsVerticalScrollIndicator={false}
       ListHeaderComponent={
         <View style={styles.header}>
-          <SectionHeader title="⚔️ Top Hunters" subtitle="Live global leaderboard" />
+          <SectionHeader icon={Swords} title="Top Hunters" subtitle="Live global leaderboard" />
           {huntersError ? (
             <>
               <FormMessage tone="error" message={huntersError} />

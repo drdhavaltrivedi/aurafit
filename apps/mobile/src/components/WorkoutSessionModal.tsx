@@ -2,12 +2,14 @@ import React, { useCallback, useEffect, useRef } from 'react';
 import { AccessibilityInfo, FlatList, Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
+import { Swords, X } from './icons';
 import type { Exercise, WorkoutDrop } from '@aurafit/shared';
 import { useCountdown } from '../hooks/useCountdown';
 import { useReducedMotion } from '../hooks/useReducedMotion';
 import { useTheme } from '../theme/ThemeProvider';
 import { MIN_TOUCH_TARGET, fontSize, radius, spacing } from '../theme/tokens';
 import { AppButton } from './AppButton';
+import { AppIcon } from './AppIcon';
 import { HealthDisclaimer } from './Legal';
 
 const SET_SECONDS = 45;
@@ -96,7 +98,7 @@ export function WorkoutSessionModal({ drop, onClose, onClaim }: WorkoutSessionMo
                     { backgroundColor: colors.bgElevated, opacity: pressed ? 0.7 : 1 },
                   ]}
                 >
-                  <Text style={[styles.closeText, { color: colors.textSecondary }]}>✕</Text>
+                  <AppIcon icon={X} size={20} color={colors.textSecondary} strokeWidth={2.5} />
                 </Pressable>
               </View>
 
@@ -140,7 +142,8 @@ export function WorkoutSessionModal({ drop, onClose, onClaim }: WorkoutSessionMo
               </View>
 
               <AppButton
-                label="⚔️ Claim Workout Aura"
+                label="Claim Workout Aura"
+                icon={Swords}
                 accessibilityLabel="Finish workout and claim aura"
                 variant="success"
                 size="lg"
@@ -178,10 +181,6 @@ const styles = StyleSheet.create({
     borderRadius: MIN_TOUCH_TARGET / 2,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  closeText: {
-    fontSize: 18,
-    fontWeight: '700',
   },
   timerWrap: {
     alignItems: 'center',

@@ -1,9 +1,11 @@
 import React, { memo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
+import { Timer } from './icons';
 import type { WorkoutDrop } from '@aurafit/shared';
 import { useTheme } from '../theme/ThemeProvider';
 import { fontSize, radius, spacing } from '../theme/tokens';
 import { AppButton } from './AppButton';
+import { AppIcon } from './AppIcon';
 
 interface WorkoutDropCardProps {
   drop: WorkoutDrop;
@@ -31,9 +33,12 @@ export const WorkoutDropCard = memo(function WorkoutDropCard({ drop, canStart, o
         <Text style={[styles.tagline, { color: colors.textSecondary }]}>{drop.tagline}</Text>
       </View>
       <View style={[styles.footer, { borderTopColor: colors.border }]}>
-        <Text style={[styles.meta, { color: colors.textSecondary }]} accessible={false} importantForAccessibility="no">
-          ⏱️ {drop.durationMinutes}m • {drop.exercises.length} moves
-        </Text>
+        <View style={styles.metaRow} accessible={false} importantForAccessibility="no-hide-descendants">
+          <AppIcon icon={Timer} size={fontSize.caption + 2} color={colors.textSecondary} />
+          <Text style={[styles.meta, { color: colors.textSecondary }]}>
+            {drop.durationMinutes}m • {drop.exercises.length} moves
+          </Text>
+        </View>
         {canStart ? (
           <AppButton label="Start" accessibilityLabel={`Start workout: ${drop.title}`} onPress={() => onStart(drop)} />
         ) : null}
@@ -85,6 +90,12 @@ const styles = StyleSheet.create({
     borderTopWidth: StyleSheet.hairlineWidth,
     paddingTop: spacing.sm,
     gap: spacing.sm,
+  },
+  metaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    flexShrink: 1,
   },
   meta: {
     fontSize: fontSize.caption,

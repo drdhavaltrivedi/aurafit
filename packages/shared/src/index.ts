@@ -1,3 +1,5 @@
+import type { IconKey } from './icons';
+
 export type UserRole = 'MEMBER' | 'CREATOR' | 'ADMIN';
 
 export type UserPermission =
@@ -102,7 +104,7 @@ export interface Quest {
   targetCount: number;
   currentCount: number;
   unit: string;
-  icon: string;
+  icon: IconKey;
   accentColor: string;
   description: string;
 }
@@ -143,7 +145,7 @@ export interface Squad {
   id: string;
   name: string;
   tag: string;
-  avatar: string;
+  avatar: IconKey;
   totalAura: number;
   rankPosition: number;
   memberCount: number;
@@ -280,6 +282,7 @@ export function calculateQuestProgress(currentCount: number, targetCount: number
 }
 
 export * from './limits';
+export * from './icons';
 export * from './streak';
 export * from './drops';
 export * from './api';
@@ -378,7 +381,7 @@ export const INITIAL_QUESTS: Quest[] = [
     targetCount: 50,
     currentCount: 15,
     unit: 'reps',
-    icon: '⚡',
+    icon: 'zap',
     accentColor: '#8B5CF6',
     description: 'Perform 50 clean chest-to-deck pushups. Break into sets if needed. Boosts your STR stat.',
   },
@@ -396,7 +399,7 @@ export const INITIAL_QUESTS: Quest[] = [
     targetCount: 12,
     currentCount: 0,
     unit: 'min',
-    icon: '🔥',
+    icon: 'flame',
     accentColor: '#EC4899',
     description: '30s sprint / 30s walk interval blitz. Syncs with your phonk playlist.',
   },
@@ -414,7 +417,7 @@ export const INITIAL_QUESTS: Quest[] = [
     targetCount: 4,
     currentCount: 4,
     unit: 'min',
-    icon: '✨',
+    icon: 'sparkles',
     accentColor: '#06B6D4',
     description: 'Doorway chest openers, chin tucks, and wall slides for instant aura posture.',
   },
@@ -432,7 +435,7 @@ export const INITIAL_QUESTS: Quest[] = [
     targetCount: 500,
     currentCount: 340,
     unit: 'squad reps',
-    icon: '👹',
+    icon: 'skull',
     accentColor: '#EF4444',
     description: 'Raid the weekly titan boss with your squad. Slaying the beast unlocks legendary Monarch badge.',
   },
@@ -575,7 +578,7 @@ export const INITIAL_SQUADS: Squad[] = [
     id: 'sq_shadow_unit',
     name: 'Shadow Monarch Unit',
     tag: '#SOLO',
-    avatar: '⚔️',
+    avatar: 'swords',
     totalAura: 48920,
     rankPosition: 1,
     memberCount: 5,
@@ -589,7 +592,7 @@ export const INITIAL_SQUADS: Squad[] = [
     id: 'sq_tokyo_drift',
     name: 'Shibuya Phonk Lifters',
     tag: '#DRIFT',
-    avatar: '🏎️',
+    avatar: 'car',
     totalAura: 43210,
     rankPosition: 2,
     memberCount: 5,
@@ -603,7 +606,7 @@ export const INITIAL_SQUADS: Squad[] = [
     id: 'sq_cyber_beasts',
     name: 'Cyber Gym Rats',
     tag: '#CYBER',
-    avatar: '🐺',
+    avatar: 'dog',
     totalAura: 37800,
     rankPosition: 3,
     memberCount: 4,
@@ -617,7 +620,7 @@ export const INITIAL_SQUADS: Squad[] = [
     id: 'sq_slumber_squad',
     name: 'The Couch Resistance',
     tag: '#SAVEME',
-    avatar: '🛋️',
+    avatar: 'sofa',
     totalAura: 19400,
     rankPosition: 8,
     memberCount: 3,

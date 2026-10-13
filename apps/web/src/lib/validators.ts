@@ -1,4 +1,4 @@
-import type { Quest, UserProfile, UserRole, WorkoutDrop } from '@aurafit/shared';
+import { toIconKey, type Quest, type UserProfile, type UserRole, type WorkoutDrop } from '@aurafit/shared';
 
 type Rec = Record<string, unknown>;
 
@@ -42,7 +42,7 @@ const STATS = new Set(['str', 'agi', 'end', 'rec']);
 function isQuest(v: unknown): v is Quest {
   if (!isObj(v)) return false;
   const r = v.statReward;
-  return (
+  const valid =
     isStr(v.id) &&
     isStr(v.title) &&
     isStr(v.subtitle) &&
@@ -50,12 +50,15 @@ function isQuest(v: unknown): v is Quest {
     isNum(v.durationMinutes) &&
     isBool(v.completed) &&
     isNum(v.targetCount) &&
-    isStr(v.icon) &&
     isObj(r) &&
     isStr(r.stat) &&
     STATS.has(r.stat) &&
-    isNum(r.amount)
-  );
+    isNum(r.amount);
+  // Saved demo state from older builds stores emoji (or nothing) as the icon. Rather than
+  // rejecting the whole quest list, normalise it to an icon key in place; `v` is freshly
+  // parsed JSON owned by the caller, so mutating it is safe.
+  if (valid) v.icon = toIconKey(v.icon);
+  return valid;
 }
 
 function isExercise(v: unknown): boolean {

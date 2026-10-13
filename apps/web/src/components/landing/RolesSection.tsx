@@ -1,13 +1,14 @@
 import { ArrowRight, Check } from 'lucide-react';
-import type { UserRole } from '@aurafit/shared';
+import type { IconKey, UserRole } from '@aurafit/shared';
 import { Card } from '@/components/ui/Card';
 import { Badge, type Tone } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
+import { AppIcon } from '@/components/ui/AppIcon';
 
 interface RoleCard {
   role: UserRole;
   tone: Tone;
-  emoji: string;
+  icon: IconKey;
   title: string;
   body: string;
   perks: string[];
@@ -18,7 +19,7 @@ const CARDS: RoleCard[] = [
   {
     role: 'MEMBER',
     tone: 'accent',
-    emoji: '⚡',
+    icon: 'zap',
     title: 'Athlete (Gen Z & Alpha)',
     body: 'The active player doing daily movement, levelling stats and competing with peers.',
     perks: ['Complete daily Hunter quests', 'Run interactive interval workouts', 'Join squads & co-op boss raids', 'Level up STR, AGI, END, REC', 'View global gym rankings'],
@@ -27,7 +28,7 @@ const CARDS: RoleCard[] = [
   {
     role: 'CREATOR',
     tone: 'pink',
-    emoji: '👑',
+    icon: 'crown',
     title: 'Fitness coach & creator',
     body: 'Publishes routine drops, curates phonk cadence and builds subscriber squads.',
     perks: ['All Athlete capabilities', 'Publish custom workout drops', 'Set Aura multipliers (1.0×–3.0×)', 'Creator Studio analytics & MRR', 'Manage subscriber squads'],
@@ -36,10 +37,10 @@ const CARDS: RoleCard[] = [
   {
     role: 'ADMIN',
     tone: 'emerald',
-    emoji: '🛡️',
+    icon: 'shield',
     title: 'Gym owner & platform overseer',
     body: 'Oversees gym competitions, audits anti-cheat streak proof and monitors the economy.',
-    perks: ['Full administration rights', 'Manage the global gym leaderboard', 'Audit streak proof & anti-cheat flags', 'Balance Aura economy inflation', 'Grant roles (Member → Creator)'],
+    perks: ['Full administration rights', 'Manage the global gym leaderboard', 'Audit streak proof & anti-cheat flags', 'Balance Aura economy inflation', 'Grant roles (Member to Creator)'],
     cta: 'Try the Admin console',
   },
 ];
@@ -62,8 +63,8 @@ export function RolesSection({ onTryRole }: { onTryRole: (role: UserRole) => voi
                 <Badge tone={c.tone} outline>
                   Role: {c.role}
                 </Badge>
-                <span className="role-card__emoji" aria-hidden="true">
-                  {c.emoji}
+                <span className={`role-card__icon tone-${c.tone}`} aria-hidden="true">
+                  <AppIcon name={c.icon} />
                 </span>
               </div>
               <h3 className="role-card__title">{c.title}</h3>

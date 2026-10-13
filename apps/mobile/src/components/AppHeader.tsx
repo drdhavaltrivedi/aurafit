@@ -1,6 +1,8 @@
 import React from 'react';
 import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
+import { CircleUser, Flame, Moon, Sparkles, Sun } from './icons';
 import { useTheme } from '../theme/ThemeProvider';
+import { AppIcon } from './AppIcon';
 import { MIN_TOUCH_TARGET, fontSize, radius, spacing } from '../theme/tokens';
 
 interface AppHeaderProps {
@@ -40,8 +42,9 @@ export function AppHeader({ auraPoints, streakDays, onToggleTheme, onOpenAccount
           accessibilityLabel={`${auraPoints.toLocaleString()} aura points`}
           style={[styles.chip, { backgroundColor: colors.primarySubtle, borderColor: colors.border }]}
         >
+          <AppIcon icon={Sparkles} size={14} color={colors.primary} strokeWidth={2.5} />
           <Text style={[styles.chipText, { color: colors.primary }]} maxFontSizeMultiplier={1.4}>
-            ✨ {auraPoints.toLocaleString()}
+            {auraPoints.toLocaleString()}
           </Text>
         </View>
         <View
@@ -49,8 +52,9 @@ export function AppHeader({ auraPoints, streakDays, onToggleTheme, onOpenAccount
           accessibilityLabel={`${streakDays} day streak`}
           style={[styles.chip, { backgroundColor: colors.bgElevated, borderColor: colors.border }]}
         >
+          <AppIcon icon={Flame} size={14} color={colors.orange} strokeWidth={2.5} />
           <Text style={[styles.chipText, { color: colors.orange }]} maxFontSizeMultiplier={1.4}>
-            🔥 {streakDays}d
+            {streakDays}d
           </Text>
         </View>
         <Pressable
@@ -63,9 +67,7 @@ export function AppHeader({ auraPoints, streakDays, onToggleTheme, onOpenAccount
             { backgroundColor: colors.bgElevated, borderColor: colors.border, opacity: pressed ? 0.7 : 1 },
           ]}
         >
-          <Text style={styles.themeIcon} accessible={false}>
-            {isDark ? '🌙' : '☀️'}
-          </Text>
+          <AppIcon icon={isDark ? Moon : Sun} size={20} color={colors.textPrimary} />
         </Pressable>
         {onOpenAccount ? (
           <Pressable
@@ -79,9 +81,7 @@ export function AppHeader({ auraPoints, streakDays, onToggleTheme, onOpenAccount
               { backgroundColor: colors.bgElevated, borderColor: colors.border, opacity: pressed ? 0.7 : 1 },
             ]}
           >
-            <Text style={styles.themeIcon} accessible={false}>
-              👤
-            </Text>
+            <AppIcon icon={CircleUser} size={22} color={colors.textPrimary} />
           </Pressable>
         ) : null}
       </View>
@@ -121,6 +121,9 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   chip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
     paddingHorizontal: spacing.sm,
     paddingVertical: 6,
     borderRadius: radius.full,
@@ -137,8 +140,5 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  themeIcon: {
-    fontSize: 16,
   },
 });

@@ -1,9 +1,20 @@
 import React, { memo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
+import { Check } from './icons';
 import type { Quest } from '@aurafit/shared';
 import { useTheme } from '../theme/ThemeProvider';
 import { fontSize, radius, spacing } from '../theme/tokens';
 import { AppButton } from './AppButton';
+import { AppIcon } from './AppIcon';
+
+/** `#RRGGBB` + alpha → `#RRGGBBAA`; other colour formats are returned unchanged. */
+function withAlpha(hex: string, alpha: number): string {
+  if (!/^#[0-9a-f]{6}$/i.test(hex)) return hex;
+  const a = Math.round(Math.min(1, Math.max(0, alpha)) * 255)
+    .toString(16)
+    .padStart(2, '0');
+  return `${hex}${a}`;
+}
 
 interface QuestCardProps {
   quest: Quest;
@@ -15,6 +26,7 @@ export const QuestCard = memo(function QuestCard({ quest, canComplete, onComplet
   const { colors } = useTheme();
   const done = quest.completed;
   const stat = quest.statReward.stat.toUpperCase();
+  const accent = /^#[0-9a-f]{6}$/i.test(quest.accentColor) ? quest.accentColor : colors.primary;
 
   return (
     <View
@@ -27,9 +39,9 @@ export const QuestCard = memo(function QuestCard({ quest, canComplete, onComplet
       ]}
     >
       <View style={styles.row}>
-        <Text style={styles.icon} accessible={false} importantForAccessibility="no">
-          {quest.icon}
-        </Text>
+        <View style={[styles.iconTile, { backgroundColor: withAlpha(accent, 0.15), borderColor: withAlpha(accent, 0.3) }]}>
+          <AppIcon name={quest.icon} size={22} color={accent} strokeWidth={2.25} />
+        </View>
         <View
           style={styles.textWrap}
           accessible
@@ -52,7 +64,7 @@ export const QuestCard = memo(function QuestCard({ quest, canComplete, onComplet
             accessible={false}
             importantForAccessibility="no-hide-descendants"
           >
-            <Text style={[styles.doneText, { color: colors.emerald }]}>✓</Text>
+            <AppIcon icon={Check} size={18} color={colors.emerald} strokeWidth={3} />
           </View>
         ) : canComplete ? (
           <AppButton
@@ -77,8 +89,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: spacing.md,
   },
-  icon: {
-    fontSize: 22,
+  iconTile: {
+    width: 44,
+    height: 44,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   textWrap: {
     flex: 1,
@@ -112,9 +129,5 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  doneText: {
-    fontWeight: '900',
-    fontSize: fontSize.body,
   },
 });

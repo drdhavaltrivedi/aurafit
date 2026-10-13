@@ -9,6 +9,8 @@ import {
   type UserRole,
   type WorkoutDrop,
 } from '@aurafit/shared';
+import { Flame, ScrollText, Swords } from '../components/icons';
+import { AppIcon } from '../components/AppIcon';
 import { Card } from '../components/Card';
 import { ProgressBar } from '../components/ProgressBar';
 import { QuestCard } from '../components/QuestCard';
@@ -77,7 +79,7 @@ export function MemberScreen({
             accessible={false}
             importantForAccessibility="no-hide-descendants"
           >
-            <Text style={styles.avatarEmoji}>⚔️</Text>
+            <AppIcon icon={Swords} size={22} color={colors.primary} strokeWidth={2.25} />
           </View>
         </View>
 
@@ -102,14 +104,14 @@ export function MemberScreen({
       </Card>
 
       <View style={styles.section}>
-        <SectionHeader title="📜 Daily Hunter Quests" subtitle="Complete to boost stats & prevent aura decay" />
+        <SectionHeader icon={ScrollText} title="Daily Hunter Quests" subtitle="Complete to boost stats & prevent aura decay" />
         {quests.map((q) => (
           <QuestCard key={q.id} quest={q} canComplete={canDoQuests} onComplete={onCompleteQuest} />
         ))}
       </View>
 
       <View style={styles.section}>
-        <SectionHeader title="🔥 Trending Workout Drops" subtitle="Curated routines with boosted Aura multipliers" />
+        <SectionHeader icon={Flame} iconColor={colors.orange} title="Trending Workout Drops" subtitle="Curated routines with boosted Aura multipliers" />
         {drops.map((drop) => (
           <WorkoutDropCard key={drop.id} drop={drop} canStart={canStartWorkout} onStart={onStartWorkout} />
         ))}
@@ -159,9 +161,6 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  avatarEmoji: {
-    fontSize: 20,
   },
   progressWrap: {
     marginTop: spacing.md + 2,
