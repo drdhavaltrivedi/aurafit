@@ -10,13 +10,13 @@
  *  - Everything else (incl. /api/*, /_next/image, cross-origin, non-GET) is
  *    passed straight through and never cached.
  */
-const VERSION = 'v2.2.0'; // bump purges caches from older versions
+const VERSION = 'v2.3.0'; // bump purges caches from older versions
 const STATIC_CACHE = `aurafit-static-${VERSION}`;
 const PAGE_CACHE = `aurafit-pages-${VERSION}`;
 const KNOWN_CACHES = [STATIC_CACHE, PAGE_CACHE];
 
 const OFFLINE_URL = '/';
-const PRECACHE = ['/', '/manifest.json', '/icon.svg', '/logo.jpg', '/icons/icon-192.png', '/icons/icon-512.png'];
+const PRECACHE = ['/', '/manifest.json', '/favicon.ico', '/logo.jpg', '/icons/icon-192.png', '/icons/icon-512.png'];
 const CACHEABLE_PAGE = /^\/(?:demo)?$/;
 const PUBLIC_ASSET = /^\/(?:icon\.svg|logo\.jpg|manifest\.json|icons\/[\w.-]+\.(?:png|svg))$/;
 
