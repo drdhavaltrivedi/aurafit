@@ -6,7 +6,7 @@ import { AppState, Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as SecureStore from 'expo-secure-store';
 import * as aesjs from 'aes-js';
-import { createClient, processLock, type SupabaseClient } from '@supabase/supabase-js';
+import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { env } from '../config/env';
 
 /**
@@ -79,8 +79,6 @@ function createSupabase(): SupabaseClient | null {
         detectSessionInUrl: false,
         // PKCE: email links / OAuth redirect back with `?code=` which we exchange on-device.
         flowType: 'pkce',
-        // In-process lock: there is no Web Locks API in React Native.
-        lock: processLock,
       },
     });
   } catch (err) {
