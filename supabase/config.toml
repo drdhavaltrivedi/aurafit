@@ -1,0 +1,27 @@
+# Only the properties declared here are pushed by `supabase config push`; everything else
+# (site URL, redirect URLs, SMTP, providers) stays as configured in the dashboard.
+project_id = "aurafit"
+
+[auth.email.template.confirmation]
+subject = "Confirm your AuraFit account"
+content_path = "./supabase/templates/confirmation.html"
+
+[auth.email.template.recovery]
+subject = "Reset your AuraFit password"
+content_path = "./supabase/templates/recovery.html"
+
+[auth.email.template.magic_link]
+subject = "Your AuraFit sign-in link"
+content_path = "./supabase/templates/magic_link.html"
+
+[auth.email.template.email_change]
+subject = "Confirm your new AuraFit email"
+content_path = "./supabase/templates/email_change.html"
+
+[auth.email.template.invite]
+subject = "You're invited to AuraFit"
+content_path = "./supabase/templates/invite.html"
+
+[auth.email.template.reauthentication]
+subject = "Your AuraFit verification code"
+content_path = "./supabase/templates/reauthentication.html"
