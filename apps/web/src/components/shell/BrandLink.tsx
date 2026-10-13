@@ -8,7 +8,7 @@ export function BrandLink() {
       <Image src="/icons/icon-192.png" alt="" width={40} height={40} className="brand__logo" priority />
       <span className="brand__text">
         <span className="brand__name">AURAFIT</span>
-        <span className="brand__tag">Solo Leveling RPG Fitness</span>
+        <span className="brand__tag">RPG Fitness Quests</span>
       </span>
     </Link>
   );

@@ -14,9 +14,9 @@ function resolveSiteUrl(): URL {
 }
 
 const siteUrl = resolveSiteUrl();
-const title = 'AuraFit — Gen Z & Gen Alpha RPG Fitness Platform';
+const title = 'AuraFit — Gamified Fitness RPG: Daily Workout Quests & Streaks';
 const description =
-  'Gamified fitness platform with Solo Leveling ranks, Aura points, daily quest boards, squad battles, and movement snacks.';
+  'AuraFit turns exercise into an RPG. Complete daily workout quests, build streaks, earn Aura points and level up your STR, AGI, END and REC stats with quick home workouts.';
 
 export const metadata: Metadata = {
   metadataBase: siteUrl,
@@ -35,8 +35,8 @@ export const metadata: Metadata = {
     type: 'website',
   },
   twitter: {
-    card: 'summary_large_image',
-    title: 'AuraFit — Solo Leveling RPG Fitness',
+    card: 'summary',
+    title,
     description: 'Level up your physical stats and earn Aura points with daily quests and phonk routines.',
     images: ['/logo.jpg'],
   },

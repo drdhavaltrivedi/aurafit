@@ -12,7 +12,7 @@ export function Hero({ onEnterArena }: { onEnterArena: () => void }) {
         <span className="hero__title-accent">Lock in your Aura.</span>
       </h1>
       <p className="hero__lede">
-        Turn daily movement into Solo Leveling quests. Gain Aura for every pushup, dodge stat atrophy, sync squad streaks,
+        Turn daily movement into RPG quests. Gain Aura for every pushup, dodge stat atrophy, sync squad streaks,
         and crush 4-minute Phonk movement snacks.
       </p>
       <div className="hero__actions">

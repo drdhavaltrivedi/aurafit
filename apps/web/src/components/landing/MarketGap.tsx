@@ -9,7 +9,7 @@ const LEGACY = [
 ] as const;
 
 const AURAFIT = [
-  ['Solo Leveling RPG ranks', 'E-Rank to Shadow Monarch progression with STR / AGI / END / REC stats.'],
+  ['Anime-style RPG ranks', 'E-Rank to Shadow Monarch progression with STR / AGI / END / REC stats.'],
   ['Instant micro-rewards', 'Aura for every rep, with synthesized sound on completion.'],
   ['Squad lock-in', 'Co-op weekly titan boss raids with streak-shield protection.'],
   ['Movement snacks (3–5 min)', 'Phonk and anime-rhythm routines built for gaming or study breaks.'],
