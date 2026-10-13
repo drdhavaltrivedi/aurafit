@@ -6,7 +6,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import type { PGlite } from '@electric-sql/pglite';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { applyDailyStreak, INITIAL_WORKOUT_DROPS, MAX_AURA_PER_SYNC } from '../src/index';
+import { applyDailyStreak, INITIAL_WORKOUT_DROPS, MAX_AURA_PER_ACTION } from '../src/index';
 import { as, attempt, createDb } from './pglite-helpers';
 
 const U1 = 'aaaaaaaa-0000-4000-8000-000000000001';
@@ -195,7 +195,7 @@ describe('public.complete_quest', () => {
   it('enforces the aura cap even if the server passes a larger value', async () => {
     const p = await profileOf(U1);
     await as(db, 'service_role');
-    for (const bad of [MAX_AURA_PER_SYNC + 1, -1]) {
+    for (const bad of [MAX_AURA_PER_ACTION + 1, -1]) {
       const r = await attempt(db, `SELECT public.complete_quest($1, 'q_snack_1', $2, '2026-10-13')`, [p.id, bad]);
       expect(r.error).toMatch(/outside 0\.\.5000/);
     }

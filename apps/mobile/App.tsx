@@ -17,6 +17,7 @@ import { useGameStore, type GameStore } from './src/hooks/useGameStore';
 import { AdminScreen } from './src/screens/AdminScreen';
 import { CreatorScreen } from './src/screens/CreatorScreen';
 import { MemberScreen } from './src/screens/MemberScreen';
+import { AccountScreen } from './src/screens/account/AccountScreen';
 import { AuthNavigator } from './src/screens/auth/AuthNavigator';
 import { ResetPasswordScreen } from './src/screens/auth/ResetPasswordScreen';
 import { ThemeProvider, useTheme } from './src/theme/ThemeProvider';
@@ -68,7 +69,7 @@ function Screens({ store }: { store: GameStore }) {
 
   let content: React.ReactNode;
   if (auth.recoveryPending && auth.session) content = <ResetPasswordScreen />;
-  else if (auth.status === 'signedIn') content = <ServerShell onToggleTheme={toggleTheme} />;
+  else if (auth.status === 'signedIn') content = <ServerShell store={store} onToggleTheme={toggleTheme} />;
   else if (auth.status === 'demo') content = <DemoShell store={store} onToggleTheme={toggleTheme} />;
   else content = <AuthNavigator />;
 
@@ -83,9 +84,12 @@ function Screens({ store }: { store: GameStore }) {
 /** Original local-only experience (seed data + AsyncStorage reducer). */
 function DemoShell({ store, onToggleTheme }: { store: GameStore; onToggleTheme: () => void }) {
   const auth = useAuth();
-  const { state, setRole, completeQuest, finishWorkout } = store;
+  const { state, setRole, completeQuest, finishWorkout, resetGame } = store;
   const { role, user, quests } = state;
   const [activeWorkout, setActiveWorkout] = useState<WorkoutDrop | null>(null);
+  const [accountOpen, setAccountOpen] = useState(false);
+  const openAccount = useCallback(() => setAccountOpen(true), []);
+  const closeAccount = useCallback(() => setAccountOpen(false), []);
 
   const startWorkout = useCallback(
     (drop: WorkoutDrop) => {
@@ -102,9 +106,18 @@ function DemoShell({ store, onToggleTheme }: { store: GameStore; onToggleTheme: 
     [finishWorkout]
   );
 
+  if (accountOpen) {
+    return <AccountScreen demo email={null} profile={user} onClose={closeAccount} onResetLocalData={resetGame} />;
+  }
+
   return (
     <>
-      <AppHeader auraPoints={user.auraPoints} streakDays={user.streakDays} onToggleTheme={onToggleTheme} />
+      <AppHeader
+        auraPoints={user.auraPoints}
+        streakDays={user.streakDays}
+        onToggleTheme={onToggleTheme}
+        onOpenAccount={openAccount}
+      />
       <DemoBanner onSignIn={auth.backendAvailable ? auth.exitDemo : undefined} />
       {/* The role switcher is a demo-only affordance; real roles come from the server profile. */}
       <RoleSwitcher value={role} onChange={setRole} />
@@ -113,8 +126,8 @@ function DemoShell({ store, onToggleTheme }: { store: GameStore; onToggleTheme: 
         {role === 'MEMBER' && (
           <MemberScreen role={role} user={user} quests={quests} onCompleteQuest={completeQuest} onStartWorkout={startWorkout} />
         )}
-        {role === 'CREATOR' && <CreatorScreen role={role} />}
-        {role === 'ADMIN' && <AdminScreen role={role} />}
+        {role === 'CREATOR' && <CreatorScreen role={role} sample />}
+        {role === 'ADMIN' && <AdminScreen role={role} sample />}
       </View>
 
       <WorkoutSessionModal drop={activeWorkout} onClose={closeWorkout} onClaim={claimWorkout} />
@@ -125,7 +138,7 @@ function DemoShell({ store, onToggleTheme }: { store: GameStore; onToggleTheme: 
 const ROLES: readonly UserRole[] = ['MEMBER', 'CREATOR', 'ADMIN'];
 
 /** Signed-in experience backed by the AuraFit API. */
-function ServerShell({ onToggleTheme }: { onToggleTheme: () => void }) {
+function ServerShell({ store, onToggleTheme }: { store: GameStore; onToggleTheme: () => void }) {
   const { colors } = useTheme();
   const auth = useAuth();
   const me = useMe();
@@ -156,12 +169,26 @@ function ServerShell({ onToggleTheme }: { onToggleTheme: () => void }) {
   const onQuest = useCallback((id: string) => void completeQuest(id), [completeQuest]);
 
   const signOut = useCallback(() => void auth.signOut(), [auth]);
-  const accountLabel = auth.session?.user.email ?? 'Account';
+  const [accountOpen, setAccountOpen] = useState(false);
+  const openAccount = useCallback(() => setAccountOpen(true), []);
+  const closeAccount = useCallback(() => setAccountOpen(false), []);
+
+  if (accountOpen) {
+    return (
+      <AccountScreen
+        demo={false}
+        email={auth.session?.user.email ?? null}
+        profile={profile}
+        onClose={closeAccount}
+        onResetLocalData={store.resetGame}
+      />
+    );
+  }
 
   if (!me.data) {
     return (
       <>
-        <AppHeader auraPoints={0} streakDays={0} onToggleTheme={onToggleTheme} accountLabel={accountLabel} onSignOut={signOut} />
+        <AppHeader auraPoints={0} streakDays={0} onToggleTheme={onToggleTheme} onOpenAccount={openAccount} />
         <View style={styles.center}>
           {me.loading ? (
             <ActivityIndicator size="large" color={colors.primary} accessibilityLabel="Loading your profile" />
@@ -197,8 +224,7 @@ function ServerShell({ onToggleTheme }: { onToggleTheme: () => void }) {
         auraPoints={user.auraPoints}
         streakDays={user.streakDays}
         onToggleTheme={onToggleTheme}
-        accountLabel={accountLabel}
-        onSignOut={signOut}
+        onOpenAccount={openAccount}
       />
       <View style={styles.body}>
         {role === 'MEMBER' && (
@@ -219,8 +245,26 @@ function ServerShell({ onToggleTheme }: { onToggleTheme: () => void }) {
             }
           />
         )}
-        {role === 'CREATOR' && <CreatorScreen role={role} profile={user} drops={drops.data ?? []} />}
-        {role === 'ADMIN' && <AdminScreen role={role} hunters={leaderboard.data?.hunters} />}
+        {role === 'CREATOR' && (
+          <CreatorScreen
+            role={role}
+            sample={false}
+            profile={user}
+            drops={drops.data ?? []}
+            dropsLoading={drops.loading}
+            dropsError={drops.error}
+          />
+        )}
+        {role === 'ADMIN' && (
+          <AdminScreen
+            role={role}
+            sample={false}
+            hunters={leaderboard.data?.hunters ?? []}
+            huntersLoading={leaderboard.loading}
+            huntersError={leaderboard.error}
+            onRetry={() => void leaderboard.refetch()}
+          />
+        )}
       </View>
       <WorkoutSessionModal drop={activeWorkout} onClose={closeWorkout} onClaim={claimWorkout} />
     </>

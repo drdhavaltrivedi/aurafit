@@ -59,3 +59,6 @@ export function createRateLimiter({ capacity, refillPerSecond, maxKeys = 10_000 
 
 /** Shared limiter for mutating v1 endpoints: burst of 10, then 1 request / 2 s per user. */
 export const mutationLimiter = createRateLimiter({ capacity: 10, refillPerSecond: 0.5 });
+
+/** Account deletion: burst of 3, then 1 request / minute per user. */
+export const accountDeletionLimiter = createRateLimiter({ capacity: 3, refillPerSecond: 1 / 60 });

@@ -67,18 +67,26 @@ function Chrome({
         {children}
       </main>
       {page === 'demo' && state && onRoleChange && <RoleSwitcher variant="bottom" activeRole={state.activeRole} onChange={onRoleChange} />}
-      <SiteFooter synced={page === 'arena'} />
+      <SiteFooter status={page === 'arena' ? 'synced' : page === 'demo' ? 'demo' : undefined} />
     </>
   );
 }
 
 function LandingApp({ viewer }: { viewer: Viewer | null }) {
   const router = useRouter();
+  const toast = useToast();
 
   // Old links used /#arena for the (demo) arena.
   useEffect(() => {
     if (window.location.hash === '#arena') router.replace(viewer ? '/arena' : '/demo');
   }, [router, viewer]);
+
+  // Redirect target after DELETE /api/v1/me.
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get('account') !== 'deleted') return;
+    toast.show('Your account and its data have been deleted.', 'success');
+    router.replace('/');
+  }, [router, toast]);
 
   const enterArena = useCallback(
     (role?: UserRole) => {

@@ -2,6 +2,7 @@ import React, { useRef, useState } from 'react';
 import type { TextInput } from 'react-native';
 import { AppButton } from '../../components/AppButton';
 import { AuthLayout, FormMessage } from '../../components/AuthLayout';
+import { LegalAgreement } from '../../components/Legal';
 import { TextField } from '../../components/TextField';
 import { useAuth } from '../../auth/AuthProvider';
 import { PASSWORD_MIN_LENGTH, hasErrors, validateSignup, type FieldErrors } from '../../auth/validation';
@@ -114,6 +115,7 @@ export function SignupScreen({ onBack, onLogin }: Props) {
         onSubmitEditing={submit}
         editable={!busy}
       />
+      <LegalAgreement prefix="By creating an account you agree to the AuraFit" />
       <AppButton label="Create account" size="lg" onPress={submit} loading={busy} />
       <AppButton label="Already have an account? Log in" variant="ghost" onPress={onLogin} disabled={busy} />
     </AuthLayout>

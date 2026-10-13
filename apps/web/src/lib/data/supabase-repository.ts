@@ -110,5 +110,13 @@ export function createSupabaseRepository(db: SupabaseClient): GameRepository {
         squads: ((squads.data ?? []) as unknown as SquadRow[]).map(rowToSquad),
       };
     },
+
+    async deleteAuthUser(authId) {
+      // Hard delete (shouldSoftDelete = false). Also removes the user's sessions and
+      // refresh tokens; already-issued access tokens stay valid until they expire,
+      // but every API call then fails with 404 PROFILE_NOT_FOUND.
+      const { error } = await db.auth.admin.deleteUser(authId, false);
+      if (error && error.status !== 404) fail('deleteAuthUser', { message: error.message, code: error.code });
+    },
   };
 }

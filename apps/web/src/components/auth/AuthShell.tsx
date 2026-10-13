@@ -1,6 +1,6 @@
-import Image from 'next/image';
 import Link from 'next/link';
 import type { ReactNode } from 'react';
+import { BrandLink } from '@/components/shell/BrandLink';
 import { Card } from '@/components/ui/Card';
 
 /** Minimal chrome for auth pages: brand header + centred card. */
@@ -9,13 +9,7 @@ export function AuthShell({ title, lede, children, footer }: { title: string; le
     <>
       <header className="site-header">
         <div className="container site-header__inner">
-          <Link href="/" className="brand" aria-label="AuraFit home">
-            <Image src="/logo.jpg" alt="" width={40} height={40} className="brand__logo" priority />
-            <span className="brand__text">
-              <span className="brand__name">AURAFIT</span>
-              <span className="brand__tag">Solo Leveling RPG Fitness</span>
-            </span>
-          </Link>
+          <BrandLink />
           <Link href="/demo" className="btn btn--ghost btn--md">
             Try demo
           </Link>
@@ -32,6 +26,10 @@ export function AuthShell({ title, lede, children, footer }: { title: string; le
           {children}
           {footer && <div className="auth-card__footer">{footer}</div>}
         </Card>
+        <nav aria-label="Legal" className="auth-legal">
+          <Link href="/privacy">Privacy</Link>
+          <Link href="/terms">Terms</Link>
+        </nav>
       </main>
     </>
   );

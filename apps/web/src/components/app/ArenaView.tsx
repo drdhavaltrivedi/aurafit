@@ -26,7 +26,11 @@ export function ArenaView({ state }: { state: AuraFitState }) {
   const [activeWorkout, setActiveWorkout] = useState<WorkoutDrop | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
 
-  const squad = useMemo(() => INITIAL_SQUADS.find((s) => s.id === activeUser.squadId), [activeUser.squadId]);
+  // Seed squads are demo-only; signed-in users see real squad data once squads ship.
+  const squad = useMemo(
+    () => (state.mode === 'demo' ? INITIAL_SQUADS.find((s) => s.id === activeUser.squadId) : undefined),
+    [state.mode, activeUser.squadId],
+  );
 
   const celebrate = useCallback(
     (rank: HunterRank) => {
@@ -151,6 +155,7 @@ export function ArenaView({ state }: { state: AuraFitState }) {
 
       {showCreator && (
         <CreatorStudio
+          mode={state.mode}
           user={activeUser}
           drops={state.drops}
           canPublish={can('PUBLISH_WORKOUT_DROP')}
@@ -162,7 +167,7 @@ export function ArenaView({ state }: { state: AuraFitState }) {
         />
       )}
 
-      {showAdmin && <AdminConsole canViewLeaderboard={can('VIEW_GYM_LEADERBOARD')} />}
+      {showAdmin && <AdminConsole mode={state.mode} canViewLeaderboard={can('VIEW_GYM_LEADERBOARD')} />}
 
       {activeWorkout && <WorkoutRunner key={activeWorkout.id} drop={activeWorkout} onClose={() => setActiveWorkout(null)} onFinish={handleFinish} />}
 

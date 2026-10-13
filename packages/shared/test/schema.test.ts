@@ -1,14 +1,13 @@
 /**
- * Executes schema.sql against a real (WASM) PostgreSQL via PGlite, with a minimal
- * stub of Supabase's `auth` schema and roles, then checks constraints, RLS and
- * column privileges behave as intended.
+ * Applies every migration in supabase/migrations (in order, twice for idempotency)
+ * against a real (WASM) PostgreSQL via PGlite, with a minimal stub of Supabase's
+ * `auth` schema and roles, then checks constraints, RLS and column privileges.
  */
 import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
 import type { PGlite } from '@electric-sql/pglite';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { getRankFromAura, INITIAL_QUESTS, MAX_AURA_PER_SYNC, RANK_ORDER, RANK_THRESHOLDS } from '../src/index';
-import { as as asRole, attempt as tryQuery, createDb, SCHEMA } from './pglite-helpers';
+import { getRankFromAura, INITIAL_QUESTS, MAX_AURA_PER_ACTION, RANK_ORDER, RANK_THRESHOLDS } from '../src/index';
+import { as as asRole, attempt as tryQuery, bundleMigrations, createDb, MIGRATIONS, SCHEMA_PATH } from './pglite-helpers';
 
 const MEMBER = '11111111-1111-4111-8111-111111111111';
 const OTHER = '22222222-2222-4222-8222-222222222222';
@@ -33,7 +32,7 @@ afterAll(async () => {
   await db?.close();
 });
 
-describe('schema.sql', () => {
+describe('migrations (cumulative schema)', () => {
   it('rank_for_aura() matches getRankFromAura at every threshold boundary', async () => {
     await as(null);
     const samples = RANK_ORDER.flatMap((r) => [RANK_THRESHOLDS[r] - 1, RANK_THRESHOLDS[r]]).filter((n) => n >= 0);
@@ -60,7 +59,7 @@ describe('schema.sql', () => {
     const overCap = await attempt(
       `INSERT INTO user_quest_logs (user_id, quest_id, aura_earned, date_key)
        SELECT id, 'q_daily_1', $1, '2020-01-01' FROM profiles LIMIT 1`,
-      [MAX_AURA_PER_SYNC + 1]
+      [MAX_AURA_PER_ACTION + 1]
     );
     expect(overCap.error).toMatch(/aura_earned_check/);
   });
@@ -100,12 +99,9 @@ describe('schema.sql', () => {
     await as(null);
   });
 
-  it('the migration file is a byte-identical copy of schema.sql', () => {
-    const migration = readFileSync(
-      join(__dirname, '..', '..', '..', 'supabase', 'migrations', '20261013120000_aurafit_init.sql'),
-      'utf8'
-    );
-    expect(migration, 'run `npm run db:sync`').toBe(SCHEMA);
+  it('packages/shared/schema.sql is the concatenation of all migrations', () => {
+    expect(MIGRATIONS.map((m) => m.file)[0]).toBe('20261013120000_aurafit_init.sql');
+    expect(readFileSync(SCHEMA_PATH, 'utf8'), 'run `npm run db:sync`').toBe(bundleMigrations());
   });
 
   it('seeds the quest catalog from INITIAL_QUESTS', async () => {
@@ -121,8 +117,8 @@ describe('schema.sql', () => {
 
   it('users cannot self-award aura, promote themselves, or insert quest logs', async () => {
     await as('authenticated', MEMBER);
-    expect((await attempt(`UPDATE profiles SET role = 'ADMIN' WHERE auth_id = $1`, [MEMBER])).error).toMatch(/permission denied/);
-    expect((await attempt(`UPDATE profiles SET aura_points = 99999 WHERE auth_id = $1`, [MEMBER])).error).toMatch(/permission denied/);
+    expect((await attempt(`UPDATE profiles SET role = 'ADMIN' WHERE handle = '@jinwoo_leveling'`)).error).toMatch(/permission denied/);
+    expect((await attempt(`UPDATE profiles SET aura_points = 99999 WHERE handle = '@jinwoo_leveling'`)).error).toMatch(/permission denied/);
     expect(
       (await attempt(`INSERT INTO user_quest_logs (user_id, quest_id, aura_earned) SELECT id, 'q_daily_1', 1 FROM profiles LIMIT 1`)).error
     ).toMatch(/permission denied/);
@@ -130,19 +126,24 @@ describe('schema.sql', () => {
 
   it('users can edit cosmetic fields of their own profile only', async () => {
     await as('authenticated', MEMBER);
-    expect((await attempt(`UPDATE profiles SET bio = 'locked in' WHERE auth_id = $1 RETURNING id`, [MEMBER])).rows).toHaveLength(1);
-    expect((await attempt(`UPDATE profiles SET bio = 'pwned' WHERE auth_id = $1 RETURNING id`, [OTHER])).rows).toHaveLength(0);
+    expect((await attempt(`UPDATE profiles SET bio = 'locked in' WHERE handle = '@jinwoo_leveling' RETURNING id`)).rows).toHaveLength(1);
+    expect((await attempt(`UPDATE profiles SET bio = 'pwned' WHERE handle = '@other' RETURNING id`)).rows).toHaveLength(0);
+    // Without a WHERE clause only the caller's own row matches.
+    expect((await attempt(`UPDATE profiles SET title = 'Locked in' RETURNING handle`)).rows).toEqual([{ handle: '@jinwoo_leveling' }]);
   });
 
   it('only creators/admins can publish workout drops', async () => {
     const insert = `INSERT INTO workout_drops (id, title, creator_id, vibe_tag, duration_minutes, calories_burn_estimate)
-                    SELECT 'drop_test', 't', id, 'v', 5, 50 FROM profiles WHERE auth_id = $1 RETURNING id`;
+                    SELECT 'drop_test', 't', id, 'v', 5, 50 FROM profiles WHERE handle = $1`;
     await as('authenticated', MEMBER);
-    expect((await attempt(insert, [MEMBER])).error).toMatch(/row-level security/);
+    expect((await attempt(insert, ['@jinwoo_leveling'])).error).toMatch(/row-level security/);
     await as(null);
     await db.exec(`UPDATE profiles SET role = 'CREATOR' WHERE auth_id = '${MEMBER}'`);
     await as('authenticated', MEMBER);
-    expect((await attempt(insert, [MEMBER])).rows).toHaveLength(1);
+    expect((await attempt(insert, ['@jinwoo_leveling'])).error).toBeUndefined();
+    // ...but never on behalf of another profile.
+    expect((await attempt(insert.replace('drop_test', 'drop_test2'), ['@other'])).error).toMatch(/row-level security/);
+    expect((await attempt(`UPDATE workout_drops SET title = 'renamed' WHERE id = 'drop_test' RETURNING id`)).rows).toHaveLength(1);
     expect((await attempt(`UPDATE workout_drops SET likes_count = 1000000`)).error).toMatch(/permission denied/);
   });
 

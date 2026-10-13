@@ -6,7 +6,7 @@ import { createTokenVerifier } from '@/lib/supabase/admin';
 import { isAuthConfigured } from '@/lib/supabase/env';
 import { createClient as createCookieClient } from '@/lib/supabase/server';
 import { apiError, internalError, notConfigured } from './http';
-import { mutationLimiter } from './rate-limit';
+import { mutationLimiter, type RateLimiter } from './rate-limit';
 
 export interface AuthedUser {
   /** auth.users.id (JWT `sub`). */
@@ -91,9 +91,9 @@ export function forbidUnless(user: AuthedUser, permission: UserPermission): Resp
     : apiError(403, 'FORBIDDEN', `Your role (${user.profile.role}) lacks the ${permission} permission.`);
 }
 
-/** 429 response when the per-user mutation bucket is empty, else null. */
-export function rateLimit(user: AuthedUser): Response | null {
-  const r = mutationLimiter.take(user.profile.id);
+/** 429 response when the user's bucket in `limiter` (default: mutations) is empty, else null. */
+export function rateLimit(user: AuthedUser, limiter: RateLimiter = mutationLimiter): Response | null {
+  const r = limiter.take(user.profile.id);
   return r.allowed
     ? null
     : apiError(429, 'RATE_LIMITED', 'Too many requests. Slow down.', { headers: { 'Retry-After': String(r.retryAfterSeconds) } });

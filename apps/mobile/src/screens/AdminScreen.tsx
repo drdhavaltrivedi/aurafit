@@ -1,6 +1,9 @@
 import React from 'react';
-import { FlatList, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, FlatList, StyleSheet, Text, View } from 'react-native';
 import { INITIAL_GYM_LEADERBOARD, hasPermission, type GymLeaderboardEntry, type UserRole } from '@aurafit/shared';
+import { AppButton } from '../components/AppButton';
+import { FormMessage } from '../components/AuthLayout';
+import { ComingSoonCard, SampleDataTag } from '../components/DataNotice';
 import { SectionHeader } from '../components/SectionHeader';
 import type { PublicHunter } from '../api/types';
 import { useTheme } from '../theme/ThemeProvider';
@@ -53,11 +56,23 @@ function HunterRow({ hunter, position }: { hunter: PublicHunter; position: numbe
 
 interface AdminScreenProps {
   role: UserRole;
+  /**
+   * Demo mode: the seeded gym leaderboard, labelled as sample data. Server mode (`false`): only the live
+   * hunters leaderboard from the API; gym data is not available yet and says so.
+   */
+  sample: boolean;
   /** Live top hunters from /api/v1/leaderboard (server mode only). */
   hunters?: PublicHunter[];
+  huntersLoading?: boolean;
+  huntersError?: string | null;
+  onRetry?: () => void;
 }
 
-export function AdminScreen({ role, hunters }: AdminScreenProps) {
+export function AdminScreen(props: AdminScreenProps) {
+  return props.sample ? <SampleAdmin role={props.role} /> : <LiveAdmin {...props} />;
+}
+
+function SampleAdmin({ role }: { role: UserRole }) {
   const { colors } = useTheme();
   const canView = hasPermission(role, 'VIEW_GYM_LEADERBOARD');
   const canManage = hasPermission(role, 'MANAGE_GYM_AFFILIATION');
@@ -71,14 +86,6 @@ export function AdminScreen({ role, hunters }: AdminScreenProps) {
       showsVerticalScrollIndicator={false}
       ListHeaderComponent={
         <View style={styles.header}>
-          {hunters && hunters.length > 0 ? (
-            <View style={styles.header}>
-              <SectionHeader title="⚔️ Top Hunters" subtitle="Live global leaderboard" />
-              {hunters.slice(0, 10).map((h, i) => (
-                <HunterRow key={h.id} hunter={h} position={i + 1} />
-              ))}
-            </View>
-          ) : null}
           <SectionHeader
             title="🛡️ Gym Leaderboard & Platform"
             subtitle={
@@ -87,6 +94,7 @@ export function AdminScreen({ role, hunters }: AdminScreenProps) {
                 : 'Global gym competitions (read-only)'
             }
           />
+          <SampleDataTag />
         </View>
       }
       ListEmptyComponent={
@@ -96,9 +104,53 @@ export function AdminScreen({ role, hunters }: AdminScreenProps) {
   );
 }
 
+function LiveAdmin({ hunters = [], huntersLoading = false, huntersError = null, onRetry }: AdminScreenProps) {
+  const { colors } = useTheme();
+  const top = hunters.slice(0, 10);
+
+  return (
+    <FlatList
+      data={top}
+      keyExtractor={(h) => h.id}
+      renderItem={({ item, index }) => <HunterRow hunter={item} position={index + 1} />}
+      contentContainerStyle={styles.content}
+      showsVerticalScrollIndicator={false}
+      ListHeaderComponent={
+        <View style={styles.header}>
+          <SectionHeader title="⚔️ Top Hunters" subtitle="Live global leaderboard" />
+          {huntersError ? (
+            <>
+              <FormMessage tone="error" message={huntersError} />
+              {onRetry ? <AppButton label="Try again" variant="secondary" onPress={onRetry} /> : null}
+            </>
+          ) : null}
+        </View>
+      }
+      ListEmptyComponent={
+        huntersError ? null : huntersLoading ? (
+          <ActivityIndicator color={colors.primary} accessibilityLabel="Loading leaderboard" />
+        ) : (
+          <Text style={{ color: colors.textSecondary, fontSize: fontSize.body }}>No hunters on the board yet.</Text>
+        )
+      }
+      ListFooterComponent={
+        <View style={styles.footer}>
+          <ComingSoonCard
+            title="Gym leaderboard & affiliations"
+            body="Gym rankings, active squads and affiliation management will appear here once gyms can join AuraFit."
+          />
+        </View>
+      }
+    />
+  );
+}
+
 const styles = StyleSheet.create({
   header: {
     gap: spacing.sm + 2,
+  },
+  footer: {
+    marginTop: spacing.md,
   },
   content: {
     padding: spacing.lg,

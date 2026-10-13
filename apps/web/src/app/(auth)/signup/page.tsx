@@ -34,6 +34,10 @@ export default async function SignupPage() {
             </>
           )}
           <SignupForm />
+          <p className="auth-legal-note">
+            By creating an account you agree to the <Link href="/terms">Terms of Service</Link> and acknowledge the{' '}
+            <Link href="/privacy">Privacy Policy</Link>. AuraFit is not medical advice.
+          </p>
         </>
       )}
     </AuthShell>

@@ -21,6 +21,8 @@ export interface GameStore {
   setTheme: (preference: ThemePreference) => void;
   completeQuest: (questId: string) => void;
   finishWorkout: (drop: WorkoutDrop) => void;
+  /** Clears all local progress (seed data again); the theme preference is kept. */
+  resetGame: () => void;
 }
 
 const SAVE_DEBOUNCE_MS = 300;
@@ -103,8 +105,10 @@ export function useGameStore(): GameStore {
     []
   );
 
+  const resetGame = useCallback(() => dispatch({ type: 'RESET', today: toDateKey() }), []);
+
   return useMemo(
-    () => ({ state, hydrated, setRole, setTheme, completeQuest, finishWorkout }),
-    [state, hydrated, setRole, setTheme, completeQuest, finishWorkout]
+    () => ({ state, hydrated, setRole, setTheme, completeQuest, finishWorkout, resetGame }),
+    [state, hydrated, setRole, setTheme, completeQuest, finishWorkout, resetGame]
   );
 }

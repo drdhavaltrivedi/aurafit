@@ -279,7 +279,7 @@ export function calculateQuestProgress(currentCount: number, targetCount: number
   return Math.min(100, Math.max(0, Math.floor((current / target) * 100)));
 }
 
-export * from './sync';
+export * from './limits';
 export * from './streak';
 export * from './drops';
 export * from './api';

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Alert, Image, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useTheme } from '../theme/ThemeProvider';
 import { MIN_TOUCH_TARGET, fontSize, radius, spacing } from '../theme/tokens';
 
@@ -7,22 +7,13 @@ interface AppHeaderProps {
   auraPoints: number;
   streakDays: number;
   onToggleTheme: () => void;
-  /** Signed-in account (email); when set together with `onSignOut`, an account button is shown. */
-  accountLabel?: string;
-  onSignOut?: () => void;
+  /** When set, an account button is shown that opens the account screen. */
+  onOpenAccount?: () => void;
 }
 
-export function AppHeader({ auraPoints, streakDays, onToggleTheme, accountLabel, onSignOut }: AppHeaderProps) {
+export function AppHeader({ auraPoints, streakDays, onToggleTheme, onOpenAccount }: AppHeaderProps) {
   const { colors, isDark } = useTheme();
   const nextMode = isDark ? 'light' : 'dark';
-
-  const openAccount = () => {
-    if (!onSignOut) return;
-    Alert.alert(accountLabel ?? 'Account', 'Signed in to AuraFit', [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Sign out', style: 'destructive', onPress: onSignOut },
-    ]);
-  };
 
   return (
     <View style={[styles.header, { borderBottomColor: colors.border, backgroundColor: colors.bgSurface }]}>
@@ -76,12 +67,12 @@ export function AppHeader({ auraPoints, streakDays, onToggleTheme, accountLabel,
             {isDark ? '🌙' : '☀️'}
           </Text>
         </Pressable>
-        {onSignOut ? (
+        {onOpenAccount ? (
           <Pressable
-            onPress={openAccount}
+            onPress={onOpenAccount}
             accessibilityRole="button"
             accessibilityLabel="Account"
-            accessibilityHint="Shows your account and the sign out option"
+            accessibilityHint="Opens your account settings"
             hitSlop={8}
             style={({ pressed }) => [
               styles.themeBtn,

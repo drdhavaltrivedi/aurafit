@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { Rocket } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
@@ -14,6 +15,9 @@ export function PlatformBanner({ onLaunch }: { onLaunch: () => void }) {
       <Button size="lg" onClick={onLaunch} leadingIcon={<Rocket />}>
         Launch the demo
       </Button>
+      <p className="text-xs text-secondary banner__legal">
+        No ads, no selling your data. Read the <Link href="/privacy">Privacy Policy</Link> and <Link href="/terms">Terms</Link>.
+      </p>
     </Card>
   );
 }

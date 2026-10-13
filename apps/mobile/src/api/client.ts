@@ -10,6 +10,7 @@ import type {
   CompleteWorkoutResponse,
   CreateDropRequest,
   CreateDropResponse,
+  DeleteMeRequest,
   DropsResponse,
   LeaderboardResponse,
   MeResponse,
@@ -157,6 +158,12 @@ export function createApiClient(options: ApiClientOptions) {
     createDrop: (drop: CreateDropRequest) =>
       request<CreateDropResponse>('/api/v1/drops', { method: 'POST', body: drop }),
     getLeaderboard: (signal?: AbortSignal) => request<LeaderboardResponse>('/api/v1/leaderboard', { signal }),
+    /**
+     * Permanently deletes the signed-in account and all of its data (204 on success). The explicit
+     * confirmation body is required by the server so a stray DELETE can never wipe an account.
+     */
+    deleteMe: () =>
+      request<void>('/api/v1/me', { method: 'DELETE', body: { confirm: 'DELETE' } satisfies DeleteMeRequest }),
   };
 }
 

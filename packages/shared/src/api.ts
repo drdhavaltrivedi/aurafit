@@ -14,7 +14,7 @@ import type { ValidDrop } from './drops';
 export const API_V1_BASE = '/api/v1';
 
 export const API_ROUTES = {
-  /** GET (auth) → MeResponse */
+  /** GET (auth) → MeResponse; DELETE (auth) DeleteAccountRequest → 204 (account permanently deleted) */
   me: `${API_V1_BASE}/me`,
   /** POST (auth, DO_QUESTS) → CompleteQuestResponse | 409 ALREADY_COMPLETED */
   completeQuest: (questId: string) => `${API_V1_BASE}/quests/${encodeURIComponent(questId)}/complete`,
@@ -55,6 +55,21 @@ export interface MeResponse {
   profile: UserProfile;
   /** Quest catalog; `completed` reflects completion today (UTC date). */
   quests: Quest[];
+}
+
+/** Exact value required in `DeleteAccountRequest.confirm`. */
+export const DELETE_ACCOUNT_CONFIRMATION = 'DELETE' as const;
+
+/**
+ * DELETE /api/v1/me body (Content-Type: application/json).
+ * Permanently deletes the signed-in account: the auth user, the profile, quest and
+ * workout logs, and the user's published workout drops. Squads they led keep
+ * existing without a leader. Responds 204 with no body; 400 VALIDATION_FAILED when
+ * `confirm` is not exactly "DELETE"; 401; 429. Clients should discard their
+ * session afterwards (the web cookie session is cleared by the server).
+ */
+export interface DeleteAccountRequest {
+  confirm: typeof DELETE_ACCOUNT_CONFIRMATION;
 }
 
 /** POST /api/v1/quests/{questId}/complete (no body) */

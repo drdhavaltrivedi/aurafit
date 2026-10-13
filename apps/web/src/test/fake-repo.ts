@@ -55,11 +55,13 @@ export class FakeRepo implements GameRepository {
   drops: WorkoutDrop[] = INITIAL_WORKOUT_DROPS.map((d) => ({ ...d }));
   questLog = new Set<string>();
   workoutLog = new Set<string>();
-  calls: { completeQuest: CompleteActionInput[]; completeWorkout: CompleteActionInput[]; createDrop: WorkoutDrop[] } = {
+  calls: { completeQuest: CompleteActionInput[]; completeWorkout: CompleteActionInput[]; createDrop: WorkoutDrop[]; deleteAuthUser: string[] } = {
     completeQuest: [],
     completeWorkout: [],
     createDrop: [],
+    deleteAuthUser: [],
   };
+  deleted = false;
   failWith: Error | null = null;
 
   constructor(profile: ProfileRow = makeProfileRow()) {
@@ -72,7 +74,7 @@ export class FakeRepo implements GameRepository {
 
   async getProfileByAuthId(authId: string) {
     this.guard();
-    return this.profile.auth_id === authId ? this.profile : null;
+    return !this.deleted && this.profile.auth_id === authId ? this.profile : null;
   }
   async listQuests() {
     this.guard();
@@ -129,5 +131,10 @@ export class FakeRepo implements GameRepository {
     this.guard();
     const hunters: LeaderboardHunter[] = [{ id: PROFILE_ID, username: 'Jinwoo', handle: '@jinwoo', avatarUrl: '', role: 'MEMBER', auraPoints: 950, rank: 'E-RANK', level: 1, streakDays: 4, totalWorkouts: 0 }];
     return { hunters: hunters.slice(0, limit), squads: [] };
+  }
+  async deleteAuthUser(authId: string) {
+    this.guard();
+    this.calls.deleteAuthUser.push(authId);
+    if (this.profile.auth_id === authId) this.deleted = true;
   }
 }

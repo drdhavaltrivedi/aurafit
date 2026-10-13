@@ -29,7 +29,9 @@ export type GameAction =
   | { type: 'SET_THEME'; preference: ThemePreference }
   | { type: 'COMPLETE_QUEST'; questId: string; today: string }
   | { type: 'FINISH_WORKOUT'; drop: WorkoutDrop; today: string }
-  | { type: 'DAY_ROLLOVER'; today: string };
+  | { type: 'DAY_ROLLOVER'; today: string }
+  /** Wipes all local game progress (demo reset / account deletion); keeps the theme preference. */
+  | { type: 'RESET'; today: string };
 
 const DAILY_CATEGORIES: ReadonlySet<Quest['category']> = new Set(['DAILY_QUEST', 'MOVEMENT_SNACK']);
 const ROLES: readonly UserRole[] = ['MEMBER', 'CREATOR', 'ADMIN'];
@@ -120,6 +122,9 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
 
     case 'DAY_ROLLOVER':
       return rollover(state, action.today);
+
+    case 'RESET':
+      return { ...createInitialState(action.today), themePreference: state.themePreference };
 
     case 'COMPLETE_QUEST': {
       if (!hasPermission(state.role, 'DO_QUESTS')) return state;

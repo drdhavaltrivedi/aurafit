@@ -9,6 +9,11 @@ describe('apiFetch', () => {
     expect(await apiFetch('/x', {}, respond(200, { a: 1 }) as typeof fetch)).toEqual({ ok: true, data: { a: 1 } });
   });
 
+  it('treats 204 No Content as success with null data', async () => {
+    const noContent = (async () => new Response(null, { status: 204 })) as typeof fetch;
+    expect(await apiFetch('/x', { method: 'DELETE' }, noContent)).toEqual({ ok: true, data: null });
+  });
+
   it('maps API errors to code + message', async () => {
     const r = await apiFetch('/x', {}, respond(409, { error: 'Quest already completed today.', code: 'ALREADY_COMPLETED' }) as typeof fetch);
     expect(r).toEqual({ ok: false, status: 409, code: 'ALREADY_COMPLETED', message: 'Quest already completed today.' });

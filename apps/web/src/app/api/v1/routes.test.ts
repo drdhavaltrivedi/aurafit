@@ -12,7 +12,13 @@ import {
 } from '@aurafit/shared';
 import { AUTH_ID, FakeRepo, makeProfileRow, PROFILE_ID } from '@/test/fake-repo';
 
-const h = vi.hoisted(() => ({ configured: true, repo: null as unknown }));
+const h = vi.hoisted(() => ({
+  configured: true,
+  repo: null as unknown,
+  /** Cookie session subject (null = no cookie session). */
+  cookieSub: null as string | null,
+  signOuts: [] as unknown[],
+}));
 
 vi.mock('@/lib/supabase/env', () => ({
   isAuthConfigured: () => h.configured,
@@ -27,12 +33,20 @@ vi.mock('@/lib/supabase/admin', () => ({
   }),
 }));
 vi.mock('@/lib/supabase/server', () => ({
-  createClient: async () => ({ auth: { getClaims: async () => ({ data: null, error: null }) } }),
+  createClient: async () => ({
+    auth: {
+      getClaims: async () => ({ data: h.cookieSub ? { claims: { sub: h.cookieSub } } : null, error: null }),
+      signOut: async (opts: unknown) => {
+        h.signOuts.push(opts);
+        return { error: null };
+      },
+    },
+  }),
 }));
 vi.mock('@/lib/data', () => ({ getRepository: () => h.repo }));
 
-import { mutationLimiter } from '@/lib/api/rate-limit';
-import { GET as getMe } from './me/route';
+import { accountDeletionLimiter, mutationLimiter } from '@/lib/api/rate-limit';
+import { DELETE as deleteMe, GET as getMe } from './me/route';
 import { POST as completeQuest } from './quests/[questId]/complete/route';
 import { POST as completeWorkout } from './workouts/[dropId]/complete/route';
 import { GET as listDrops, POST as createDrop } from './drops/route';
@@ -60,6 +74,9 @@ beforeEach(() => {
   repo = new FakeRepo();
   h.repo = repo;
   mutationLimiter.reset();
+  accountDeletionLimiter.reset();
+  h.cookieSub = null;
+  h.signOuts = [];
 });
 
 afterEach(() => vi.restoreAllMocks());
@@ -114,6 +131,69 @@ describe('GET /api/v1/me', () => {
   });
 });
 
+describe('DELETE /api/v1/me', () => {
+  const JSON_AUTH = { ...AUTH, 'content-type': 'application/json' };
+  const del = (body: unknown, headers: Record<string, string> = JSON_AUTH) =>
+    deleteMe(new Request(`${BASE}/me`, { method: 'DELETE', headers, body: typeof body === 'string' ? body : JSON.stringify(body) }));
+
+  it('401 without credentials or with a forged token; nothing is deleted', async () => {
+    await expectError(await del({ confirm: 'DELETE' }, { 'content-type': 'application/json' }), 401, 'UNAUTHORIZED');
+    await expectError(await del({ confirm: 'DELETE' }, { authorization: 'Bearer forged.token.sig', 'content-type': 'application/json' }), 401, 'UNAUTHORIZED');
+    expect(repo.calls.deleteAuthUser).toEqual([]);
+  });
+
+  it('400 VALIDATION_FAILED unless confirm is exactly "DELETE"', async () => {
+    for (const body of [{}, { confirm: 'delete' }, { confirm: true }, { confirm: ' DELETE' }, ['DELETE'], null]) {
+      accountDeletionLimiter.reset();
+      const err = await expectError(await del(body), 400, 'VALIDATION_FAILED');
+      expect(err.fieldErrors).toHaveProperty('confirm');
+    }
+    expect(repo.calls.deleteAuthUser).toEqual([]);
+  });
+
+  it('415 / 400 / 413 for bad bodies', async () => {
+    await expectError(await del({ confirm: 'DELETE' }, AUTH), 415, 'UNSUPPORTED_MEDIA_TYPE');
+    await expectError(await del('{nope'), 400, 'BAD_REQUEST');
+    await expectError(await del({ confirm: 'DELETE', pad: 'x'.repeat(2048) }), 413, 'PAYLOAD_TOO_LARGE');
+    expect(repo.calls.deleteAuthUser).toEqual([]);
+  });
+
+  it('204 (bearer): deletes the auth user by its auth id; the profile is gone afterwards', async () => {
+    const res = await del({ confirm: 'DELETE' });
+    expect(res.status).toBe(204);
+    expect(res.headers.get('cache-control')).toBe('no-store');
+    expect(await res.text()).toBe('');
+    expect(repo.calls.deleteAuthUser).toEqual([AUTH_ID]);
+    expect(h.signOuts).toEqual([]); // bearer clients discard their own session
+    await expectError(await getMe(get('/me')), 404, 'PROFILE_NOT_FOUND');
+  });
+
+  it('204 (cookie session): deletes and clears the session cookies', async () => {
+    h.cookieSub = AUTH_ID;
+    const res = await del({ confirm: 'DELETE' }, { 'content-type': 'application/json' });
+    expect(res.status).toBe(204);
+    expect(repo.calls.deleteAuthUser).toEqual([AUTH_ID]);
+    expect(h.signOuts).toEqual([{ scope: 'local' }]);
+  });
+
+  it('429 after a small burst (stricter than other mutations)', async () => {
+    for (let i = 0; i < 3; i++) await del({ confirm: 'nope' });
+    const res = await del({ confirm: 'DELETE' });
+    await expectError(res, 429, 'RATE_LIMITED');
+    expect(Number(res.headers.get('retry-after'))).toBeGreaterThan(0);
+    expect(repo.calls.deleteAuthUser).toEqual([]);
+  });
+
+  it('500 with a generic message when deletion fails; session is kept', async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    h.cookieSub = AUTH_ID;
+    vi.spyOn(repo, 'deleteAuthUser').mockRejectedValue(new Error('auth admin exploded'));
+    const body = await expectError(await del({ confirm: 'DELETE' }, { 'content-type': 'application/json' }), 500, 'INTERNAL_ERROR');
+    expect(JSON.stringify(body)).not.toContain('exploded');
+    expect(h.signOuts).toEqual([]);
+  });
+});
+
 describe('POST /api/v1/quests/{questId}/complete', () => {
   const call = (id: string, headers = AUTH) => completeQuest(post(`/quests/${id}/complete`, headers), params({ questId: id }));
 
@@ -150,7 +230,7 @@ describe('POST /api/v1/quests/{questId}/complete', () => {
     expect(repo.calls.completeQuest).toHaveLength(0);
   });
 
-  it('caps the aura passed to the database at MAX_AURA_PER_SYNC', async () => {
+  it('caps the aura passed to the database at MAX_AURA_PER_ACTION', async () => {
     repo.profile = makeProfileRow({ streak_days: 999 });
     await call('q_boss_1');
     expect(repo.calls.completeQuest[0].aura).toBe(calculateAuraGain(1500, 999));

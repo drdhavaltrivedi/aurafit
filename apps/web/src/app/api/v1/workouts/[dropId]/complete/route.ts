@@ -1,4 +1,4 @@
-import { calculateAuraGain, MAX_AURA_PER_SYNC, utcDateKey, type CompleteWorkoutResponse } from '@aurafit/shared';
+import { calculateAuraGain, MAX_AURA_PER_ACTION, utcDateKey, type CompleteWorkoutResponse } from '@aurafit/shared';
 import { forbidUnless, rateLimit, requireUser } from '@/lib/api/auth';
 import { apiError, internalError, isValidId, json } from '@/lib/api/http';
 import { rowToProfile } from '@/lib/data/mappers';
@@ -24,7 +24,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ dro
     const drop = await user.repo.getDrop(dropId);
     if (!drop) return apiError(404, 'NOT_FOUND', 'Workout drop not found.');
 
-    const aura = Math.min(MAX_AURA_PER_SYNC, calculateAuraGain(drop.xpPoints, user.profile.streak_days, drop.auraMultiplier));
+    const aura = Math.min(MAX_AURA_PER_ACTION, calculateAuraGain(drop.xpPoints, user.profile.streak_days, drop.auraMultiplier));
     const result = await user.repo.completeWorkout({ userId: user.profile.id, itemId: drop.id, aura, dateKey: utcDateKey() });
 
     switch (result.status) {

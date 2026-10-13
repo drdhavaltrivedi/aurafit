@@ -12,7 +12,10 @@ import {
 import { useTheme } from '../theme/ThemeProvider';
 import { MIN_TOUCH_TARGET, fontSize, radius, spacing } from '../theme/tokens';
 
-type Variant = 'primary' | 'success' | 'secondary' | 'ghost';
+type Variant = 'primary' | 'success' | 'secondary' | 'ghost' | 'danger';
+
+/** Destructive fill; white text on it is ~6:1 in both themes. */
+const DANGER_FILL = '#B91C1C';
 
 export interface AppButtonProps extends Omit<PressableProps, 'style' | 'children'> {
   label: string;
@@ -47,12 +50,14 @@ export function AppButton({
     success: colors.emeraldStrong,
     secondary: colors.bgElevated,
     ghost: 'transparent',
+    danger: DANGER_FILL,
   };
   const fg: Record<Variant, string> = {
     primary: colors.onPrimary,
     success: '#FFFFFF',
     secondary: colors.textPrimary,
     ghost: colors.textSecondary,
+    danger: '#FFFFFF',
   };
 
   const isDisabled = !!disabled || loading;

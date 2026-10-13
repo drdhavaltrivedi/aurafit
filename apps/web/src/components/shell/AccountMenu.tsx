@@ -2,12 +2,12 @@
 
 import Link from 'next/link';
 import { useEffect, useId, useRef, useState } from 'react';
-import { ChevronDown, LogOut, Swords } from 'lucide-react';
+import { ChevronDown, LogOut, Swords, UserCog } from 'lucide-react';
 import { Avatar } from '@/components/ui/Avatar';
 import { signOutAction } from '@/lib/auth/actions';
 import type { Viewer } from '@/lib/auth/viewer';
 
-/** Disclosure-style account menu: avatar + handle, with Arena link and Sign out. */
+/** Disclosure-style account menu: avatar + handle, with Arena / Account links and Sign out. */
 export function AccountMenu({ viewer }: { viewer: Viewer }) {
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
@@ -56,6 +56,9 @@ export function AccountMenu({ viewer }: { viewer: Viewer }) {
           </div>
           <Link href="/arena" className="account-menu__item" onClick={() => setOpen(false)}>
             <Swords aria-hidden="true" /> My arena
+          </Link>
+          <Link href="/account" className="account-menu__item" onClick={() => setOpen(false)}>
+            <UserCog aria-hidden="true" /> Account
           </Link>
           <form action={signOutAction}>
             <button type="submit" className="account-menu__item">

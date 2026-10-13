@@ -110,6 +110,12 @@ export interface GameRepository {
   createDrop(drop: WorkoutDrop): Promise<WorkoutDrop>;
   completeWorkout(input: CompleteActionInput): Promise<GameActionResult>;
   leaderboard(limit: number): Promise<{ hunters: LeaderboardHunter[]; squads: Squad[] }>;
+  /**
+   * Permanently deletes the auth user (auth.users.id). The database cascades to the
+   * profile, its quest/workout logs and its workout drops. Resolves when the user is
+   * gone (including when it was already deleted).
+   */
+  deleteAuthUser(authId: string): Promise<void>;
 }
 
 export type { UserProfile };

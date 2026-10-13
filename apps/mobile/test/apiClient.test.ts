@@ -139,4 +139,52 @@ describe('api client', () => {
     const { client } = setup([new Response('not json', { status: 200 })]);
     await expect(client.getMe()).rejects.toMatchObject({ code: 'INVALID_RESPONSE' });
   });
+  describe('deleteMe', () => {
+    it('sends DELETE /api/v1/me with the confirmation body and bearer token, resolving on 204', async () => {
+      const { client, calls } = setup([new Response(null, { status: 204 })]);
+      await expect(client.deleteMe()).resolves.toBeUndefined();
+      expect(calls).toHaveLength(1);
+      expect(calls[0].url).toBe('https://api.example.com/api/v1/me');
+      expect(calls[0].init.method).toBe('DELETE');
+      expect(headerOf(calls[0].init, 'Authorization')).toBe('Bearer token-1');
+      expect(headerOf(calls[0].init, 'Content-Type')).toBe('application/json');
+      expect(JSON.parse(String(calls[0].init.body))).toEqual({ confirm: 'DELETE' });
+    });
+
+    it('surfaces a 400 validation error', async () => {
+      const { client } = setup([jsonResponse(400, { error: 'Type DELETE to confirm.', code: 'VALIDATION_FAILED' })]);
+      await expect(client.deleteMe()).rejects.toMatchObject({
+        status: 400,
+        code: 'VALIDATION_FAILED',
+        message: 'Type DELETE to confirm.',
+      });
+    });
+
+    it('surfaces 429 RATE_LIMITED', async () => {
+      const { client } = setup([jsonResponse(429, { error: 'Too many requests', code: 'RATE_LIMITED' })]);
+      await expect(client.deleteMe()).rejects.toMatchObject({ status: 429, code: 'RATE_LIMITED' });
+    });
+
+    it('retries once with a refreshed token (re-sending the body) and resolves', async () => {
+      const { client, calls, refreshAccessToken, onUnauthorized } = setup([
+        jsonResponse(401, { error: 'expired', code: 'UNAUTHORIZED' }),
+        new Response(null, { status: 204 }),
+      ]);
+      await expect(client.deleteMe()).resolves.toBeUndefined();
+      expect(refreshAccessToken).toHaveBeenCalledTimes(1);
+      expect(onUnauthorized).not.toHaveBeenCalled();
+      expect(headerOf(calls[1].init, 'Authorization')).toBe('Bearer token-2');
+      expect(calls[1].init.method).toBe('DELETE');
+      expect(JSON.parse(String(calls[1].init.body))).toEqual({ confirm: 'DELETE' });
+    });
+
+    it('rejects with 401 and reports unauthorized when the session cannot be refreshed', async () => {
+      const { client, onUnauthorized } = setup(
+        [jsonResponse(401, { error: 'expired', code: 'UNAUTHORIZED' })],
+        { refreshAccessToken: async () => null }
+      );
+      await expect(client.deleteMe()).rejects.toMatchObject({ status: 401, code: 'UNAUTHORIZED' });
+      expect(onUnauthorized).toHaveBeenCalledTimes(1);
+    });
+  });
 });

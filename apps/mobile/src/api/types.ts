@@ -53,6 +53,11 @@ export interface CompleteWorkoutResponse {
   profile: UserProfile;
 }
 
+/** DELETE /api/v1/me — request body. 204 on success; 400 if `confirm` is missing; 429 RATE_LIMITED. */
+export interface DeleteMeRequest {
+  confirm: 'DELETE';
+}
+
 /** GET /api/v1/drops */
 export type DropsResponse = WorkoutDrop[];
 

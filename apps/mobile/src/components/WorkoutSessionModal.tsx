@@ -8,6 +8,7 @@ import { useReducedMotion } from '../hooks/useReducedMotion';
 import { useTheme } from '../theme/ThemeProvider';
 import { MIN_TOUCH_TARGET, fontSize, radius, spacing } from '../theme/tokens';
 import { AppButton } from './AppButton';
+import { HealthDisclaimer } from './Legal';
 
 const SET_SECONDS = 45;
 
@@ -134,6 +135,10 @@ export function WorkoutSessionModal({ drop, onClose, onClaim }: WorkoutSessionMo
                 showsVerticalScrollIndicator={false}
               />
 
+              <View style={styles.disclaimer}>
+                <HealthDisclaimer />
+              </View>
+
               <AppButton
                 label="⚔️ Claim Workout Aura"
                 accessibilityLabel="Finish workout and claim aura"
@@ -225,6 +230,9 @@ const styles = StyleSheet.create({
   },
   exReps: {
     fontSize: fontSize.caption,
+  },
+  disclaimer: {
+    paddingVertical: spacing.sm,
   },
   claimBtn: {
     marginBottom: spacing.lg,

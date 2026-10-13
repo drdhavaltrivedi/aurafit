@@ -8,6 +8,8 @@ import {
   type UserRole,
   type WorkoutDrop,
 } from '@aurafit/shared';
+import { FormMessage } from '../components/AuthLayout';
+import { ComingSoonCard, SampleDataTag } from '../components/DataNotice';
 import { SectionHeader } from '../components/SectionHeader';
 import { StatGrid } from '../components/StatGrid';
 import { useTheme } from '../theme/ThemeProvider';
@@ -21,13 +23,27 @@ function compact(n: number): string {
 
 interface CreatorScreenProps {
   role: UserRole;
+  /**
+   * Demo mode: show seed figures (including placeholder subscriber/revenue numbers), labelled as sample
+   * data. Server mode (`false`): only figures derived from real drops; the rest is "Coming soon".
+   */
+  sample: boolean;
   /** Signed-in creator (server mode); defaults to the seed creator in demo mode. */
   profile?: UserProfile;
   /** Drops to aggregate; defaults to the bundled seed drops. */
   drops?: WorkoutDrop[];
+  dropsLoading?: boolean;
+  dropsError?: string | null;
 }
 
-export function CreatorScreen({ role, profile = CREATOR_USER, drops = INITIAL_WORKOUT_DROPS }: CreatorScreenProps) {
+export function CreatorScreen({
+  role,
+  sample,
+  profile = CREATOR_USER,
+  drops = INITIAL_WORKOUT_DROPS,
+  dropsLoading = false,
+  dropsError = null,
+}: CreatorScreenProps) {
   const { colors } = useTheme();
   const canViewAnalytics = hasPermission(role, 'VIEW_CREATOR_ANALYTICS');
 
@@ -35,14 +51,14 @@ export function CreatorScreen({ role, profile = CREATOR_USER, drops = INITIAL_WO
     const myDrops = drops.filter((d) => d.creatorId === profile.id);
     const completions = myDrops.reduce((sum, d) => sum + d.completionsCount, 0);
     const likes = myDrops.reduce((sum, d) => sum + d.likesCount, 0);
-    return [
-      // Subscriber / revenue figures are demo placeholders until billing data is wired up.
-      { label: 'Squad Subs', value: '320' },
-      { label: 'MRR Revenue', value: '$2,450' },
+    const real = [
+      { label: 'Drops Published', value: compact(myDrops.length) },
       { label: 'Drop Likes', value: compact(likes) },
       { label: 'Completions', value: compact(completions) },
     ];
-  }, [drops, profile.id]);
+    // Subscriber / revenue figures are seed placeholders: only ever shown in demo mode.
+    return sample ? [{ label: 'Squad Subs', value: '320' }, { label: 'MRR Revenue', value: '$2,450' }, ...real] : real;
+  }, [drops, profile.id, sample]);
 
   return (
     <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
@@ -51,7 +67,21 @@ export function CreatorScreen({ role, profile = CREATOR_USER, drops = INITIAL_WO
         subtitle={`${profile.username} • ${profile.title}`}
       />
       {canViewAnalytics ? (
-        <StatGrid items={stats} />
+        <>
+          {sample ? <SampleDataTag /> : null}
+          {!sample && dropsError ? <FormMessage tone="error" message={dropsError} /> : null}
+          {!sample && dropsLoading && drops.length === 0 ? (
+            <Text style={{ color: colors.textMuted, fontSize: fontSize.body }}>Loading your drops…</Text>
+          ) : (
+            <StatGrid items={stats} />
+          )}
+          {!sample ? (
+            <ComingSoonCard
+              title="Subscribers & revenue"
+              body="Squad subscriptions and payouts aren't live yet. Your earnings will appear here once they are."
+            />
+          ) : null}
+        </>
       ) : (
         <View style={styles.locked}>
           <Text style={{ color: colors.textSecondary, fontSize: fontSize.body }}>

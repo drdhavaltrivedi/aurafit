@@ -17,17 +17,17 @@ It ships as two clients that share one domain package:
 │   └── shared/          @aurafit/shared: domain logic (ranks, aura, streaks, drops, permissions)
 │       ├── src/         TypeScript source, compiled to dist/ (CommonJS + .d.ts)
 │       │   └── api.ts   HTTP API v1 request/response types (used by web + mobile)
-│       ├── test/        Vitest unit tests (+ PGlite tests that execute schema.sql)
-│       └── schema.sql   Postgres/Supabase schema — single source of truth
+│       ├── test/        Vitest unit tests (+ PGlite tests that apply every migration)
+│       └── schema.sql   GENERATED cumulative schema (all migrations concatenated; read-only)
 ├── apps/
 │   ├── web/             Next.js 15 App Router PWA (standalone output, Dockerfile)
 │   │   ├── src/app/     Pages (/, /demo, /arena, /login, …) and route handlers (/api/v1/*)
 │   │   └── public/      manifest.json, sw.js (service worker), icons
 │   └── mobile/          Expo app (app.json, eas.json)
 ├── supabase/
-│   ├── migrations/      Generated copy of schema.sql (apply to the project)
+│   ├── migrations/      Source of truth for the database, applied in filename order
 │   └── seed/            Optional demo data (workout drops + seed creators)
-├── scripts/db-sync.mjs  Regenerates supabase/* from schema.sql and shared seeds
+├── scripts/db-sync.mjs  Regenerates schema.sql (from the migrations) and the demo drop seed
 ├── .github/workflows/   CI
 └── .env.example         Documented environment variables
 ```
@@ -64,7 +64,7 @@ cp .env.example apps/web/.env.local   # optional, every variable is optional
 | `npm test` | Run the Vitest suite once |
 | `npm run test:watch` | Vitest in watch mode |
 | `npm run lint --workspace=apps/web` | ESLint (flat config, `eslint-config-next`) |
-| `npm run db:sync` | Rebuild shared, copy `schema.sql` → migration, regenerate the demo drop seed |
+| `npm run db:sync` | Rebuild shared, regenerate `packages/shared/schema.sql` from `supabase/migrations/*` and the demo drop seed |
 
 ## Running the web app
 
@@ -124,6 +124,8 @@ links to the **local demo** at `/demo` (localStorage, persona switcher).
 | `/` | Landing page (header shows Log in / Sign up, or the account menu) |
 | `/demo` | Demo arena, no account; "Demo mode" badge + role switcher |
 | `/arena` | Signed-in arena (redirects to `/login?next=/arena` when signed out) |
+| `/account` | Signed-in account page: email, handle, role, and **Delete account** (typed confirmation) |
+| `/privacy`, `/terms` | Static Privacy Policy and Terms of Service (templates: get them reviewed before launch) |
 | `/login`, `/signup` | Email + password (min 8 chars, confirm field), Google button when enabled |
 | `/forgot-password`, `/reset-password` | Recovery email → `/auth/callback` → choose a new password |
 | `/auth/callback` | Exchanges `code` (OAuth/PKCE, email links) or `token_hash` for a session |
@@ -131,7 +133,7 @@ links to the **local demo** at `/demo` (localStorage, persona switcher).
 How it fits together:
 
 - `apps/web/src/middleware.ts` refreshes the session on every request
-  (`auth.getClaims()`, never `getSession()`), guards `/arena`, and sends
+  (`auth.getClaims()`, never `getSession()`), guards `/arena` and `/account`, and sends
   signed-in users away from `/login` / `/signup`.
 - Roles live in `profiles.role` (default `MEMBER`). `user_metadata` is never
   used for authorization. Change roles with SQL as the service role, or the
@@ -152,6 +154,7 @@ are `{ "error": string, "code": ApiErrorCode }`.
 | Method & path | Auth / permission | Success | Errors |
 | --- | --- | --- | --- |
 | `GET /api/v1/me` | signed in | `{ profile, quests }` (quests carry today's `completed`) | 401, 404 `PROFILE_NOT_FOUND` |
+| `DELETE /api/v1/me` | signed in | `204`, body `{ "confirm": "DELETE" }` (`DeleteAccountRequest`). Deletes the auth user; the DB cascades to profile, logs and the user's drops (squads they led keep existing with no leader). Cookie sessions are cleared; bearer clients should drop their session | 400 `VALIDATION_FAILED`, 401, 413, 415, 429 (burst 3, then 1/min) |
 | `POST /api/v1/quests/{questId}/complete` | `DO_QUESTS` | `{ status: 'completed', auraEarned, statGain: { stat, amount }, profile }` | 401, 403, 404, 409 `ALREADY_COMPLETED`, 429 |
 | `POST /api/v1/workouts/{dropId}/complete` | `START_WORKOUT` | `{ status: 'completed', auraEarned, profile }` | 401, 403, 404, 409, 429 |
 | `GET /api/v1/drops` | public | `WorkoutDrop[]` (newest first) | 503 |
@@ -161,8 +164,7 @@ are `{ "error": string, "code": ApiErrorCode }`.
 Mutating endpoints are rate limited with an **in-memory, per-instance** token
 bucket (burst 10, then 1 request / 2 s per user; `429` + `Retry-After`). With
 several instances the effective limit multiplies; use a shared store for a
-strict global limit. `/api/sync` is deprecated (sends `Deprecation`/`Sunset`
-headers) and never persists anything.
+strict global limit.
 
 ### Setting up a Supabase project
 
@@ -170,12 +172,27 @@ headers) and never persists anything.
    `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` (a legacy
    anon key also works), `SUPABASE_SECRET_KEY` (server only). `NEXT_PUBLIC_*`
    are inlined at build time, so **rebuild** after setting them.
-2. **Apply the migration** `supabase/migrations/20261013120000_aurafit_init.sql`
-   (tables, RLS, grants, signup trigger, game functions, quest seeds), e.g.
-   with the Supabase MCP `apply_migration` tool, the SQL editor, or
-   `supabase db push` in a linked project. It is idempotent.
-   `packages/shared/schema.sql` is the source of truth: edit it, then run
-   `npm run db:sync` (a test fails if the migration drifts).
+2. **Apply the migrations** in `supabase/migrations/` in filename order, e.g.
+   with `supabase db push` in a linked project, the Supabase MCP
+   `apply_migration` tool, or the SQL editor. Each one is idempotent.
+   - `20261013120000_aurafit_init.sql`: tables, RLS, grants, signup trigger,
+     game functions, quest seeds.
+   - `20261013130000_launch_hardening.sql`: hides `profiles.auth_id` from the
+     Data API (column-level `SELECT`; `select=*` on `profiles` is denied for
+     `anon`/`authenticated`, so name columns), merges the two profile `UPDATE`
+     policies, moves policies onto `private.current_profile_id()`, and adds the
+     weekly aura reset (`private.reset_weekly_aura()`, scheduled with pg_cron
+     as `aurafit-weekly-aura-reset` every Monday 00:00 UTC; the job is skipped
+     where pg_cron is unavailable).
+
+   **Schema workflow.** The migrations are the source of truth. Never edit a
+   migration that has been applied; add a new timestamped file (e.g.
+   `supabase migration new <name>`), then run `npm run db:sync`, which
+   regenerates `packages/shared/schema.sql` as the concatenation of all
+   migrations (a read-only, single-file view of the cumulative schema). The
+   PGlite tests apply every migration in order (twice, to check idempotency),
+   and a test fails if `schema.sql` is out of date. When you add a `profiles`
+   column that clients may read, grant `SELECT` on it explicitly.
 3. **Optional demo drops**: run `supabase/seed/demo_workout_drops.sql` (creates
    three sign-in-less creator profiles and the seed workout drops).
 4. **Auth → URL configuration**: set *Site URL* to your app origin and add
@@ -189,6 +206,19 @@ headers) and never persists anything.
    automatically once the provider is enabled.
 6. Keep **`private`** out of the Data API's exposed schemas (it holds the
    SECURITY DEFINER helpers), and run the security advisors after migrating.
+7. Check the cron job after migrating: `select jobname, schedule, command from cron.job;`
+   (Integrations → Cron in the dashboard).
+
+### Account deletion and legal pages
+
+App stores require in-app account deletion: `/account` → **Delete account**
+(web) or `DELETE /api/v1/me` (mobile). The server deletes the user with the
+admin API (`auth.admin.deleteUser`), which also removes their sessions and
+refresh tokens; access tokens already issued stay valid until they expire,
+but every API call then returns 404 `PROFILE_NOT_FOUND`. `/privacy` and
+`/terms` are plain-language **templates** (see the comment at the top of each
+file): have them reviewed and fill in your entity details before launch. The
+contact address `privacy@aurafit.app` is a placeholder.
 
 ## Docker (web)
 

@@ -5,8 +5,37 @@ import { Badge } from '@/components/ui/Badge';
 import { StatGrid, StatTile } from '@/components/ui/StatTile';
 import { formatNumber } from '@/lib/format';
 import { cx } from '@/lib/cx';
+import { SampleDataBadge } from './SampleDataBadge';
 
-export function AdminConsole({ canViewLeaderboard }: { canViewLeaderboard: boolean }) {
+interface AdminConsoleProps {
+  /** 'demo' shows the seeded sample gym data; 'server' never shows fabricated figures. */
+  mode: 'demo' | 'server';
+  canViewLeaderboard: boolean;
+}
+
+export function AdminConsole({ mode, canViewLeaderboard }: AdminConsoleProps) {
+  if (mode === 'server') {
+    return (
+      <div className="stack-6">
+        <Card as="section" variant="feature" aria-labelledby="admin-title">
+          <Badge tone="emerald" outline>
+            <Shield aria-hidden="true" className="icon-inline" /> Platform master access
+          </Badge>
+          <h2 id="admin-title" className="page-title">
+            Platform overview &amp; anti-cheat
+          </h2>
+          <div className="empty">
+            <p className="fw-700 text-neutral">Coming soon</p>
+            <p>
+              Platform metrics, gym affiliations and the gym leaderboard will appear here once gyms can join AuraFit. Every quest and
+              workout is already validated and capped on the server.
+            </p>
+          </div>
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <div className="stack-6">
       <Card as="section" variant="feature" aria-labelledby="admin-title">
@@ -16,8 +45,9 @@ export function AdminConsole({ canViewLeaderboard }: { canViewLeaderboard: boole
         <h2 id="admin-title" className="page-title">
           Global gym leaderboard &amp; anti-cheat
         </h2>
+        <SampleDataBadge />
         <p className="text-secondary text-sm">Auditing 84 affiliated gym branches, anti-cheat streak verifications and economy health.</p>
-        <StatGrid label="Platform metrics">
+        <StatGrid label="Platform metrics (sample data)">
           <StatTile label="Total active Hunters" value={formatNumber(42850)} hint="Gen Z & Alpha" />
           <StatTile label="30-day streak retention" value="94.2%" tone="emerald" hint="3.4× industry benchmark" />
           <StatTile label="Aura economy health" value="Optimal" tone="blue" hint="0.02% drift rate" hintTone="blue" />
@@ -34,7 +64,7 @@ export function AdminConsole({ canViewLeaderboard }: { canViewLeaderboard: boole
                 <Trophy aria-hidden="true" className="icon-inline text-orange" /> Gym leaderboard
               </>
             }
-            subtitle="Ranked by total Aura earned this season."
+            subtitle="Sample data: ranked by total Aura earned this season."
           />
           <ol className="stack-2 list-reset">
             {INITIAL_GYM_LEADERBOARD.map((gym) => (

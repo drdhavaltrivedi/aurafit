@@ -3,7 +3,7 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { getPublicSupabaseConfig } from './env';
 
 /** Routes that require a signed-in user (redirect to /login otherwise). */
-export const PROTECTED_PREFIXES = ['/arena'] as const;
+export const PROTECTED_PREFIXES = ['/arena', '/account'] as const;
 /** Auth pages a signed-in user should not see (redirect to /arena). */
 export const GUEST_ONLY_PATHS = ['/login', '/signup'] as const;
 

@@ -29,6 +29,14 @@ function cleanUrl(value: string | undefined): string | null {
   return v.replace(/\/+$/, '');
 }
 
+/**
+ * Public site origin (where the legal pages live). Resolved independently of the backend mode so the
+ * Terms / Privacy links still work in a build that has an API URL but no Supabase config.
+ */
+export function resolveSiteUrl(apiUrl: string | undefined): string | null {
+  return cleanUrl(apiUrl);
+}
+
 export function resolveEnv(raw: RawEnv): ResolvedEnv {
   const supabaseUrl = cleanUrl(raw.supabaseUrl);
   const apiUrl = cleanUrl(raw.apiUrl);

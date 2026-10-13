@@ -3,7 +3,9 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Linking from 'expo-linking';
 import * as WebBrowser from 'expo-web-browser';
 import type { Session } from '@supabase/supabase-js';
+import { api, isApiError } from '../api';
 import { env, isBackendConfigured } from '../config/env';
+import { errorMessage } from '../hooks/useApi';
 import { supabase } from '../lib/supabase';
 import { AUTH_CALLBACK_PATH, RESET_PASSWORD_PATH, parseAuthRedirect } from './authLinks';
 import { friendlyAuthError, normalizeEmail } from './validation';
@@ -32,6 +34,9 @@ interface AuthContextValue {
   /** Error from the last deep link (e.g. expired reset link), for display on the auth screens. */
   linkError: string | null;
   clearLinkError: () => void;
+  /** One-off confirmation for the welcome screen (e.g. after the account was deleted). */
+  notice: string | null;
+  clearNotice: () => void;
   signIn: (email: string, password: string) => Promise<AuthResult>;
   signUp: (email: string, password: string) => Promise<AuthResult>;
   signInWithGoogle: () => Promise<AuthResult>;
@@ -39,6 +44,11 @@ interface AuthContextValue {
   updatePassword: (password: string) => Promise<AuthResult>;
   cancelRecovery: () => Promise<void>;
   signOut: () => Promise<void>;
+  /**
+   * Permanently deletes the signed-in account on the server, then signs out on this device.
+   * `clearLocalData` runs only after the server confirmed the deletion.
+   */
+  deleteAccount: (clearLocalData?: () => void) => Promise<AuthResult>;
   enterDemo: () => void;
   exitDemo: () => void;
 }
@@ -58,6 +68,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [demoChosen, setDemoChosen] = useState<boolean | null>(isBackendConfigured ? null : true);
   const [recoveryPending, setRecoveryPending] = useState(false);
   const [linkError, setLinkError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
   const handledUrls = useRef(new Set<string>());
 
   // Restore the persisted "Try demo" choice.
@@ -223,6 +234,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (error) await supabase.auth.signOut({ scope: 'local' }).catch(() => {});
   }, []);
 
+  const deleteAccount = useCallback(
+    async (clearLocalData?: () => void): Promise<AuthResult> => {
+      if (!supabase || !api) return NOT_CONFIGURED;
+      try {
+        await api.deleteMe();
+      } catch (err) {
+        if (isApiError(err) && err.status === 401) {
+          // The client already dropped the dead session; explain why the user is back on Welcome.
+          setLinkError('Your session expired, so your account was not deleted. Log in again to delete it.');
+        }
+        return { error: errorMessage(err) };
+      }
+      clearLocalData?.();
+      setRecoveryPending(false);
+      setDemo(false);
+      setNotice('Your AuraFit account and its data have been permanently deleted.');
+      // The server already revoked everything; only the local session needs clearing.
+      await supabase.auth.signOut({ scope: 'local' }).catch(() => {});
+      return {};
+    },
+    [setDemo]
+  );
+
   const cancelRecovery = useCallback(async () => {
     // The recovery session should not silently become a normal login.
     await signOut();
@@ -233,6 +267,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (isBackendConfigured) setDemo(false);
   }, [setDemo]);
   const clearLinkError = useCallback(() => setLinkError(null), []);
+  const clearNotice = useCallback(() => setNotice(null), []);
 
   const status: AuthStatus =
     !sessionLoaded || demoChosen === null
@@ -252,6 +287,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       recoveryPending,
       linkError,
       clearLinkError,
+      notice,
+      clearNotice,
       signIn,
       signUp,
       signInWithGoogle,
@@ -259,6 +296,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       updatePassword,
       cancelRecovery,
       signOut,
+      deleteAccount,
       enterDemo,
       exitDemo,
     }),
@@ -268,6 +306,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       recoveryPending,
       linkError,
       clearLinkError,
+      notice,
+      clearNotice,
       signIn,
       signUp,
       signInWithGoogle,
@@ -275,6 +315,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       updatePassword,
       cancelRecovery,
       signOut,
+      deleteAccount,
       enterDemo,
       exitDemo,
     ]

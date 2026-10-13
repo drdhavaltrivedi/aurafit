@@ -1,5 +1,6 @@
 import 'server-only';
 import type { UserRole } from '@aurafit/shared';
+import { getRepository } from '@/lib/data';
 import { getSessionClaims, createClient } from '@/lib/supabase/server';
 import { isAuthConfigured } from '@/lib/supabase/env';
 
@@ -14,8 +15,9 @@ export interface Viewer {
 
 /**
  * Current viewer from the verified cookie session (getClaims), plus display
- * fields from their profile (public read via RLS). null when signed out or
- * auth is not configured. Never throws.
+ * fields from their profile. The profile is looked up server-side by auth id
+ * with the secret key (clients cannot read profiles.auth_id through the Data
+ * API). null when signed out or auth is not configured. Never throws.
  */
 export async function getViewer(): Promise<Viewer | null> {
   if (!isAuthConfigured()) return null;
@@ -30,11 +32,7 @@ export async function getViewer(): Promise<Viewer | null> {
     role: 'MEMBER',
   };
   try {
-    const { data } = await supabase
-      .from('profiles')
-      .select('handle, username, avatar_url, role')
-      .eq('auth_id', claims.sub)
-      .maybeSingle();
+    const data = await getRepository()?.getProfileByAuthId(claims.sub);
     if (!data) return fallback;
     return { email: claims.email, handle: data.handle, username: data.username, avatarUrl: data.avatar_url ?? '', role: data.role };
   } catch {

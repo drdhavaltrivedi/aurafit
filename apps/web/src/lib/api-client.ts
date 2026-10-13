@@ -6,6 +6,7 @@ import {
   type CompleteWorkoutResponse,
   type CreateDropRequest,
   type CreateDropResponse,
+  type DeleteAccountRequest,
   type DropsResponse,
   type MeResponse,
 } from '@aurafit/shared';
@@ -46,6 +47,11 @@ export const api = {
   drops: () => apiFetch<DropsResponse>(API_ROUTES.drops),
   completeQuest: (id: string) => apiFetch<CompleteQuestResponse>(API_ROUTES.completeQuest(id), { method: 'POST' }),
   completeWorkout: (id: string) => apiFetch<CompleteWorkoutResponse>(API_ROUTES.completeWorkout(id), { method: 'POST' }),
+  /** 204 → `{ ok: true, data: null }`. */
+  deleteAccount: () => {
+    const body: DeleteAccountRequest = { confirm: 'DELETE' };
+    return apiFetch<null>(API_ROUTES.me, { method: 'DELETE', body: JSON.stringify(body) });
+  },
   createDrop: (input: CreateDropRequest) =>
     apiFetch<CreateDropResponse>(API_ROUTES.drops, { method: 'POST', body: JSON.stringify(input) }),
 };

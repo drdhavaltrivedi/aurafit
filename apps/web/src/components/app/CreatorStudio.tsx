@@ -6,8 +6,11 @@ import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { StatGrid, StatTile } from '@/components/ui/StatTile';
 import { formatCompact, formatNumber } from '@/lib/format';
+import { SampleDataBadge } from './SampleDataBadge';
 
 interface CreatorStudioProps {
+  /** 'demo' shows the seeded sample analytics; 'server' shows only figures derived from real drops. */
+  mode: 'demo' | 'server';
   user: UserProfile;
   drops: WorkoutDrop[];
   canPublish: boolean;
@@ -18,7 +21,7 @@ interface CreatorStudioProps {
   onStart: (drop: WorkoutDrop) => void;
 }
 
-export function CreatorStudio({ user, drops, canPublish, canViewAnalytics, canStart, onCreate, onShare, onStart }: CreatorStudioProps) {
+export function CreatorStudio({ mode, user, drops, canPublish, canViewAnalytics, canStart, onCreate, onShare, onStart }: CreatorStudioProps) {
   const myDrops = useMemo(() => drops.filter((d) => d.creatorId === user.id), [drops, user.id]);
   const totals = useMemo(
     () => myDrops.reduce((acc, d) => ({ completions: acc.completions + d.completionsCount, likes: acc.likes + d.likesCount }), { completions: 0, likes: 0 }),
@@ -36,7 +39,11 @@ export function CreatorStudio({ user, drops, canPublish, canViewAnalytics, canSt
             <h2 id="studio-title" className="page-title">
               {user.username} <span className="text-secondary fw-600">{user.handle}</span>
             </h2>
-            <p className="text-secondary text-sm">Publish workout drops, set Aura multipliers and grow your subscriber squad.</p>
+            <p className="text-secondary text-sm">
+              {mode === 'demo'
+                ? 'Publish workout drops, set Aura multipliers and grow your subscriber squad.'
+                : 'Publish workout drops, set Aura multipliers and see how Hunters respond.'}
+            </p>
           </div>
           {canPublish && (
             <Button id="create-drop-modal-btn" onClick={onCreate} leadingIcon={<Plus />} aria-haspopup="dialog">
@@ -45,12 +52,24 @@ export function CreatorStudio({ user, drops, canPublish, canViewAnalytics, canSt
           )}
         </div>
 
-        {canViewAnalytics && (
+        {canViewAnalytics && mode === 'demo' && (
+          <div className="stack-2">
+            <SampleDataBadge />
+            <StatGrid label="Creator analytics (sample data)">
+              <StatTile label="Squad subscribers" value="320" hint="+18% this week" />
+              <StatTile label="Monthly recurring (MRR)" value="$2,450" tone="blue" hint="$7.99 / squad pass" hintTone="blue" />
+              <StatTile label="Routine completions" value={formatNumber(totals.completions)} tone="pink" hint={`${myDrops.length} published drops`} />
+              <StatTile label="Total likes" value={formatCompact(totals.likes)} tone="accent" hint="Across your drops" hintTone="accent" />
+            </StatGrid>
+          </div>
+        )}
+
+        {canViewAnalytics && mode === 'server' && (
           <StatGrid label="Creator analytics">
-            <StatTile label="Squad subscribers" value="320" hint="+18% this week" />
-            <StatTile label="Monthly recurring (MRR)" value="$2,450" tone="blue" hint="$7.99 / squad pass" hintTone="blue" />
-            <StatTile label="Routine completions" value={formatNumber(totals.completions)} tone="pink" hint={`${myDrops.length} published drops`} />
+            <StatTile label="Published drops" value={formatNumber(myDrops.length)} hint="Live for all Hunters" />
+            <StatTile label="Routine completions" value={formatNumber(totals.completions)} tone="pink" hint="Across your drops" hintTone="pink" />
             <StatTile label="Total likes" value={formatCompact(totals.likes)} tone="accent" hint="Across your drops" hintTone="accent" />
+            <StatTile label="Subscriptions" value="Coming soon" tone="blue" hint="Squad passes are not live yet" hintTone="blue" />
           </StatGrid>
         )}
       </Card>

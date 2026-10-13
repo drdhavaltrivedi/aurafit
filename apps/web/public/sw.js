@@ -10,7 +10,7 @@
  *  - Everything else (incl. /api/*, /_next/image, cross-origin, non-GET) is
  *    passed straight through and never cached.
  */
-const VERSION = 'v2.1.0'; // bump purges caches from older versions
+const VERSION = 'v2.2.0'; // bump purges caches from older versions
 const STATIC_CACHE = `aurafit-static-${VERSION}`;
 const PAGE_CACHE = `aurafit-pages-${VERSION}`;
 const KNOWN_CACHES = [STATIC_CACHE, PAGE_CACHE];
