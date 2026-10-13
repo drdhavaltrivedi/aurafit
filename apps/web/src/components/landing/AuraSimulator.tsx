@@ -38,7 +38,7 @@ export function AuraSimulator() {
             Test your Hunter rank &amp; Aura
           </h2>
         </div>
-        <Badge tone="accent" outline aria-live="polite">
+        <Badge tone="accent" outline>
           Rank: {rank}
         </Badge>
       </div>

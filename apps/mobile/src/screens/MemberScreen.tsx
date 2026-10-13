@@ -1,5 +1,5 @@
 import React from 'react';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, View, type RefreshControlProps } from 'react-native';
 import {
   INITIAL_WORKOUT_DROPS,
   getRankFromAura,
@@ -24,9 +24,24 @@ interface MemberScreenProps {
   quests: Quest[];
   onCompleteQuest: (questId: string) => void;
   onStartWorkout: (drop: WorkoutDrop) => void;
+  /** Workout drops to show; defaults to the bundled seed drops (demo mode). */
+  drops?: WorkoutDrop[];
+  /** Optional element rendered above the profile card (e.g. a sync error notice). */
+  header?: React.ReactNode;
+  /** Pull-to-refresh control (server mode). */
+  refreshControl?: React.ReactElement<RefreshControlProps>;
 }
 
-export function MemberScreen({ role, user, quests, onCompleteQuest, onStartWorkout }: MemberScreenProps) {
+export function MemberScreen({
+  role,
+  user,
+  quests,
+  onCompleteQuest,
+  onStartWorkout,
+  drops = INITIAL_WORKOUT_DROPS,
+  header,
+  refreshControl,
+}: MemberScreenProps) {
   const { colors } = useTheme();
   const rankInfo = getRankFromAura(user.auraPoints);
   const canDoQuests = hasPermission(role, 'DO_QUESTS');
@@ -40,7 +55,9 @@ export function MemberScreen({ role, user, quests, onCompleteQuest, onStartWorko
       contentContainerStyle={styles.content}
       showsVerticalScrollIndicator={false}
       contentInsetAdjustmentBehavior="never"
+      refreshControl={refreshControl}
     >
+      {header}
       <Card>
         <View style={styles.cardHeader}>
           <View style={styles.cardHeaderText}>
@@ -93,7 +110,7 @@ export function MemberScreen({ role, user, quests, onCompleteQuest, onStartWorko
 
       <View style={styles.section}>
         <SectionHeader title="🔥 Trending Workout Drops" subtitle="Curated routines with boosted Aura multipliers" />
-        {INITIAL_WORKOUT_DROPS.map((drop) => (
+        {drops.map((drop) => (
           <WorkoutDropCard key={drop.id} drop={drop} canStart={canStartWorkout} onStart={onStartWorkout} />
         ))}
       </View>

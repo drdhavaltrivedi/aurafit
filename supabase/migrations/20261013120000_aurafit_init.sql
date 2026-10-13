@@ -1,0 +1,771 @@
+-- AuraFit Production PostgreSQL / Supabase Database Schema
+-- Includes Row Level Security (RLS) policies, Role-Based Access Control (RBAC),
+-- the auth.users -> profiles trigger, and the transactional game functions.
+--
+-- SINGLE SOURCE OF TRUTH. supabase/migrations/20261013120000_aurafit_init.sql is a
+-- byte-identical copy (checked by packages/shared/test/schema.test.ts). After
+-- editing this file run `npm run db:sync-migration`.
+--
+-- Target: Supabase (PostgreSQL 15+). Uses the `auth` schema (auth.users, auth.uid())
+-- and the built-in `anon` / `authenticated` / `service_role` roles. The script is
+-- idempotent and can be re-run safely.
+--
+-- Trust model:
+--   * Clients (anon / authenticated) may READ public data and edit only cosmetic
+--     fields of their own profile. TRUNCATE/REFERENCES/TRIGGER are revoked.
+--   * Anything that affects the aura economy (aura_points, rank, stats, streaks,
+--     completion logs, roles) is written by the Next.js server using the secret
+--     (service_role) key, through ONE function per action:
+--       public.complete_quest / public.complete_workout / public.admin_set_role.
+--     Those functions are SECURITY INVOKER and EXECUTE is granted to service_role
+--     only, so they are not callable by anon/authenticated through the Data API.
+--   * Privileged helpers (SECURITY DEFINER) live in the non-exposed `private` schema.
+--   * Roles live in profiles.role. user_metadata is never used for authorization
+--     (it is user-editable); the signup trigger reads it for cosmetic fields only.
+--   * Values here must stay in sync with packages/shared/src (RANK_THRESHOLDS,
+--     MAX_AURA_PER_SYNC, applyDailyStreak, INITIAL_QUESTS). Tests check this.
+
+-- gen_random_uuid() is built into PostgreSQL 13+; no extension needed.
+
+-- ==========================================
+-- 0. PRIVATE (NON-EXPOSED) SCHEMA
+-- ==========================================
+-- Never add `private` to the Data API "exposed schemas" setting.
+CREATE SCHEMA IF NOT EXISTS private;
+REVOKE ALL ON SCHEMA private FROM PUBLIC;
+-- authenticated needs USAGE only to evaluate RLS policies that call
+-- private.current_profile_role(); EXECUTE on every other function is revoked.
+GRANT USAGE ON SCHEMA private TO authenticated, service_role;
+
+-- ==========================================
+-- 1. ENUMS (idempotent)
+-- ==========================================
+DO $$ BEGIN
+    CREATE TYPE user_role_enum AS ENUM ('MEMBER', 'CREATOR', 'ADMIN');
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+DO $$ BEGIN
+    CREATE TYPE hunter_rank_enum AS ENUM ('E-RANK', 'D-RANK', 'C-RANK', 'B-RANK', 'A-RANK', 'S-RANK', 'MONARCH');
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+DO $$ BEGIN
+    CREATE TYPE quest_category_enum AS ENUM ('DAILY_QUEST', 'BOSS_RAID', 'MOVEMENT_SNACK', 'SQUAD_MISSION');
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+DO $$ BEGIN
+    CREATE TYPE quest_difficulty_enum AS ENUM ('CASUAL', 'HARD', 'NIGHTMARE', 'EXTREME');
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+DO $$ BEGIN
+    CREATE TYPE workout_difficulty_enum AS ENUM ('NOVICE', 'HUNTER', 'BEAST', 'SHADOW');
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+DO $$ BEGIN
+    CREATE TYPE workout_category_enum AS ENUM ('STRENGTH', 'HIIT', 'POSTURE_RESET', 'CARDIO_SNACK');
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+DO $$ BEGIN
+    CREATE TYPE squad_status_enum AS ENUM ('LOCKED_IN', 'ON_FIRE', 'NEEDS_SAVING');
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+-- ==========================================
+-- 2. SHARED TRIGGER FUNCTIONS
+-- ==========================================
+CREATE OR REPLACE FUNCTION set_updated_at()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SET search_path = ''
+AS $$
+BEGIN
+    NEW.updated_at := NOW();
+    RETURN NEW;
+END;
+$$;
+
+-- Keeps profiles.rank consistent with aura_points.
+-- Thresholds mirror RANK_THRESHOLDS in packages/shared/src/index.ts.
+CREATE OR REPLACE FUNCTION rank_for_aura(aura BIGINT)
+RETURNS hunter_rank_enum
+LANGUAGE sql
+IMMUTABLE
+SET search_path = public
+AS $$
+    SELECT CASE
+        WHEN aura >= 60000 THEN 'MONARCH'
+        WHEN aura >= 30000 THEN 'S-RANK'
+        WHEN aura >= 15000 THEN 'A-RANK'
+        WHEN aura >= 7000  THEN 'B-RANK'
+        WHEN aura >= 3000  THEN 'C-RANK'
+        WHEN aura >= 1000  THEN 'D-RANK'
+        ELSE 'E-RANK'
+    END::hunter_rank_enum;
+$$;
+
+CREATE OR REPLACE FUNCTION sync_profile_rank()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SET search_path = public
+AS $$
+BEGIN
+    NEW.rank := rank_for_aura(NEW.aura_points);
+    RETURN NEW;
+END;
+$$;
+
+-- ==========================================
+-- 3. GYMS (leaderboard doubles as the gym registry)
+-- ==========================================
+CREATE TABLE IF NOT EXISTS gym_leaderboard (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    gym_name VARCHAR(150) NOT NULL UNIQUE,
+    city VARCHAR(100) NOT NULL,
+    active_squads INT NOT NULL DEFAULT 0 CHECK (active_squads >= 0),
+    total_aura_earned BIGINT NOT NULL DEFAULT 0 CHECK (total_aura_earned >= 0),
+    top_hunter_handle VARCHAR(50),
+    growth_rate VARCHAR(50) DEFAULT '+0%',
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- ==========================================
+-- 4. USER PROFILES
+-- ==========================================
+-- auth_id is NULL only for system/seed creator profiles (supabase/seed/).
+CREATE TABLE IF NOT EXISTS profiles (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    auth_id UUID UNIQUE REFERENCES auth.users(id) ON DELETE CASCADE,
+    username VARCHAR(50) NOT NULL CHECK (char_length(btrim(username)) > 0),
+    handle VARCHAR(50) NOT NULL UNIQUE CHECK (handle ~ '^@[A-Za-z0-9_.]{2,49}$'),
+    role user_role_enum NOT NULL DEFAULT 'MEMBER',
+    avatar_url TEXT CHECK (avatar_url IS NULL OR (avatar_url ~ '^https://' AND char_length(avatar_url) <= 2048)),
+    title VARCHAR(100) DEFAULT 'Hunter in Training',
+    bio TEXT CHECK (bio IS NULL OR char_length(bio) <= 500),
+    aura_points BIGINT NOT NULL DEFAULT 0 CHECK (aura_points >= 0),
+    rank hunter_rank_enum NOT NULL DEFAULT 'E-RANK',
+    level INT NOT NULL DEFAULT 1 CHECK (level >= 1),
+    str_stat INT NOT NULL DEFAULT 50 CHECK (str_stat BETWEEN 0 AND 100),
+    agi_stat INT NOT NULL DEFAULT 50 CHECK (agi_stat BETWEEN 0 AND 100),
+    end_stat INT NOT NULL DEFAULT 50 CHECK (end_stat BETWEEN 0 AND 100),
+    rec_stat INT NOT NULL DEFAULT 50 CHECK (rec_stat BETWEEN 0 AND 100),
+    streak_days INT NOT NULL DEFAULT 0 CHECK (streak_days >= 0),
+    streak_shields INT NOT NULL DEFAULT 2 CHECK (streak_shields >= 0),
+    -- UTC calendar day of the last quest/workout; drives the daily streak rule.
+    last_active_date DATE,
+    squad_id UUID, -- FK added below (squads references profiles too)
+    gym_id UUID REFERENCES gym_leaderboard(id) ON DELETE SET NULL,
+    total_workouts INT NOT NULL DEFAULT 0 CHECK (total_workouts >= 0),
+    weekly_aura_gained BIGINT NOT NULL DEFAULT 0 CHECK (weekly_aura_gained >= 0),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- ==========================================
+-- 5. SQUADS
+-- ==========================================
+CREATE TABLE IF NOT EXISTS squads (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    name VARCHAR(100) NOT NULL,
+    tag VARCHAR(20) NOT NULL UNIQUE,
+    avatar TEXT DEFAULT '⚔️',
+    total_aura BIGINT NOT NULL DEFAULT 0 CHECK (total_aura >= 0),
+    leader_id UUID REFERENCES profiles(id) ON DELETE SET NULL,
+    member_count INT NOT NULL DEFAULT 1,
+    max_members INT NOT NULL DEFAULT 5 CHECK (max_members BETWEEN 1 AND 50),
+    streak_days INT NOT NULL DEFAULT 0 CHECK (streak_days >= 0),
+    weekly_goal_progress INT NOT NULL DEFAULT 0 CHECK (weekly_goal_progress BETWEEN 0 AND 100),
+    status squad_status_enum NOT NULL DEFAULT 'LOCKED_IN',
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    CONSTRAINT squads_member_count_range CHECK (member_count BETWEEN 0 AND max_members)
+);
+
+DO $$ BEGIN
+    ALTER TABLE profiles
+        ADD CONSTRAINT profiles_squad_id_fkey
+        FOREIGN KEY (squad_id) REFERENCES squads(id) ON DELETE SET NULL;
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+-- ==========================================
+-- 6. QUESTS (catalog)
+-- ==========================================
+CREATE TABLE IF NOT EXISTS quests (
+    id VARCHAR(100) PRIMARY KEY CHECK (id ~ '^[A-Za-z0-9_-]+$'),
+    title VARCHAR(150) NOT NULL,
+    subtitle TEXT NOT NULL,
+    category quest_category_enum NOT NULL,
+    aura_reward INT NOT NULL CHECK (aura_reward BETWEEN 0 AND 5000),
+    stat_reward_stat VARCHAR(10) NOT NULL CHECK (stat_reward_stat IN ('str', 'agi', 'end', 'rec')),
+    stat_reward_amount INT NOT NULL CHECK (stat_reward_amount >= 0),
+    duration_minutes INT NOT NULL CHECK (duration_minutes > 0),
+    difficulty quest_difficulty_enum NOT NULL DEFAULT 'CASUAL',
+    target_count INT NOT NULL CHECK (target_count > 0),
+    unit VARCHAR(30) NOT NULL,
+    icon VARCHAR(10) NOT NULL,
+    accent_color VARCHAR(7) CHECK (accent_color IS NULL OR accent_color ~ '^#[0-9A-Fa-f]{6}$'),
+    description TEXT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- ==========================================
+-- 7. USER QUEST COMPLETION LEDGER
+-- ==========================================
+CREATE TABLE IF NOT EXISTS user_quest_logs (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+    quest_id VARCHAR(100) NOT NULL REFERENCES quests(id) ON DELETE CASCADE,
+    -- Upper bound mirrors MAX_AURA_PER_SYNC in packages/shared/src/sync.ts.
+    aura_earned INT NOT NULL CHECK (aura_earned BETWEEN 0 AND 5000),
+    completed_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    -- UTC calendar day (idempotency key together with user_id + quest_id).
+    date_key DATE NOT NULL DEFAULT ((NOW() AT TIME ZONE 'utc')::date),
+    CONSTRAINT unique_daily_quest_per_user UNIQUE (user_id, quest_id, date_key)
+);
+
+-- ==========================================
+-- 8. WORKOUT DROPS (CREATOR UPLOADS)
+-- ==========================================
+CREATE TABLE IF NOT EXISTS workout_drops (
+    id VARCHAR(100) PRIMARY KEY CHECK (id ~ '^[A-Za-z0-9_-]+$'),
+    title VARCHAR(150) NOT NULL,
+    tagline TEXT,
+    creator_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+    vibe_tag VARCHAR(50) NOT NULL,
+    duration_minutes INT NOT NULL CHECK (duration_minutes > 0),
+    calories_burn_estimate INT NOT NULL CHECK (calories_burn_estimate >= 0),
+    aura_multiplier NUMERIC(3, 1) NOT NULL DEFAULT 1.0 CHECK (aura_multiplier BETWEEN 1.0 AND 3.0),
+    xp_points INT NOT NULL DEFAULT 100 CHECK (xp_points >= 0),
+    difficulty workout_difficulty_enum NOT NULL DEFAULT 'NOVICE',
+    category workout_category_enum NOT NULL DEFAULT 'STRENGTH',
+    -- Exercise list: [{id, name, targetMuscle, repsOrSeconds, tips}, ...]
+    exercises JSONB NOT NULL DEFAULT '[]'::jsonb
+        CHECK (jsonb_typeof(exercises) = 'array' AND jsonb_array_length(exercises) <= 30),
+    cover_from VARCHAR(7) NOT NULL DEFAULT '#7C3AED' CHECK (cover_from ~ '^#[0-9A-Fa-f]{6}$'),
+    cover_to VARCHAR(7) NOT NULL DEFAULT '#3B82F6' CHECK (cover_to ~ '^#[0-9A-Fa-f]{6}$'),
+    -- Server-controlled marketing badge (not client-writable).
+    creator_badge VARCHAR(50) NOT NULL DEFAULT 'Verified Creator',
+    -- Engagement counters are maintained server-side only.
+    likes_count INT NOT NULL DEFAULT 0 CHECK (likes_count >= 0),
+    completions_count INT NOT NULL DEFAULT 0 CHECK (completions_count >= 0),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- ==========================================
+-- 8b. USER WORKOUT COMPLETION LEDGER
+-- ==========================================
+CREATE TABLE IF NOT EXISTS user_workout_logs (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+    drop_id VARCHAR(100) NOT NULL REFERENCES workout_drops(id) ON DELETE CASCADE,
+    aura_earned INT NOT NULL CHECK (aura_earned BETWEEN 0 AND 5000),
+    completed_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    date_key DATE NOT NULL DEFAULT ((NOW() AT TIME ZONE 'utc')::date),
+    CONSTRAINT unique_daily_workout_per_user UNIQUE (user_id, drop_id, date_key)
+);
+
+-- ==========================================
+-- 9. INDEXES (FK columns + leaderboard sorts)
+-- ==========================================
+CREATE INDEX IF NOT EXISTS idx_profiles_squad_id ON profiles (squad_id);
+CREATE INDEX IF NOT EXISTS idx_profiles_gym_id ON profiles (gym_id);
+CREATE INDEX IF NOT EXISTS idx_profiles_aura_points ON profiles (aura_points DESC);
+CREATE INDEX IF NOT EXISTS idx_squads_leader_id ON squads (leader_id);
+CREATE INDEX IF NOT EXISTS idx_squads_total_aura ON squads (total_aura DESC);
+-- user_quest_logs(user_id) is covered by the unique (user_id, quest_id, date_key) index.
+CREATE INDEX IF NOT EXISTS idx_user_quest_logs_quest_id ON user_quest_logs (quest_id);
+-- user_workout_logs(user_id) is covered by the unique (user_id, drop_id, date_key) index.
+CREATE INDEX IF NOT EXISTS idx_user_workout_logs_drop_id ON user_workout_logs (drop_id);
+CREATE INDEX IF NOT EXISTS idx_workout_drops_creator_id ON workout_drops (creator_id);
+CREATE INDEX IF NOT EXISTS idx_workout_drops_created_at ON workout_drops (created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_gym_leaderboard_total_aura ON gym_leaderboard (total_aura_earned DESC);
+
+-- ==========================================
+-- 10. TRIGGERS
+-- ==========================================
+DROP TRIGGER IF EXISTS trg_profiles_updated_at ON profiles;
+CREATE TRIGGER trg_profiles_updated_at BEFORE UPDATE ON profiles
+    FOR EACH ROW EXECUTE FUNCTION set_updated_at();
+
+DROP TRIGGER IF EXISTS trg_profiles_rank ON profiles;
+CREATE TRIGGER trg_profiles_rank BEFORE INSERT OR UPDATE OF aura_points, rank ON profiles
+    FOR EACH ROW EXECUTE FUNCTION sync_profile_rank();
+
+DROP TRIGGER IF EXISTS trg_squads_updated_at ON squads;
+CREATE TRIGGER trg_squads_updated_at BEFORE UPDATE ON squads
+    FOR EACH ROW EXECUTE FUNCTION set_updated_at();
+
+DROP TRIGGER IF EXISTS trg_quests_updated_at ON quests;
+CREATE TRIGGER trg_quests_updated_at BEFORE UPDATE ON quests
+    FOR EACH ROW EXECUTE FUNCTION set_updated_at();
+
+DROP TRIGGER IF EXISTS trg_workout_drops_updated_at ON workout_drops;
+CREATE TRIGGER trg_workout_drops_updated_at BEFORE UPDATE ON workout_drops
+    FOR EACH ROW EXECUTE FUNCTION set_updated_at();
+
+DROP TRIGGER IF EXISTS trg_gym_leaderboard_updated_at ON gym_leaderboard;
+CREATE TRIGGER trg_gym_leaderboard_updated_at BEFORE UPDATE ON gym_leaderboard
+    FOR EACH ROW EXECUTE FUNCTION set_updated_at();
+
+-- ==========================================
+-- 11. PRIVATE HELPERS (non-exposed schema)
+-- ==========================================
+-- SECURITY DEFINER so policies can look up the caller's role without recursing
+-- through the profiles RLS policies. Scoped to auth.uid(); lives in `private`
+-- so it is not reachable as a Data API RPC.
+CREATE OR REPLACE FUNCTION private.current_profile_role()
+RETURNS public.user_role_enum
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = ''
+AS $$
+    SELECT role FROM public.profiles WHERE auth_id = (SELECT auth.uid());
+$$;
+
+-- Daily streak rule. Mirrors applyDailyStreak() in packages/shared/src/streak.ts:
+--   first activity -> 1; same day (or clock skew) -> unchanged; yesterday -> +1;
+--   exactly one missed day -> consume a shield and +1 if available, else 1;
+--   two or more missed days -> 1 (shields kept).
+CREATE OR REPLACE FUNCTION private.apply_daily_streak(
+    p_prev DATE,
+    p_today DATE,
+    p_streak INT,
+    p_shields INT,
+    OUT streak_days INT,
+    OUT streak_shields INT,
+    OUT last_active_date DATE,
+    OUT outcome TEXT
+)
+LANGUAGE plpgsql
+IMMUTABLE
+SET search_path = ''
+AS $$
+DECLARE
+    v_streak INT := greatest(coalesce(p_streak, 0), 0);
+    v_shields INT := greatest(coalesce(p_shields, 0), 0);
+    v_gap INT;
+BEGIN
+    IF p_prev IS NULL THEN
+        streak_days := 1; streak_shields := v_shields; last_active_date := p_today; outcome := 'started';
+        RETURN;
+    END IF;
+    v_gap := p_today - p_prev;
+    IF v_gap <= 0 THEN
+        streak_days := v_streak; streak_shields := v_shields; last_active_date := p_prev; outcome := 'same_day';
+    ELSIF v_gap = 1 THEN
+        streak_days := v_streak + 1; streak_shields := v_shields; last_active_date := p_today; outcome := 'incremented';
+    ELSIF v_gap = 2 AND v_shields > 0 THEN
+        streak_days := v_streak + 1; streak_shields := v_shields - 1; last_active_date := p_today; outcome := 'shield_used';
+    ELSE
+        streak_days := 1; streak_shields := v_shields; last_active_date := p_today; outcome := 'reset';
+    END IF;
+END;
+$$;
+
+-- Creates the profile for every new auth user. SECURITY DEFINER (runs as the
+-- owner, invoked by supabase_auth_admin) with an empty search_path.
+-- Role is always the column default (MEMBER); raw_user_meta_data is
+-- user-controlled and is used ONLY for cosmetic display fields.
+-- handle = '@' + sanitised email local-part, suffixed with 4 random digits on
+-- collision (retries also cover concurrent sign-ups racing for the same handle).
+CREATE OR REPLACE FUNCTION private.handle_new_user()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = ''
+AS $$
+DECLARE
+    v_local TEXT := lower(split_part(coalesce(NEW.email, ''), '@', 1));
+    v_base TEXT;
+    v_handle TEXT;
+    v_name TEXT;
+    v_avatar TEXT;
+    v_attempt INT := 0;
+BEGIN
+    v_base := left(regexp_replace(v_local, '[^a-z0-9_.]', '_', 'g'), 30);
+    IF char_length(v_base) < 2 THEN
+        v_base := 'hunter' || v_base;
+    END IF;
+    v_handle := '@' || v_base;
+
+    v_name := left(btrim(coalesce(NEW.raw_user_meta_data ->> 'full_name', NEW.raw_user_meta_data ->> 'name', '')), 50);
+    IF v_name = '' THEN
+        v_name := left(coalesce(nullif(v_local, ''), 'Hunter'), 50);
+    END IF;
+
+    v_avatar := NEW.raw_user_meta_data ->> 'avatar_url';
+    IF v_avatar IS NULL OR v_avatar !~ '^https://' OR char_length(v_avatar) > 2048 THEN
+        v_avatar := NULL;
+    END IF;
+
+    LOOP
+        BEGIN
+            INSERT INTO public.profiles (auth_id, username, handle, avatar_url)
+            VALUES (NEW.id, v_name, v_handle, v_avatar);
+            RETURN NEW;
+        EXCEPTION WHEN unique_violation THEN
+            IF EXISTS (SELECT 1 FROM public.profiles WHERE auth_id = NEW.id) THEN
+                RETURN NEW; -- profile already exists
+            END IF;
+            v_attempt := v_attempt + 1;
+            IF v_attempt > 25 THEN
+                RAISE;
+            END IF;
+            v_handle := '@' || v_base || '_' || (1000 + floor(random() * 9000))::INT::TEXT;
+        END;
+    END LOOP;
+END;
+$$;
+
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
+CREATE TRIGGER on_auth_user_created AFTER INSERT ON auth.users
+    FOR EACH ROW EXECUTE FUNCTION private.handle_new_user();
+
+REVOKE ALL ON FUNCTION private.current_profile_role() FROM PUBLIC;
+REVOKE ALL ON FUNCTION private.apply_daily_streak(DATE, DATE, INT, INT) FROM PUBLIC;
+REVOKE ALL ON FUNCTION private.handle_new_user() FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION private.current_profile_role() TO authenticated, service_role;
+GRANT EXECUTE ON FUNCTION private.apply_daily_streak(DATE, DATE, INT, INT) TO service_role;
+
+-- ==========================================
+-- 12. GAME ACTIONS (server-only, one function per action)
+-- ==========================================
+-- Called by the Next.js server with the secret key via supabase-js `.rpc()`.
+-- SECURITY INVOKER: they run as service_role (which bypasses RLS); EXECUTE is
+-- revoked from PUBLIC/anon/authenticated below so clients cannot call them.
+-- Each one locks the profile row (SELECT ... FOR UPDATE) so concurrent actions
+-- for one user serialise, and is idempotent per (user, item, UTC date_key) via
+-- the ledger's unique constraint. The aura amount is computed in TypeScript
+-- (calculateAuraGain) but the cap is enforced here as well.
+
+CREATE OR REPLACE FUNCTION public.complete_quest(
+    p_user_id UUID,
+    p_quest_id TEXT,
+    p_aura INT,
+    p_date_key DATE DEFAULT NULL
+)
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY INVOKER
+SET search_path = ''
+AS $$
+DECLARE
+    v_today DATE := coalesce(p_date_key, (NOW() AT TIME ZONE 'utc')::date);
+    v_quest public.quests%ROWTYPE;
+    v_profile public.profiles%ROWTYPE;
+    v_log_id UUID;
+    v_streak RECORD;
+BEGIN
+    IF p_aura IS NULL OR p_aura < 0 OR p_aura > 5000 THEN
+        RAISE EXCEPTION 'aura % outside 0..5000', p_aura USING ERRCODE = 'check_violation';
+    END IF;
+
+    SELECT * INTO v_quest FROM public.quests WHERE id = p_quest_id;
+    IF NOT FOUND THEN
+        RETURN jsonb_build_object('status', 'not_found');
+    END IF;
+
+    SELECT * INTO v_profile FROM public.profiles WHERE id = p_user_id FOR UPDATE;
+    IF NOT FOUND THEN
+        RETURN jsonb_build_object('status', 'profile_not_found');
+    END IF;
+
+    INSERT INTO public.user_quest_logs (user_id, quest_id, aura_earned, date_key)
+    VALUES (p_user_id, p_quest_id, p_aura, v_today)
+    ON CONFLICT ON CONSTRAINT unique_daily_quest_per_user DO NOTHING
+    RETURNING id INTO v_log_id;
+    IF v_log_id IS NULL THEN
+        RETURN jsonb_build_object('status', 'already_completed');
+    END IF;
+
+    SELECT * INTO v_streak
+    FROM private.apply_daily_streak(v_profile.last_active_date, v_today, v_profile.streak_days, v_profile.streak_shields);
+
+    UPDATE public.profiles AS p SET
+        aura_points = p.aura_points + p_aura,
+        weekly_aura_gained = p.weekly_aura_gained + p_aura,
+        total_workouts = p.total_workouts + 1,
+        str_stat = CASE WHEN v_quest.stat_reward_stat = 'str' THEN least(100, greatest(0, p.str_stat + v_quest.stat_reward_amount)) ELSE p.str_stat END,
+        agi_stat = CASE WHEN v_quest.stat_reward_stat = 'agi' THEN least(100, greatest(0, p.agi_stat + v_quest.stat_reward_amount)) ELSE p.agi_stat END,
+        end_stat = CASE WHEN v_quest.stat_reward_stat = 'end' THEN least(100, greatest(0, p.end_stat + v_quest.stat_reward_amount)) ELSE p.end_stat END,
+        rec_stat = CASE WHEN v_quest.stat_reward_stat = 'rec' THEN least(100, greatest(0, p.rec_stat + v_quest.stat_reward_amount)) ELSE p.rec_stat END,
+        streak_days = v_streak.streak_days,
+        streak_shields = v_streak.streak_shields,
+        last_active_date = v_streak.last_active_date
+    WHERE p.id = p_user_id
+    RETURNING * INTO v_profile;
+
+    RETURN jsonb_build_object(
+        'status', 'completed',
+        'aura_earned', p_aura,
+        'stat', v_quest.stat_reward_stat,
+        'stat_amount', v_quest.stat_reward_amount,
+        'streak_outcome', v_streak.outcome,
+        'profile', to_jsonb(v_profile)
+    );
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION public.complete_workout(
+    p_user_id UUID,
+    p_drop_id TEXT,
+    p_aura INT,
+    p_date_key DATE DEFAULT NULL
+)
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY INVOKER
+SET search_path = ''
+AS $$
+DECLARE
+    v_today DATE := coalesce(p_date_key, (NOW() AT TIME ZONE 'utc')::date);
+    v_profile public.profiles%ROWTYPE;
+    v_log_id UUID;
+    v_streak RECORD;
+BEGIN
+    IF p_aura IS NULL OR p_aura < 0 OR p_aura > 5000 THEN
+        RAISE EXCEPTION 'aura % outside 0..5000', p_aura USING ERRCODE = 'check_violation';
+    END IF;
+
+    PERFORM 1 FROM public.workout_drops WHERE id = p_drop_id;
+    IF NOT FOUND THEN
+        RETURN jsonb_build_object('status', 'not_found');
+    END IF;
+
+    SELECT * INTO v_profile FROM public.profiles WHERE id = p_user_id FOR UPDATE;
+    IF NOT FOUND THEN
+        RETURN jsonb_build_object('status', 'profile_not_found');
+    END IF;
+
+    INSERT INTO public.user_workout_logs (user_id, drop_id, aura_earned, date_key)
+    VALUES (p_user_id, p_drop_id, p_aura, v_today)
+    ON CONFLICT ON CONSTRAINT unique_daily_workout_per_user DO NOTHING
+    RETURNING id INTO v_log_id;
+    IF v_log_id IS NULL THEN
+        RETURN jsonb_build_object('status', 'already_completed');
+    END IF;
+
+    SELECT * INTO v_streak
+    FROM private.apply_daily_streak(v_profile.last_active_date, v_today, v_profile.streak_days, v_profile.streak_shields);
+
+    UPDATE public.profiles AS p SET
+        aura_points = p.aura_points + p_aura,
+        weekly_aura_gained = p.weekly_aura_gained + p_aura,
+        total_workouts = p.total_workouts + 1,
+        str_stat = least(100, p.str_stat + 4),
+        agi_stat = least(100, p.agi_stat + 4),
+        end_stat = least(100, p.end_stat + 3),
+        streak_days = v_streak.streak_days,
+        streak_shields = v_streak.streak_shields,
+        last_active_date = v_streak.last_active_date
+    WHERE p.id = p_user_id
+    RETURNING * INTO v_profile;
+
+    UPDATE public.workout_drops SET completions_count = completions_count + 1 WHERE id = p_drop_id;
+
+    RETURN jsonb_build_object(
+        'status', 'completed',
+        'aura_earned', p_aura,
+        'streak_outcome', v_streak.outcome,
+        'profile', to_jsonb(v_profile)
+    );
+END;
+$$;
+
+-- Role changes: only via the server (service_role) on behalf of an ADMIN actor.
+CREATE OR REPLACE FUNCTION public.admin_set_role(
+    p_actor_id UUID,
+    p_target_id UUID,
+    p_role public.user_role_enum
+)
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY INVOKER
+SET search_path = ''
+AS $$
+DECLARE
+    v_target public.profiles%ROWTYPE;
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM public.profiles WHERE id = p_actor_id AND role = 'ADMIN') THEN
+        RETURN jsonb_build_object('status', 'forbidden');
+    END IF;
+    UPDATE public.profiles SET role = p_role WHERE id = p_target_id RETURNING * INTO v_target;
+    IF NOT FOUND THEN
+        RETURN jsonb_build_object('status', 'not_found');
+    END IF;
+    RETURN jsonb_build_object('status', 'updated', 'profile', to_jsonb(v_target));
+END;
+$$;
+
+REVOKE ALL ON FUNCTION public.complete_quest(UUID, TEXT, INT, DATE) FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION public.complete_workout(UUID, TEXT, INT, DATE) FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION public.admin_set_role(UUID, UUID, public.user_role_enum) FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.complete_quest(UUID, TEXT, INT, DATE) TO service_role;
+GRANT EXECUTE ON FUNCTION public.complete_workout(UUID, TEXT, INT, DATE) TO service_role;
+GRANT EXECUTE ON FUNCTION public.admin_set_role(UUID, UUID, public.user_role_enum) TO service_role;
+
+-- ==========================================
+-- 13. TABLE & COLUMN PRIVILEGES
+-- ==========================================
+-- Supabase's default privileges grant ALL (incl. TRUNCATE, which ignores RLS) on
+-- new public tables to anon/authenticated. Narrow them explicitly; also grant
+-- explicitly so the app works when the Data API's automatic grants are off.
+REVOKE ALL ON profiles, squads, quests, user_quest_logs, user_workout_logs, workout_drops, gym_leaderboard
+    FROM anon, authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE
+    ON profiles, squads, quests, user_quest_logs, user_workout_logs, workout_drops, gym_leaderboard
+    TO service_role;
+
+-- Public catalog / leaderboard data.
+GRANT SELECT ON profiles, squads, quests, workout_drops, gym_leaderboard TO anon, authenticated;
+-- Personal ledgers: signed-in users only (rows further limited by RLS).
+GRANT SELECT ON user_quest_logs, user_workout_logs TO authenticated;
+
+-- RLS restricts *rows*; these grants restrict *columns* so a user editing their own
+-- profile cannot self-promote (role) or self-award aura/stats/rank/streaks.
+GRANT INSERT (auth_id, username, handle, avatar_url, title, bio) ON profiles TO authenticated;
+GRANT UPDATE (username, avatar_url, title, bio) ON profiles TO authenticated;
+
+GRANT INSERT (id, title, tagline, creator_id, vibe_tag, duration_minutes, calories_burn_estimate,
+              aura_multiplier, xp_points, difficulty, category, exercises, cover_from, cover_to)
+    ON workout_drops TO authenticated;
+GRANT UPDATE (title, tagline, vibe_tag, duration_minutes, calories_burn_estimate,
+              aura_multiplier, xp_points, difficulty, category, exercises, cover_from, cover_to)
+    ON workout_drops TO authenticated;
+GRANT DELETE ON workout_drops TO authenticated;
+
+-- ==========================================
+-- 14. ROW LEVEL SECURITY (RLS) POLICIES
+-- ==========================================
+ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
+ALTER TABLE squads ENABLE ROW LEVEL SECURITY;
+ALTER TABLE quests ENABLE ROW LEVEL SECURITY;
+ALTER TABLE user_quest_logs ENABLE ROW LEVEL SECURITY;
+ALTER TABLE user_workout_logs ENABLE ROW LEVEL SECURITY;
+ALTER TABLE workout_drops ENABLE ROW LEVEL SECURITY;
+ALTER TABLE gym_leaderboard ENABLE ROW LEVEL SECURITY;
+
+-- Profiles: public read; users create/update their own row (cosmetic columns only,
+-- see grants above); admins may update cosmetic fields of any row.
+DROP POLICY IF EXISTS "Public profiles are readable by everyone" ON profiles;
+CREATE POLICY "Public profiles are readable by everyone" ON profiles
+    FOR SELECT TO anon, authenticated USING (true);
+
+DROP POLICY IF EXISTS "Users can create their own profile" ON profiles;
+CREATE POLICY "Users can create their own profile" ON profiles
+    FOR INSERT TO authenticated
+    WITH CHECK ((SELECT auth.uid()) = auth_id);
+
+DROP POLICY IF EXISTS "Users can update their own profile" ON profiles;
+CREATE POLICY "Users can update their own profile" ON profiles
+    FOR UPDATE TO authenticated
+    USING ((SELECT auth.uid()) = auth_id)
+    WITH CHECK ((SELECT auth.uid()) = auth_id);
+
+-- Note: admins are still bound by the column grants above; role/aura/stat changes
+-- are made server-side with service_role (public.admin_set_role, game actions).
+DROP POLICY IF EXISTS "Admins can update any profile" ON profiles;
+CREATE POLICY "Admins can update any profile" ON profiles
+    FOR UPDATE TO authenticated
+    USING ((SELECT private.current_profile_role()) = 'ADMIN')
+    WITH CHECK ((SELECT private.current_profile_role()) = 'ADMIN');
+
+-- Squads: public read (squad leaderboard). Writes are server-side.
+DROP POLICY IF EXISTS "Squads readable by everyone" ON squads;
+CREATE POLICY "Squads readable by everyone" ON squads
+    FOR SELECT TO anon, authenticated USING (true);
+
+-- Quest catalog: public read. Writes are server-side.
+DROP POLICY IF EXISTS "Quests readable by everyone" ON quests;
+CREATE POLICY "Quests readable by everyone" ON quests
+    FOR SELECT TO anon, authenticated USING (true);
+
+-- Quest logs: a user can read only their own history; admins can read all
+-- (anti-cheat audits). Writes go through public.complete_quest (service_role).
+DROP POLICY IF EXISTS "Quests readable by everyone" ON user_quest_logs;
+DROP POLICY IF EXISTS "Users can insert their own quest logs" ON user_quest_logs;
+DROP POLICY IF EXISTS "Users can read their own quest logs" ON user_quest_logs;
+CREATE POLICY "Users can read their own quest logs" ON user_quest_logs
+    FOR SELECT TO authenticated
+    USING (
+        user_id IN (SELECT id FROM profiles WHERE auth_id = (SELECT auth.uid()))
+        OR (SELECT private.current_profile_role()) = 'ADMIN'
+    );
+
+-- Workout logs: same model as quest logs. Writes via public.complete_workout.
+DROP POLICY IF EXISTS "Users can read their own workout logs" ON user_workout_logs;
+CREATE POLICY "Users can read their own workout logs" ON user_workout_logs
+    FOR SELECT TO authenticated
+    USING (
+        user_id IN (SELECT id FROM profiles WHERE auth_id = (SELECT auth.uid()))
+        OR (SELECT private.current_profile_role()) = 'ADMIN'
+    );
+
+-- Workout drops: public read; creators/admins publish and manage their own drops.
+DROP POLICY IF EXISTS "Workout drops readable by everyone" ON workout_drops;
+CREATE POLICY "Workout drops readable by everyone" ON workout_drops
+    FOR SELECT TO anon, authenticated USING (true);
+
+DROP POLICY IF EXISTS "Creators can publish workout drops" ON workout_drops;
+CREATE POLICY "Creators can publish workout drops" ON workout_drops
+    FOR INSERT TO authenticated
+    WITH CHECK (
+        EXISTS (
+            SELECT 1 FROM profiles
+            WHERE profiles.id = creator_id
+              AND profiles.auth_id = (SELECT auth.uid())
+              AND profiles.role IN ('CREATOR', 'ADMIN')
+        )
+    );
+
+DROP POLICY IF EXISTS "Creators can update their own workout drops" ON workout_drops;
+CREATE POLICY "Creators can update their own workout drops" ON workout_drops
+    FOR UPDATE TO authenticated
+    USING (
+        EXISTS (
+            SELECT 1 FROM profiles
+            WHERE profiles.id = creator_id
+              AND profiles.auth_id = (SELECT auth.uid())
+              AND profiles.role IN ('CREATOR', 'ADMIN')
+        )
+    )
+    WITH CHECK (
+        EXISTS (
+            SELECT 1 FROM profiles
+            WHERE profiles.id = creator_id
+              AND profiles.auth_id = (SELECT auth.uid())
+              AND profiles.role IN ('CREATOR', 'ADMIN')
+        )
+    );
+
+DROP POLICY IF EXISTS "Creators can delete their own workout drops; admins any" ON workout_drops;
+CREATE POLICY "Creators can delete their own workout drops; admins any" ON workout_drops
+    FOR DELETE TO authenticated
+    USING (
+        EXISTS (
+            SELECT 1 FROM profiles
+            WHERE profiles.id = creator_id
+              AND profiles.auth_id = (SELECT auth.uid())
+        )
+        OR (SELECT private.current_profile_role()) = 'ADMIN'
+    );
+
+-- Gym leaderboard: public read. Writes are server-side.
+DROP POLICY IF EXISTS "Gym leaderboard readable by everyone" ON gym_leaderboard;
+CREATE POLICY "Gym leaderboard readable by everyone" ON gym_leaderboard
+    FOR SELECT TO anon, authenticated USING (true);
+
+-- ==========================================
+-- 15. SEED DATA: quest catalog (mirrors INITIAL_QUESTS in packages/shared/src)
+-- ==========================================
+-- Workout drops need a creator profile, so they are NOT seeded here; see
+-- supabase/seed/demo_workout_drops.sql (optional, run manually by an admin).
+INSERT INTO quests (id, title, subtitle, category, aura_reward, stat_reward_stat, stat_reward_amount,
+                    duration_minutes, difficulty, target_count, unit, icon, accent_color, description)
+VALUES
+    ('q_daily_1', 'Daily Protocol: Pushup Ignition', 'Build raw explosive STR power before noon', 'DAILY_QUEST', 250, 'str', 3, 8, 'CASUAL', 50, 'reps', '⚡', '#8B5CF6', 'Perform 50 clean chest-to-deck pushups. Break into sets if needed. Boosts your STR stat.'),
+    ('q_daily_2', 'Subway Surfers Cardio Sprint', 'High cadence sprint intervals to dodge the slump', 'DAILY_QUEST', 400, 'agi', 5, 12, 'HARD', 12, 'min', '🔥', '#EC4899', '30s sprint / 30s walk interval blitz. Syncs with your phonk playlist.'),
+    ('q_snack_1', 'Posture Glow-Up: Gamer Spine Reset', 'Decompress neck & shoulder tension in 4 minutes', 'MOVEMENT_SNACK', 150, 'rec', 4, 4, 'CASUAL', 4, 'min', '✨', '#06B6D4', 'Doorway chest openers, chin tucks, and wall slides for instant aura posture.'),
+    ('q_boss_1', 'Weekly Boss: The Couch Demon Titan', 'Squad Boss Raid — Accumulate 50,000 steps & 500 squats together', 'BOSS_RAID', 1500, 'end', 12, 60, 'NIGHTMARE', 500, 'squad reps', '👹', '#EF4444', 'Raid the weekly titan boss with your squad. Slaying the beast unlocks legendary Monarch badge.')
+ON CONFLICT (id) DO NOTHING;

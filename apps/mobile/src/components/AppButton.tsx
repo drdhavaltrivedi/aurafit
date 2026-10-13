@@ -1,5 +1,6 @@
 import React from 'react';
 import {
+  ActivityIndicator,
   Pressable,
   StyleSheet,
   Text,
@@ -21,6 +22,8 @@ export interface AppButtonProps extends Omit<PressableProps, 'style' | 'children
   size?: 'md' | 'lg';
   style?: StyleProp<ViewStyle>;
   selected?: boolean;
+  /** Shows a spinner, disables presses and marks the button busy for screen readers. */
+  loading?: boolean;
 }
 
 const HIT_SLOP = { top: 8, bottom: 8, left: 8, right: 8 };
@@ -32,6 +35,7 @@ export function AppButton({
   style,
   disabled,
   selected,
+  loading = false,
   accessibilityLabel,
   accessibilityHint,
   ...rest
@@ -51,7 +55,8 @@ export function AppButton({
     ghost: colors.textSecondary,
   };
 
-  const a11yState: AccessibilityState = { disabled: !!disabled };
+  const isDisabled = !!disabled || loading;
+  const a11yState: AccessibilityState = { disabled: isDisabled, busy: loading };
   if (selected !== undefined) a11yState.selected = selected;
 
   return (
@@ -60,7 +65,7 @@ export function AppButton({
       accessibilityLabel={accessibilityLabel ?? label}
       accessibilityHint={accessibilityHint}
       accessibilityState={a11yState}
-      disabled={disabled}
+      disabled={isDisabled}
       hitSlop={HIT_SLOP}
       android_ripple={{ color: 'rgba(255,255,255,0.15)', borderless: false }}
       style={({ pressed }) => [
@@ -69,13 +74,16 @@ export function AppButton({
         {
           backgroundColor: bg[variant],
           borderColor: variant === 'secondary' ? colors.border : 'transparent',
-          opacity: disabled ? 0.45 : pressed ? 0.8 : 1,
-          transform: [{ scale: pressed && !disabled ? 0.97 : 1 }],
+          opacity: isDisabled && !loading ? 0.45 : pressed ? 0.8 : 1,
+          transform: [{ scale: pressed && !isDisabled ? 0.97 : 1 }],
         },
         style,
       ]}
       {...rest}
     >
+      {loading ? (
+        <ActivityIndicator color={fg[variant]} accessibilityElementsHidden importantForAccessibility="no" />
+      ) : (
       <Text
         style={[styles.label, size === 'lg' && styles.labelLg, { color: fg[variant] }]}
         numberOfLines={1}
@@ -83,6 +91,7 @@ export function AppButton({
       >
         {label}
       </Text>
+      )}
     </Pressable>
   );
 }

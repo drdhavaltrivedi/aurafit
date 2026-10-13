@@ -1,24 +1,36 @@
 import type { Metadata, Viewport } from 'next';
+import { THEME_INIT_SCRIPT } from '@/lib/theme';
+import { ServiceWorkerRegister } from '@/components/shell/ServiceWorkerRegister';
 import './globals.css';
 
+const FALLBACK_URL = 'https://aurafit.app';
+
+function resolveSiteUrl(): URL {
+  try {
+    return new URL(process.env.NEXT_PUBLIC_APP_URL || FALLBACK_URL);
+  } catch {
+    return new URL(FALLBACK_URL);
+  }
+}
+
+const siteUrl = resolveSiteUrl();
+const title = 'AuraFit — Gen Z & Gen Alpha RPG Fitness Platform';
+const description =
+  'Gamified fitness platform with Solo Leveling ranks, Aura points, daily quest boards, squad battles, and movement snacks.';
+
 export const metadata: Metadata = {
-  title: 'AuraFit — Gen Z & Gen Alpha RPG Fitness Platform',
-  description: 'Gamified fitness platform with Solo Leveling ranks, Aura points, daily quest boards, squad battles, and movement snacks.',
+  metadataBase: siteUrl,
+  title: { default: title, template: '%s · AuraFit' },
+  description,
+  applicationName: 'AuraFit',
   manifest: '/manifest.json',
-  metadataBase: new URL('https://aurafit.app'),
+  alternates: { canonical: '/' },
   openGraph: {
-    title: 'AuraFit — Gen Z & Gen Alpha RPG Fitness Platform',
+    title,
     description: 'Level up your physical stats, earn Aura points, lock in daily quests, and climb hunter ranks.',
-    url: 'https://aurafit.app',
+    url: '/',
     siteName: 'AuraFit',
-    images: [
-      {
-        url: '/logo.jpg',
-        width: 800,
-        height: 800,
-        alt: 'AuraFit Brand Logo',
-      },
-    ],
+    images: [{ url: '/logo.jpg', width: 1024, height: 1024, alt: 'AuraFit logo' }],
     locale: 'en_US',
     type: 'website',
   },
@@ -29,56 +41,44 @@ export const metadata: Metadata = {
     images: ['/logo.jpg'],
   },
   icons: {
-    icon: '/icon.svg',
-    apple: '/icon.svg',
+    icon: [
+      { url: '/icon.svg', type: 'image/svg+xml' },
+      { url: '/icons/icon-192.png', sizes: '192x192', type: 'image/png' },
+    ],
+    apple: [{ url: '/icons/apple-touch-icon.png', sizes: '180x180' }],
   },
   appleWebApp: {
     capable: true,
     statusBarStyle: 'black-translucent',
     title: 'AuraFit',
   },
+  formatDetection: { telephone: false },
 };
 
 export const viewport: Viewport = {
-  themeColor: '#7C3AED',
   width: 'device-width',
   initialScale: 1,
-  maximumScale: 1,
-  userScalable: false,
+  viewportFit: 'cover',
+  colorScheme: 'dark light',
+  themeColor: [
+    { media: '(prefers-color-scheme: dark)', color: '#0A0C14' },
+    { media: '(prefers-color-scheme: light)', color: '#F8FAFC' },
+  ],
 };
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
+    // data-theme is set pre-paint by THEME_INIT_SCRIPT, so the server markup differs by design.
+    <html lang="en" suppressHydrationWarning>
       <head>
-        <link rel="icon" href="/icon.svg" type="image/svg+xml" />
-        <link rel="apple-touch-icon" href="/icon.svg" />
+        <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
       </head>
       <body>
+        <a href="#main-content" className="skip-link">
+          Skip to content
+        </a>
         {children}
-        {/* Production PWA Service Worker Registration */}
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `
-              if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
-                window.addEventListener('load', function() {
-                  navigator.serviceWorker.register('/sw.js').then(
-                    function(reg) {
-                      console.log('[AuraFit PWA] ServiceWorker registered with scope:', reg.scope);
-                    },
-                    function(err) {
-                      console.log('[AuraFit PWA] ServiceWorker registration failed:', err);
-                    }
-                  );
-                });
-              }
-            `,
-          }}
-        />
+        <ServiceWorkerRegister />
       </body>
     </html>
   );

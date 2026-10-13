@@ -30,6 +30,15 @@ describe('POST /api/sync', () => {
     expect(JSON.stringify(body)).not.toContain('VERIFIED');
   });
 
+  it('is marked deprecated in favour of /api/v1', async () => {
+    const res = await POST(jsonRequest({ userId: 'u1' }));
+    expect(res.headers.get('deprecation')).toMatch(/^@\d+$/);
+    expect(res.headers.get('sunset')).toBeTruthy();
+    expect(res.headers.get('link')).toContain('successor-version');
+    const bad = await POST(jsonRequest('{'));
+    expect(bad.headers.get('deprecation')).toBeTruthy();
+  });
+
   it('issues a unique receipt per request', async () => {
     const a = await (await POST(jsonRequest({ userId: 'u1' }))).json();
     const b = await (await POST(jsonRequest({ userId: 'u1' }))).json();

@@ -11,6 +11,8 @@ export default defineConfig({
       // Test against shared *source* so tests never depend on a stale dist build.
       { find: /^@aurafit\/shared$/, replacement: r('./packages/shared/src/index.ts') },
       { find: /^@\//, replacement: `${r('./apps/web/src')}/` },
+      // `server-only` throws outside a React Server bundle; tests run in plain Node.
+      { find: /^server-only$/, replacement: r('./apps/web/src/test/server-only-stub.ts') },
     ],
   },
   test: {

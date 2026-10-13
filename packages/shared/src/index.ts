@@ -280,6 +280,9 @@ export function calculateQuestProgress(currentCount: number, targetCount: number
 }
 
 export * from './sync';
+export * from './streak';
+export * from './drops';
+export * from './api';
 
 // ==========================================
 // MOCK SEED DATA FOR DEMO / ROLES

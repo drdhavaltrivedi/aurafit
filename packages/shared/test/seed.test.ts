@@ -99,7 +99,7 @@ describe('seed workout drops', () => {
   it.each(INITIAL_WORKOUT_DROPS.map((d) => [d.id, d] as const))('%s: fields are sane', (_id, d) => {
     expect(d.exercises.length).toBeGreaterThan(0);
     expect(d.auraMultiplier).toBeGreaterThanOrEqual(1);
-    expect(d.auraMultiplier).toBeLessThanOrEqual(9.9); // NUMERIC(3,1) in schema.sql
+    expect(d.auraMultiplier).toBeLessThanOrEqual(3); // CHECK (aura_multiplier BETWEEN 1.0 AND 3.0) in schema.sql
     expect(d.durationMinutes).toBeGreaterThan(0);
     expect(d.caloriesBurnEstimate).toBeGreaterThan(0);
     expect(d.xpPoints).toBeGreaterThan(0);

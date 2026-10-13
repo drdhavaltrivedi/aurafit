@@ -1,5 +1,5 @@
 import React from 'react';
-import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Alert, Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useTheme } from '../theme/ThemeProvider';
 import { MIN_TOUCH_TARGET, fontSize, radius, spacing } from '../theme/tokens';
 
@@ -7,17 +7,28 @@ interface AppHeaderProps {
   auraPoints: number;
   streakDays: number;
   onToggleTheme: () => void;
+  /** Signed-in account (email); when set together with `onSignOut`, an account button is shown. */
+  accountLabel?: string;
+  onSignOut?: () => void;
 }
 
-export function AppHeader({ auraPoints, streakDays, onToggleTheme }: AppHeaderProps) {
+export function AppHeader({ auraPoints, streakDays, onToggleTheme, accountLabel, onSignOut }: AppHeaderProps) {
   const { colors, isDark } = useTheme();
   const nextMode = isDark ? 'light' : 'dark';
+
+  const openAccount = () => {
+    if (!onSignOut) return;
+    Alert.alert(accountLabel ?? 'Account', 'Signed in to AuraFit', [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Sign out', style: 'destructive', onPress: onSignOut },
+    ]);
+  };
 
   return (
     <View style={[styles.header, { borderBottomColor: colors.border, backgroundColor: colors.bgSurface }]}>
       <View style={styles.brandRow}>
         <Image
-          source={require('../../assets/logo.jpg')}
+          source={require('../../assets/logo-header.png')}
           style={styles.logo}
           resizeMode="cover"
           accessibilityIgnoresInvertColors
@@ -65,6 +76,23 @@ export function AppHeader({ auraPoints, streakDays, onToggleTheme }: AppHeaderPr
             {isDark ? '🌙' : '☀️'}
           </Text>
         </Pressable>
+        {onSignOut ? (
+          <Pressable
+            onPress={openAccount}
+            accessibilityRole="button"
+            accessibilityLabel="Account"
+            accessibilityHint="Shows your account and the sign out option"
+            hitSlop={8}
+            style={({ pressed }) => [
+              styles.themeBtn,
+              { backgroundColor: colors.bgElevated, borderColor: colors.border, opacity: pressed ? 0.7 : 1 },
+            ]}
+          >
+            <Text style={styles.themeIcon} accessible={false}>
+              👤
+            </Text>
+          </Pressable>
+        ) : null}
       </View>
     </View>
   );

@@ -17,11 +17,12 @@
     "typecheck": "npm run typecheck:shared && npm run typecheck:web && npm run typecheck:mobile",
     "typecheck:shared": "tsc --noEmit -p packages/shared/tsconfig.json && tsc --noEmit -p packages/shared/test/tsconfig.json",
     "typecheck:web": "tsc --noEmit -p apps/web/tsconfig.json",
-    "typecheck:mobile": "tsc --noEmit -p apps/mobile/tsconfig.json"
+    "typecheck:mobile": "tsc --noEmit -p apps/mobile/tsconfig.json",
+    "db:sync": "npm run build:shared && node scripts/db-sync.mjs"
   },
   "overrides": {
-    "react": "19.0.0",
-    "react-dom": "19.0.0"
+    "react": "19.2.3",
+    "react-dom": "19.2.3"
   },
   "keywords": [
     "fitness",
@@ -37,10 +38,11 @@
   "author": "AuraFit Team",
   "license": "MIT",
   "dependencies": {
-    "react": "19.0.0",
-    "react-dom": "19.0.0"
+    "react": "19.2.3",
+    "react-dom": "19.2.3"
   },
   "devDependencies": {
+    "@electric-sql/pglite": "^0.5.9",
     "vitest": "^3.2.7"
   }
 }

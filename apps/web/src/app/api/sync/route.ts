@@ -7,7 +7,18 @@ import {
 
 export const dynamic = 'force-dynamic';
 
-const NO_STORE_HEADERS = { 'Cache-Control': 'no-store' } as const;
+/**
+ * DEPRECATED: superseded by the authenticated /api/v1 endpoints
+ * (POST /api/v1/quests/{id}/complete, POST /api/v1/workouts/{id}/complete),
+ * which persist progress server-side. Kept only for old clients; it never
+ * persists anything. Responses carry RFC 9745 / RFC 8594 deprecation headers.
+ */
+const NO_STORE_HEADERS = {
+  'Cache-Control': 'no-store',
+  Deprecation: '@1791849600', // 2026-10-13T00:00:00Z
+  Sunset: 'Thu, 31 Dec 2026 23:59:59 GMT',
+  Link: '</api/v1/quests>; rel="successor-version"',
+} as const;
 
 function errorResponse(status: number, error: string, details?: string[]): Response {
   const body: SyncErrorResponse = { success: false, error };

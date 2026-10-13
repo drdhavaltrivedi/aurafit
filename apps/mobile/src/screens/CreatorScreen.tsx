@@ -1,6 +1,13 @@
 import React, { useMemo } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
-import { CREATOR_USER, INITIAL_WORKOUT_DROPS, hasPermission, type UserRole } from '@aurafit/shared';
+import {
+  CREATOR_USER,
+  INITIAL_WORKOUT_DROPS,
+  hasPermission,
+  type UserProfile,
+  type UserRole,
+  type WorkoutDrop,
+} from '@aurafit/shared';
 import { SectionHeader } from '../components/SectionHeader';
 import { StatGrid } from '../components/StatGrid';
 import { useTheme } from '../theme/ThemeProvider';
@@ -12,12 +19,20 @@ function compact(n: number): string {
   return n.toLocaleString();
 }
 
-export function CreatorScreen({ role }: { role: UserRole }) {
+interface CreatorScreenProps {
+  role: UserRole;
+  /** Signed-in creator (server mode); defaults to the seed creator in demo mode. */
+  profile?: UserProfile;
+  /** Drops to aggregate; defaults to the bundled seed drops. */
+  drops?: WorkoutDrop[];
+}
+
+export function CreatorScreen({ role, profile = CREATOR_USER, drops = INITIAL_WORKOUT_DROPS }: CreatorScreenProps) {
   const { colors } = useTheme();
   const canViewAnalytics = hasPermission(role, 'VIEW_CREATOR_ANALYTICS');
 
   const stats = useMemo(() => {
-    const myDrops = INITIAL_WORKOUT_DROPS.filter((d) => d.creatorId === CREATOR_USER.id);
+    const myDrops = drops.filter((d) => d.creatorId === profile.id);
     const completions = myDrops.reduce((sum, d) => sum + d.completionsCount, 0);
     const likes = myDrops.reduce((sum, d) => sum + d.likesCount, 0);
     return [
@@ -27,13 +42,13 @@ export function CreatorScreen({ role }: { role: UserRole }) {
       { label: 'Drop Likes', value: compact(likes) },
       { label: 'Completions', value: compact(completions) },
     ];
-  }, []);
+  }, [drops, profile.id]);
 
   return (
     <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
       <SectionHeader
         title="👑 Creator Studio"
-        subtitle={`${CREATOR_USER.username} • ${CREATOR_USER.title}`}
+        subtitle={`${profile.username} • ${profile.title}`}
       />
       {canViewAnalytics ? (
         <StatGrid items={stats} />

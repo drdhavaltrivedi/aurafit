@@ -1,78 +1,84 @@
 'use client';
 
 import Image from 'next/image';
-import type { MouseEvent } from 'react';
+import Link from 'next/link';
 import { Moon, Sparkles, Sun, Volume2, VolumeX } from 'lucide-react';
 import type { UserRole } from '@aurafit/shared';
-import type { AppView } from '@/hooks/useHashView';
+import type { Viewer } from '@/lib/auth/viewer';
 import type { Theme } from '@/lib/theme';
 import { formatNumber } from '@/lib/format';
 import { cx } from '@/lib/cx';
+import { Badge } from '@/components/ui/Badge';
 import { RoleSwitcher } from './RoleSwitcher';
+import { AccountMenu } from './AccountMenu';
+
+export type AppPage = 'landing' | 'demo' | 'arena';
 
 interface SiteHeaderProps {
-  view: AppView;
-  onNavigate: (view: AppView) => void;
-  activeRole: UserRole;
-  onRoleChange: (role: UserRole) => void;
-  auraPoints: number;
+  page: AppPage;
+  viewer: Viewer | null;
+  /** Arena pages: aura shown in the header chip. */
+  auraPoints?: number;
+  /** Demo arena only: persona switcher. */
+  activeRole?: UserRole;
+  onRoleChange?: (role: UserRole) => void;
   theme: Theme;
   onToggleTheme: () => void;
   soundEnabled: boolean;
   onToggleSound: () => void;
 }
 
-const isPlainClick = (e: MouseEvent) => e.button === 0 && !e.metaKey && !e.ctrlKey && !e.shiftKey && !e.altKey;
-
 export function SiteHeader({
-  view,
-  onNavigate,
+  page,
+  viewer,
+  auraPoints,
   activeRole,
   onRoleChange,
-  auraPoints,
   theme,
   onToggleTheme,
   soundEnabled,
   onToggleSound,
 }: SiteHeaderProps) {
-  const go = (target: AppView) => (e: MouseEvent<HTMLAnchorElement>) => {
-    if (!isPlainClick(e)) return;
-    e.preventDefault();
-    onNavigate(target);
-  };
+  const inArena = page !== 'landing';
+  const arenaHref = viewer ? '/arena' : '/demo';
 
   return (
     <header className="site-header">
       <div className="container site-header__inner">
         <div className="site-header__start">
-          <a href="/" className="brand" onClick={go('LANDING')} aria-label="AuraFit home">
-            <Image src="/logo.jpg" alt="" width={40} height={40} sizes="40px" className="brand__logo" priority />
+          <Link href="/" className="brand" aria-label="AuraFit home">
+            <Image src="/logo.jpg" alt="" width={40} height={40} className="brand__logo" priority />
             <span className="brand__text">
               <span className="brand__name">AURAFIT</span>
               <span className="brand__tag">Solo Leveling RPG Fitness</span>
             </span>
-          </a>
+          </Link>
 
           <nav aria-label="Primary" className="segmented">
-            <a href="/" className={cx('segmented__item', view === 'LANDING' && 'is-active')} aria-current={view === 'LANDING' ? 'page' : undefined} onClick={go('LANDING')}>
+            <Link href="/" className={cx('segmented__item', !inArena && 'is-active')} aria-current={!inArena ? 'page' : undefined}>
               Home
-            </a>
-            <a href="#arena" className={cx('segmented__item', view === 'APP' && 'is-active')} aria-current={view === 'APP' ? 'page' : undefined} onClick={go('APP')}>
+            </Link>
+            <Link href={arenaHref} className={cx('segmented__item', inArena && 'is-active')} aria-current={inArena ? 'page' : undefined}>
               Arena
-            </a>
+            </Link>
           </nav>
         </div>
 
         <div className="site-header__actions">
-          {view === 'APP' && (
-            <>
-              <RoleSwitcher variant="header" activeRole={activeRole} onChange={onRoleChange} />
-              <span className="aura-chip hide-below-md" title="Aura points">
-                <Sparkles aria-hidden="true" className="aura-chip__icon" />
-                <span className="sr-only">Aura points: </span>
-                {formatNumber(auraPoints)}
-              </span>
-            </>
+          {page === 'demo' && (
+            <Badge tone="orange" outline size="sm" title="Progress is saved in this browser only">
+              Demo mode
+            </Badge>
+          )}
+          {page === 'demo' && activeRole && onRoleChange && (
+            <RoleSwitcher variant="header" activeRole={activeRole} onChange={onRoleChange} />
+          )}
+          {inArena && auraPoints !== undefined && (
+            <span className="aura-chip hide-below-md" title="Aura points">
+              <Sparkles aria-hidden="true" className="aura-chip__icon" />
+              <span className="sr-only">Aura points: </span>
+              {formatNumber(auraPoints)}
+            </span>
           )}
           <button
             type="button"
@@ -96,6 +102,18 @@ export function SiteHeader({
           >
             {soundEnabled ? <Volume2 aria-hidden="true" /> : <VolumeX aria-hidden="true" />}
           </button>
+          {viewer ? (
+            <AccountMenu viewer={viewer} />
+          ) : (
+            <>
+              <Link href="/login" className="btn btn--ghost btn--md">
+                Log in
+              </Link>
+              <Link href="/signup" className="btn btn--primary btn--md hide-below-md">
+                Sign up
+              </Link>
+            </>
+          )}
         </div>
       </div>
     </header>
