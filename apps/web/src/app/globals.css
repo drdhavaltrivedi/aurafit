@@ -59,29 +59,29 @@
   --z-toast: 1100;
 
   /* ---- Dark theme colours (default) ---- */
-  --bg-page: #0a0c14;
-  --bg-surface: #111420;
-  --bg-surface-elevated: #181b2b;
-  --bg-input: #151827;
-  --bg-header: rgba(10, 12, 20, 0.82);
-  --border-subtle: rgba(255, 255, 255, 0.09);
-  --border-strong: rgba(255, 255, 255, 0.18);
-  --border-focus: #a78bfa;
+  --bg-page: #070a12;
+  --bg-surface: #0d1322;
+  --bg-surface-elevated: #131b2e;
+  --bg-input: #101726;
+  --bg-header: rgba(7, 10, 18, 0.85);
+  --border-subtle: rgba(255, 255, 255, 0.08);
+  --border-strong: rgba(255, 255, 255, 0.16);
+  --border-focus: #8b5cf6;
 
-  --text-primary: #f8fafc;
-  --text-secondary: #a3b0c2;
-  --text-muted: #8b96ab;
+  --text-primary: #ffffff;
+  --text-secondary: #94a3b8;
+  --text-muted: #64748b;
 
-  --accent-primary: #7c3aed; /* fills (white text 5.7:1) */
-  --accent-primary-hover: #6d28d9;
+  --accent-primary: #8b5cf6; /* fills */
+  --accent-primary-hover: #7c3aed;
   --accent-fg: #a78bfa; /* text on surfaces */
-  --accent-subtle: rgba(139, 92, 246, 0.14);
-  --accent-glow: rgba(124, 58, 237, 0.35);
+  --accent-subtle: rgba(139, 92, 246, 0.16);
+  --accent-glow: rgba(139, 92, 246, 0.4);
   --on-accent: #ffffff;
 
-  --blue-fg: #60a5fa;
-  --blue-subtle: rgba(96, 165, 250, 0.13);
-  --blue-fill: #3b82f6;
+  --blue-fg: #38bdf8;
+  --blue-subtle: rgba(56, 189, 248, 0.15);
+  --blue-fill: #0284c7;
   --emerald-fg: #34d399;
   --emerald-subtle: rgba(52, 211, 153, 0.13);
   --emerald-fill: #047857;
