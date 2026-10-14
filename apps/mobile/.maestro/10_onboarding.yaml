@@ -1,0 +1,130 @@
+# Onboarding for a signed-in account that has not finished it, plus the one-time demo intro.
+# Env: EMAIL, PASSWORD for a confirmed account whose profile has onboarded_at = NULL (e.g. a fresh
+# sign-up made after the 20261014100000_onboarding migration). This flow completes onboarding, so
+# reset the account before re-running (service role):
+#   UPDATE profiles SET onboarded_at = NULL, fitness_goal = NULL, fitness_level = NULL WHERE handle = '<handle>';
+# The demo intro is shown once per install; clear app data (or reinstall Expo Go) to see it again.
+appId: host.exp.Exponent
+name: Onboarding
+env:
+  KEEP_ONBOARDING: "true"
+---
+- runFlow: subflows/start.yaml
+- runFlow: subflows/login.yaml
+- extendedWaitUntil:
+    visible:
+      id: "onboarding-screen"
+    timeout: 30000
+
+# Step 1: display name (validation, then continue)
+- assertVisible: "Step 1 of 4"
+- assertVisible: "Let's set up your arena"
+- takeScreenshot: 10_onboarding_welcome
+- tapOn:
+    id: "onboarding-name"
+- eraseText: 60
+- tapOn:
+    id: "onboarding-next"
+- assertVisible: "Enter a display name."
+- inputText: "Maestro Hunter"
+- tapOn:
+    id: "onboarding-next"
+
+# Step 2: goal (required)
+- assertVisible: "Step 2 of 4"
+- tapOn:
+    id: "onboarding-next"
+- assertVisible: "Pick the goal that fits you best."
+- tapOn:
+    id: "goal-BUILD_STRENGTH"
+- takeScreenshot: 10_onboarding_goal
+- tapOn:
+    id: "onboarding-next"
+
+# Step 3: level; Android back returns to the previous step with the answer kept
+- assertVisible: "Step 3 of 4"
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - back
+      - assertVisible: "Step 2 of 4"
+      - tapOn:
+          id: "onboarding-next"
+- tapOn:
+    id: "onboarding-back"
+- assertVisible: "Step 2 of 4"
+- tapOn:
+    id: "onboarding-next"
+- tapOn:
+    id: "level-BEGINNER"
+- tapOn:
+    id: "onboarding-next"
+
+# Step 4: reminder (opting in asks for notification permission)
+- assertVisible: "Step 4 of 4"
+- assertVisible: "Streak saver"
+- tapOn:
+    id: "reminder-hour-20"
+- takeScreenshot: 10_onboarding_reminder
+- tapOn:
+    id: "onboarding-finish"
+- runFlow:
+    when:
+      visible: "Allow"
+    commands:
+      - tapOn: "Allow"
+- extendedWaitUntil:
+    visible:
+      id: "onboarding-start-now"
+    timeout: 30000
+
+# Finish: strength + beginner → the full-body starter (never BEAST/SHADOW)
+- assertVisible: "Ready, Maestro Hunter?"
+- assertVisible: "First Quest: Full-Body Starter"
+- assertVisible: "Daily reminder set for 8 PM."
+- takeScreenshot: 10_onboarding_done
+- tapOn:
+    id: "onboarding-start-now"
+- extendedWaitUntil:
+    visible:
+      id: "workout-close"
+    timeout: 30000
+- assertVisible: "First Quest: Full-Body Starter"
+- takeScreenshot: 10_onboarding_first_workout
+- tapOn:
+    id: "workout-close"
+- assertVisible:
+    id: "header-account"
+
+# Relaunch: onboarding does not come back
+- runFlow: subflows/launch.yaml
+- assertVisible:
+    id: "header-account"
+- assertNotVisible:
+    id: "onboarding-screen"
+
+# Demo intro: shown once, 2 steps, skippable
+- runFlow: subflows/start.yaml
+- tapOn:
+    id: "welcome-demo"
+- runFlow:
+    when:
+      visible:
+        id: "demo-intro"
+    commands:
+      - assertVisible: "Step 1 of 2"
+      - takeScreenshot: 10_demo_intro_1
+      - tapOn:
+          id: "demo-intro-next"
+      - assertVisible: "Train, earn aura, rank up"
+      - takeScreenshot: 10_demo_intro_2
+      - tapOn:
+          id: "demo-intro-done"
+- extendedWaitUntil:
+    visible:
+      id: "header-account"
+    timeout: 15000
+- runFlow: subflows/launch.yaml
+- assertNotVisible:
+    id: "demo-intro"

@@ -7,6 +7,8 @@ import { SampleDataTag } from '../components/DataNotice';
 import { Toast, type ToastMessage } from '../components/Toast';
 import { WorkoutSessionModal } from '../components/WorkoutSessionModal';
 import { useActivityFeed } from '../hooks/useActivityFeed';
+import { useNotificationRouting } from '../hooks/useNotificationRouting';
+import { usePushRegistration } from '../hooks/usePushRegistration';
 import { diffProfileEvents } from '../lib/activity';
 import type { ProfilePatch } from '../lib/profile';
 import { AchievementsScreen } from '../screens/AchievementsScreen';
@@ -54,6 +56,8 @@ export interface ShellModel {
   themePreference: ThemePreference;
   setTheme: (p: ThemePreference) => void;
   toggleTheme: () => void;
+  /** Opens this drop's workout session once it is in `drops` (e.g. "Start now" after onboarding). */
+  initialWorkoutId?: string | null;
 }
 
 type Overlay = 'settings' | 'notifications' | 'editProfile' | 'hunterCard' | 'leaderboard' | 'achievements';
@@ -71,6 +75,16 @@ export function MainShell({ model }: { model: ShellModel }) {
   const open = useCallback((o: Overlay) => setOverlays((s) => [...s, o]), []);
   const close = useCallback(() => setOverlays((s) => s.slice(0, -1)), []);
   const showToast = useCallback((text: string) => setToast({ id: Date.now(), text }), []);
+
+  // Push reminders: server settings + this device's token (signed in only), and routing for
+  // taps on aurafit://quests notifications.
+  usePushRegistration(demo ? null : user.id);
+  useNotificationRouting(
+    useCallback(() => {
+      setOverlays([]);
+      setTab('quests');
+    }, [])
+  );
   const dismissToast = useCallback(() => setToast(null), []);
 
   // Android back: close the top overlay, then return to Home, then let the OS exit.
@@ -135,6 +149,16 @@ export function MainShell({ model }: { model: ShellModel }) {
     [role]
   );
   const closeWorkout = useCallback(() => setActiveWorkout(null), []);
+
+  const startedInitial = useRef<string | null>(null);
+  useEffect(() => {
+    const id = model.initialWorkoutId;
+    if (!id || startedInitial.current === id) return;
+    const drop = drops.find((d) => d.id === id);
+    if (!drop) return;
+    startedInitial.current = id;
+    startWorkout(drop);
+  }, [model.initialWorkoutId, drops, startWorkout]);
   const onClaimWorkout = useCallback(
     async (drop: WorkoutDrop) => {
       setActiveWorkout(null);

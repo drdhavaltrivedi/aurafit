@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
@@ -21,9 +21,13 @@ import { FormMessage } from './src/components/AuthLayout';
 import { DemoBanner } from './src/components/DemoBanner';
 import { RoleSwitcher } from './src/components/RoleSwitcher';
 import { useCompleteQuest, useCompleteWorkout, useDrops, useLeaderboard, useMe } from './src/hooks/useApi';
+import { useDemoIntro } from './src/hooks/useDemoIntro';
 import { useGameStore, type GameStore } from './src/hooks/useGameStore';
+import { needsOnboarding } from './src/lib/onboarding';
 import { AuthNavigator } from './src/screens/auth/AuthNavigator';
 import { ResetPasswordScreen } from './src/screens/auth/ResetPasswordScreen';
+import { DemoIntroScreen } from './src/screens/onboarding/DemoIntroScreen';
+import { OnboardingScreen } from './src/screens/onboarding/OnboardingScreen';
 import { MainShell, alertAlreadyClaimed, type ShellModel } from './src/shell/MainShell';
 import { ThemeProvider, useTheme } from './src/theme/ThemeProvider';
 import { spacing } from './src/theme/tokens';
@@ -91,6 +95,7 @@ function DemoShell({ store, onToggleTheme }: { store: GameStore; onToggleTheme: 
   const auth = useAuth();
   const { state, setRole, completeQuest, finishWorkout, resetGame, setTheme, updateProfile } = store;
   const { role, user, quests } = state;
+  const intro = useDemoIntro();
 
   const leaderboard = useMemo(() => {
     const hunters: PublicHunter[] = [user, CREATOR_USER, ADMIN_USER]
@@ -155,6 +160,10 @@ function DemoShell({ store, onToggleTheme }: { store: GameStore; onToggleTheme: 
     toggleTheme: onToggleTheme,
   };
 
+  // One-time, skippable intro the first time demo mode is opened on this device.
+  if (!intro.loaded) return null;
+  if (!intro.seen) return <DemoIntroScreen onDone={intro.markSeen} />;
+
   return <MainShell model={model} />;
 }
 
@@ -174,6 +183,8 @@ function ServerShell({ store, onToggleTheme }: { store: GameStore; onToggleTheme
   const completeQuest = useCompleteQuest(me);
   const completeWorkout = useCompleteWorkout(me);
   const signOut = useCallback(() => void auth.signOut(), [auth]);
+  // Set by onboarding's "Start now": MainShell opens that workout once drops are loaded.
+  const [startDropId, setStartDropId] = useState<string | null>(null);
 
   if (!me.data) {
     return (
@@ -192,6 +203,19 @@ function ServerShell({ store, onToggleTheme }: { store: GameStore; onToggleTheme
   }
 
   const user = me.data.profile;
+  if (needsOnboarding(user)) {
+    return (
+      <OnboardingScreen
+        initialUsername={user.username}
+        drops={drops.data ?? []}
+        onSignOut={signOut}
+        onComplete={({ profile: updated, startDropId: id }) => {
+          setStartDropId(id);
+          me.setData((d) => (d ? { ...d, profile: updated } : d));
+        }}
+      />
+    );
+  }
   const syncError = me.error ?? drops.error;
   const model: ShellModel = {
     demo: false,
@@ -236,6 +260,7 @@ function ServerShell({ store, onToggleTheme }: { store: GameStore; onToggleTheme
     themePreference: store.state.themePreference,
     setTheme: store.setTheme,
     toggleTheme: onToggleTheme,
+    initialWorkoutId: startDropId,
   };
 
   return <MainShell model={model} />;

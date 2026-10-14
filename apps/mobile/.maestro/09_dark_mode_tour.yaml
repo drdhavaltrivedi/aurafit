@@ -5,6 +5,7 @@ name: Dark mode tour
 - runFlow: subflows/start.yaml
 - tapOn:
     id: "welcome-demo"
+- runFlow: subflows/skip_intros.yaml
 - extendedWaitUntil:
     visible:
       id: "header-account"

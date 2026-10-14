@@ -20,5 +20,15 @@ appId: host.exp.Exponent
       - tapOn: "Not Now"
 - extendedWaitUntil:
     visible:
-      id: "header-account"
+      id: "header-account|onboarding-screen"
     timeout: 30000
+# New accounts land on onboarding first (see subflows/skip_intros.yaml; KEEP_ONBOARDING=true keeps it).
+- runFlow: skip_intros.yaml
+- runFlow:
+    when:
+      true: ${KEEP_ONBOARDING != 'true'}
+    commands:
+      - extendedWaitUntil:
+          visible:
+            id: "header-account"
+          timeout: 30000

@@ -1,6 +1,6 @@
 /** In-memory GameRepository + helpers for API route tests (not a test file itself). */
 import { INITIAL_QUESTS, INITIAL_WORKOUT_DROPS, type LeaderboardHunter, type Squad, type WorkoutDrop } from '@aurafit/shared';
-import type { CompleteActionInput, GameActionResult, GameRepository, ProfileRow, QuestRow } from '@/lib/data/types';
+import type { CompleteActionInput, GameActionResult, GameRepository, ProfileRow, ProfileUpdate, QuestRow } from '@/lib/data/types';
 
 export const AUTH_ID = '11111111-1111-4111-8111-111111111111';
 export const PROFILE_ID = '99999999-9999-4999-8999-999999999999';
@@ -29,6 +29,9 @@ export function makeProfileRow(overrides: Partial<ProfileRow> = {}): ProfileRow 
     gym_id: null,
     total_workouts: 0,
     weekly_aura_gained: 0,
+    fitness_goal: null,
+    fitness_level: null,
+    onboarded_at: '2026-10-01T00:00:00.000Z',
     ...overrides,
   };
 }
@@ -136,5 +139,19 @@ export class FakeRepo implements GameRepository {
     this.guard();
     this.calls.deleteAuthUser.push(authId);
     if (this.profile.auth_id === authId) this.deleted = true;
+  }
+  updateProfileCalls: Array<{ profileId: string; patch: ProfileUpdate }> = [];
+  async updateProfile(profileId: string, patch: ProfileUpdate) {
+    this.guard();
+    this.updateProfileCalls.push({ profileId, patch });
+    if (this.deleted || this.profile.id !== profileId) return null;
+    this.profile = {
+      ...this.profile,
+      ...(patch.username !== undefined ? { username: patch.username } : {}),
+      ...(patch.fitnessGoal !== undefined ? { fitness_goal: patch.fitnessGoal } : {}),
+      ...(patch.fitnessLevel !== undefined ? { fitness_level: patch.fitnessLevel } : {}),
+      ...(patch.completeOnboarding && !this.profile.onboarded_at ? { onboarded_at: new Date().toISOString() } : {}),
+    };
+    return this.profile;
   }
 }

@@ -1,0 +1,215 @@
+/* Onboarding (/onboarding). Uses the design tokens from globals.css; works in both themes. */
+
+.onboarding {
+  max-width: 640px;
+  padding-block: var(--space-8) var(--space-16);
+}
+
+.onboarding__card {
+  gap: var(--space-6);
+}
+
+.onboarding__title:focus-visible {
+  outline-offset: 4px;
+}
+
+.onboarding__progress {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.onboarding__steps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--space-2);
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+}
+.onboarding__steps li.is-done {
+  color: var(--text-secondary);
+}
+.onboarding__steps li.is-current {
+  color: var(--accent-fg);
+  font-weight: 700;
+}
+
+/* ---- Radio cards ---- */
+.choice-group {
+  border: 0;
+  margin: 0;
+  padding: 0;
+  min-width: 0;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-3);
+}
+@media (min-width: 560px) {
+  .choice-group {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+.choice-group--compact {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.choice {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-height: var(--tap);
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-strong);
+  background: var(--bg-surface-elevated);
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: border-color var(--dur-fast) ease, background-color var(--dur-fast) ease, box-shadow var(--dur-fast) ease;
+}
+.choice:hover {
+  border-color: var(--text-muted);
+}
+.choice.is-selected {
+  border-color: var(--border-focus);
+  background: var(--accent-subtle);
+  box-shadow: 0 0 0 1px var(--border-focus) inset;
+}
+/* The native radio stays in the accessibility tree and keyboard order; only visually hidden. */
+.choice__input {
+  position: absolute;
+  opacity: 0;
+  width: 1px;
+  height: 1px;
+  margin: 0;
+  pointer-events: none;
+}
+.choice:has(.choice__input:focus-visible) {
+  outline: 2px solid var(--border-focus);
+  outline-offset: 2px;
+}
+.choice__icon {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-sm);
+  background: var(--accent-subtle);
+  color: var(--accent-fg);
+}
+.choice__icon svg {
+  width: 20px;
+  height: 20px;
+}
+.choice-group--compact .choice__icon {
+  width: 32px;
+  height: 32px;
+}
+.choice__text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.choice__label {
+  font-weight: 700;
+}
+.choice__description {
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+}
+
+/* ---- Streak saver ---- */
+.onboarding__saver {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+.onboarding__check {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-height: var(--tap);
+  cursor: pointer;
+}
+.onboarding__check input {
+  width: 20px;
+  height: 20px;
+  accent-color: var(--accent-primary);
+}
+
+/* ---- Step navigation ---- */
+.onboarding__nav {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+@media (max-width: 420px) {
+  .onboarding__nav {
+    flex-direction: column-reverse;
+    align-items: stretch;
+  }
+  .onboarding__nav .btn-row {
+    flex-direction: column-reverse;
+  }
+  .onboarding__nav .btn {
+    width: 100%;
+  }
+  .onboarding__nav > span:empty {
+    display: none;
+  }
+}
+
+/* ---- Finish screen ---- */
+.onboarding__drop {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-surface-elevated);
+}
+.onboarding__drop-cover {
+  display: grid;
+  place-items: center;
+  height: 96px;
+  color: #ffffff;
+}
+.onboarding__drop-cover svg {
+  width: 36px;
+  height: 36px;
+  opacity: 0.9;
+}
+.onboarding__drop-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-4) var(--space-5);
+}
+.onboarding__drop-title {
+  font-size: var(--text-xl);
+  font-weight: 800;
+  overflow-wrap: anywhere;
+}
+.onboarding__drop-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+}
+.onboarding__actions {
+  flex-wrap: wrap;
+}
+@media (max-width: 420px) {
+  .onboarding__actions .btn {
+    width: 100%;
+  }
+}

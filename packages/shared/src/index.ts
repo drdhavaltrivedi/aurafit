@@ -1,4 +1,5 @@
 import type { IconKey } from './icons';
+import type { FitnessGoal, FitnessLevel } from './onboarding';
 
 export type UserRole = 'MEMBER' | 'CREATOR' | 'ADMIN';
 
@@ -83,6 +84,14 @@ export interface UserProfile {
   gymId?: string;
   totalWorkouts: number;
   weeklyAuraGained: number;
+  /**
+   * Onboarding answers. Always present in API responses (`null` until chosen); optional
+   * so local demo/seed profiles need not set them.
+   */
+  fitnessGoal?: FitnessGoal | null;
+  fitnessLevel?: FitnessLevel | null;
+  /** False until the user finishes onboarding. Always present in API responses. */
+  onboarded?: boolean;
 }
 
 export type QuestCategory = 'DAILY_QUEST' | 'BOSS_RAID' | 'MOVEMENT_SNACK' | 'SQUAD_MISSION';
@@ -286,6 +295,8 @@ export * from './icons';
 export * from './streak';
 export * from './drops';
 export * from './api';
+export * from './onboarding';
+export * from './notifications';
 
 // ==========================================
 // MOCK SEED DATA FOR DEMO / ROLES

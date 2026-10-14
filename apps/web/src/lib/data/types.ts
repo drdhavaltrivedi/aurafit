@@ -1,4 +1,4 @@
-import type { LeaderboardHunter, PlayerAttributes, Quest, Squad, UserProfile, WorkoutDrop } from '@aurafit/shared';
+import type { FitnessGoal, FitnessLevel, LeaderboardHunter, PlayerAttributes, Quest, Squad, UserProfile, WorkoutDrop } from '@aurafit/shared';
 
 /** public.profiles row (snake_case, as returned by PostgREST / to_jsonb). */
 export interface ProfileRow {
@@ -24,6 +24,10 @@ export interface ProfileRow {
   gym_id: string | null;
   total_workouts: number;
   weekly_aura_gained: number | string;
+  /** Onboarding (20261014100000_onboarding.sql). onboarded_at NULL = not onboarded yet. */
+  fitness_goal: FitnessGoal | null;
+  fitness_level: FitnessLevel | null;
+  onboarded_at: string | null;
 }
 
 export interface QuestRow {
@@ -116,6 +120,18 @@ export interface GameRepository {
    * gone (including when it was already deleted).
    */
   deleteAuthUser(authId: string): Promise<void>;
+  /**
+   * Server-side profile update (PATCH /api/v1/me). `completeOnboarding` sets onboarded_at = now()
+   * only if it is still NULL. Resolves with the updated row, or null if the profile is gone.
+   */
+  updateProfile(profileId: string, patch: ProfileUpdate): Promise<ProfileRow | null>;
+}
+
+export interface ProfileUpdate {
+  username?: string;
+  fitnessGoal?: FitnessGoal;
+  fitnessLevel?: FitnessLevel;
+  completeOnboarding?: boolean;
 }
 
 export type { UserProfile };

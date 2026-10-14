@@ -2,6 +2,16 @@
 # (site URL, redirect URLs, SMTP, providers) stays as configured in the dashboard.
 project_id = "aurafit"
 
+[auth]
+site_url = "https://aurafit-alpha-one.vercel.app"
+additional_redirect_urls = [
+  "https://aurafit-alpha-one.vercel.app/auth/callback",
+  "https://aurafit-alpha-one.vercel.app/auth/callback**",
+  "http://localhost:3000/auth/callback",
+  "http://localhost:3000/auth/callback**",
+  "aurafit://**",
+]
+
 [auth.email.template.confirmation]
 subject = "Confirm your AuraFit account"
 content_path = "./supabase/templates/confirmation.html"

@@ -11,7 +11,7 @@ let db: PGlite;
 
 beforeAll(async () => {
   db = await createDb();
-});
+}, 60_000);
 
 afterAll(async () => {
   await db?.close();

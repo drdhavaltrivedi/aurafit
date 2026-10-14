@@ -6,6 +6,7 @@ import type { Session } from '@supabase/supabase-js';
 import { api, isApiError } from '../api';
 import { env, isBackendConfigured } from '../config/env';
 import { errorMessage } from '../hooks/useApi';
+import { runSignOutTasks } from '../lib/signOutTasks';
 import { supabase } from '../lib/supabase';
 import { AUTH_CALLBACK_PATH, RESET_PASSWORD_PATH, parseAuthRedirect } from './authLinks';
 import { friendlyAuthError, normalizeEmail } from './validation';
@@ -229,6 +230,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signOut = useCallback(async () => {
     setRecoveryPending(false);
     if (!supabase) return;
+    // While the session is still valid: e.g. remove this device's push token (bounded, never blocks).
+    await runSignOutTasks();
     // Revokes the refresh token server-side; local session is cleared even if the network call fails.
     const { error } = await supabase.auth.signOut();
     if (error) await supabase.auth.signOut({ scope: 'local' }).catch(() => {});

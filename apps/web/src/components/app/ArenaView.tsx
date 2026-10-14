@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { RefreshCw } from 'lucide-react';
 import { INITIAL_SQUADS, type HunterRank, type WorkoutDrop } from '@aurafit/shared';
 import type { AuraFitState, ActionResult } from '@/hooks/useAuraFitState';
@@ -55,6 +55,21 @@ export function ArenaView({ state }: { state: AuraFitState }) {
   );
 
   const { completeQuest, finishWorkout, publishDrop } = state;
+
+  // /arena?start=<dropId> (e.g. "Start now" after onboarding) opens that drop's runner once.
+  const startHandled = useRef(false);
+  useEffect(() => {
+    if (!hydrated || startHandled.current) return;
+    const url = new URL(window.location.href);
+    const id = url.searchParams.get('start');
+    if (!id) return;
+    startHandled.current = true;
+    url.searchParams.delete('start');
+    window.history.replaceState(window.history.state, '', url.pathname + url.search + url.hash);
+    const drop = state.drops.find((d) => d.id === id);
+    if (drop && can('START_WORKOUT')) setActiveWorkout(drop);
+    else if (!drop) toast.show("That workout isn't available right now. Pick another one below.", 'warning');
+  }, [hydrated, state.drops, can, toast]);
 
   const handleCompleteQuest = useCallback(
     async (id: string) => {

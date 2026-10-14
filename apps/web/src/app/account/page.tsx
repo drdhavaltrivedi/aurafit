@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { DeleteAccountPanel } from '@/components/account/DeleteAccountPanel';
+import { NotificationPreferencesPanel } from '@/components/account/NotificationPreferencesPanel';
 import { PageShell } from '@/components/shell/PageShell';
 import { Badge } from '@/components/ui/Badge';
 import { Card, CardHeader } from '@/components/ui/Card';
@@ -52,6 +53,8 @@ export default async function AccountPage() {
             <Link href="/privacy" className="auth-link">Privacy Policy</Link>.
           </p>
         </Card>
+
+        <NotificationPreferencesPanel />
 
         <DeleteAccountPanel handle={viewer.handle} />
       </div>

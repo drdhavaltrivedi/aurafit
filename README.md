@@ -337,8 +337,50 @@ cp .env.example apps/web/.env.local
 | `EXPO_PUBLIC_API_URL` | Mobile App | URL of the Next.js API Gateway (e.g. `http://localhost:3000`) |
 | `EXPO_PUBLIC_SUPABASE_URL` | Mobile App | Supabase project URL for native auth |
 | `EXPO_PUBLIC_SUPABASE_ANON_KEY` | Mobile App | Supabase anonymous key for mobile client |
+| `CRON_SECRET` | Web Server Only | Bearer secret for `POST /api/cron/notifications` (≥ 32 chars; also stored in Supabase Vault) |
+| `EXPO_ACCESS_TOKEN` | Web Server Only | Optional Expo access token (only with Expo "Enhanced Security for Push Notifications") |
 
 ---
+
+## 🔔 Push Notifications (Streak Saver & Daily Reminder)
+
+Signed-in mobile users get server push reminders through the Expo Push API:
+
+- **Streak saver**: at 20:00 local time, if the streak is still alive but nothing was done today:
+  *"Your {n}-day streak ends at midnight. A 5-minute quest keeps it alive."* (opens the Quests tab).
+- **Daily reminder**: at the user's chosen local hour, if nothing was done today.
+
+Preferences (`timezone`, `streakSaver`, `dailyReminderHour`) live in `notification_settings` and are
+edited from the app (Notifications / Settings), the web `/account` page, or onboarding via
+`GET/PUT /api/v1/me/notification-settings`. Devices register with `POST/DELETE /api/v1/me/push-tokens`.
+The local on-device reminder stays as the offline fallback and is cancelled while server push covers it.
+
+**Scheduling.** Vercel Hobby crons only run daily, so Supabase `pg_cron` + `pg_net` call
+`POST ${APP_URL}/api/cron/notifications` every hour at minute 0 (migration
+`supabase/migrations/20261014110000_push.sql`). Each run claims recipients in `notification_log`
+*before* sending (`UNIQUE (user_id, kind, local_date)`), so a duplicate run sends nothing, and
+removes tokens that Expo reports as `DeviceNotRegistered` (from tickets, and from receipts checked
+on the next run).
+
+**One-time setup**
+
+1. Generate a secret: `openssl rand -hex 32`.
+2. Vercel → Project → Settings → Environment Variables (Production): `CRON_SECRET=<secret>`
+   (and optionally `EXPO_ACCESS_TOKEN`). Redeploy.
+3. Apply the migration, then in the Supabase SQL editor create the Vault secrets the job reads:
+   ```sql
+   select vault.create_secret('https://<your-production-domain>', 'aurafit_app_url');
+   select vault.create_secret('<the same secret as CRON_SECRET>', 'aurafit_cron_secret');
+   ```
+   To rotate later: `select vault.update_secret(id, '<new value>') from vault.secrets where name = 'aurafit_cron_secret';`
+4. Check: `select jobname, schedule from cron.job;` shows `aurafit-hourly-notifications` (`0 * * * *`);
+   after the next hour, `select status_code, created from net._http_response order by created desc limit 5;`
+   should show `200`.
+5. Mobile: remote push needs a development or store build with push credentials. iOS: let
+   `eas credentials` create the APNs key. Android: create a Firebase project for `com.brilworks.aurafit`,
+   add `google-services.json` to `apps/mobile/` and set `"android": { "googleServicesFile": "./google-services.json" }`
+   in `app.json`, then upload the FCM V1 service-account key with `eas credentials`. Expo Go on Android and
+   simulators cannot receive remote push; the app says so and keeps the local reminder.
 
 ## 🚢 Production Deployment
 

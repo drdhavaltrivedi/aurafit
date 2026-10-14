@@ -4,25 +4,38 @@ import { Clock, Minus, Plus } from './icons';
 import { AppButton } from './AppButton';
 import { AppIcon } from './AppIcon';
 import { FormMessage } from './AuthLayout';
+import { useNotificationSettings } from '../hooks/useNotificationSettings';
 import type { ReminderStore } from '../hooks/useReminder';
-import { REMINDER_MINUTE_STEP, formatReminderTime, shiftTime } from '../lib/reminders';
+import { formatReminderTime, shiftTime } from '../lib/reminders';
 import { useTheme } from '../theme/ThemeProvider';
 import { MIN_TOUCH_TARGET, fontSize, radius, spacing } from '../theme/tokens';
 
-/** "Daily workout reminder" switch + time stepper (local notification). */
+/**
+ * "Daily workout reminder" switch + time stepper, plus (signed in) the server "Streak saver"
+ * push toggle. Signed in, the daily reminder is synced to the server and pushed on the hour.
+ */
 export function ReminderSettingsCard({ reminder }: { reminder: ReminderStore }) {
   const { colors, isDark } = useTheme();
   const { settings, loaded, busy, error, permission } = reminder;
   const time = formatReminderTime(settings.hour, settings.minute);
+  const notif = useNotificationSettings();
+  const signedIn = notif.profileId !== null;
+  const step = reminder.stepMinutes;
+  const pushNote =
+    notif.push === 'unsupported' || notif.push === 'denied' || notif.push === 'error'
+      ? notif.pushMessage
+      : notif.push === 'registered'
+        ? 'Push reminders are on for this device.'
+        : null;
 
-  const step = (delta: number) => {
+  const stepBy = (delta: number) => {
     const next = shiftTime(settings, delta);
     void reminder.setTime(next.hour, next.minute);
   };
 
   const stepBtn = (icon: typeof Plus, delta: number, label: string, testID: string) => (
     <Pressable
-      onPress={() => step(delta)}
+      onPress={() => stepBy(delta)}
       disabled={busy}
       testID={testID}
       accessibilityRole="button"
@@ -43,7 +56,9 @@ export function ReminderSettingsCard({ reminder }: { reminder: ReminderStore }) 
         <View style={styles.textCol}>
           <Text style={[styles.label, { color: colors.textPrimary }]}>Daily workout reminder</Text>
           <Text style={[styles.hint, { color: colors.textSecondary }]}>
-            {settings.enabled ? `On — every day at ${time}` : 'A gentle nudge to train, once a day.'}
+            {settings.enabled
+              ? `On — every day at ${time}${reminder.pushActive ? ' (push)' : ''}`
+              : 'A gentle nudge to train, once a day.'}
           </Text>
         </View>
         {loaded ? (
@@ -67,7 +82,7 @@ export function ReminderSettingsCard({ reminder }: { reminder: ReminderStore }) 
           <Text style={[styles.hint, { color: colors.textSecondary }]}>Reminder time</Text>
         </View>
         <View style={styles.stepper}>
-          {stepBtn(Minus, -REMINDER_MINUTE_STEP, `Earlier, ${REMINDER_MINUTE_STEP} minutes`, 'reminder-earlier')}
+          {stepBtn(Minus, -step, step === 60 ? 'Earlier, 1 hour' : `Earlier, ${step} minutes`, 'reminder-earlier')}
           <Text
             testID="reminder-time"
             accessibilityLabel={`Reminder time ${time}`}
@@ -75,12 +90,41 @@ export function ReminderSettingsCard({ reminder }: { reminder: ReminderStore }) 
           >
             {time}
           </Text>
-          {stepBtn(Plus, REMINDER_MINUTE_STEP, `Later, ${REMINDER_MINUTE_STEP} minutes`, 'reminder-later')}
+          {stepBtn(Plus, step, step === 60 ? 'Later, 1 hour' : `Later, ${step} minutes`, 'reminder-later')}
         </View>
       </View>
 
+      {signedIn ? (
+        <View style={[styles.row, styles.divider, { borderTopColor: colors.border }]}>
+          <View style={styles.textCol}>
+            <Text style={[styles.label, { color: colors.textPrimary }]}>Streak saver</Text>
+            <Text style={[styles.hint, { color: colors.textSecondary }]}>
+              A push at 8 PM if your streak still needs today's quest.
+            </Text>
+          </View>
+          {notif.settings ? (
+            <Switch
+              testID="streak-saver-switch"
+              value={notif.settings.streakSaver}
+              disabled={notif.saving || notif.push === 'registering'}
+              onValueChange={(v) => void notif.setStreakSaver(v)}
+              trackColor={{ true: colors.primaryStrong, false: isDark ? '#334155' : '#CBD5E1' }}
+              ios_backgroundColor={isDark ? '#334155' : '#CBD5E1'}
+              accessibilityLabel="Streak saver push notification"
+            />
+          ) : notif.loading ? (
+            <ActivityIndicator color={colors.primary} />
+          ) : null}
+        </View>
+      ) : null}
+      {signedIn && pushNote ? (
+        <Text testID="push-status" style={[styles.hint, { color: colors.textSecondary }]}>
+          {pushNote}
+        </Text>
+      ) : null}
+
       {error ? <FormMessage tone="error" message={error} /> : null}
-      {permission === 'denied' ? (
+      {permission === 'denied' || (signedIn && notif.push === 'denied') ? (
         <AppButton label="Open Settings" variant="secondary" onPress={reminder.openSettings} testID="reminder-open-settings" />
       ) : null}
     </View>
@@ -99,6 +143,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     gap: spacing.md,
+  },
+  divider: {
+    borderTopWidth: StyleSheet.hairlineWidth,
+    paddingTop: spacing.md,
   },
   textCol: {
     flex: 1,

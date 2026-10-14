@@ -5,9 +5,11 @@
 export type { LucideIcon, LucideProps } from 'lucide-react-native';
 
 export { default as ArrowLeft } from 'lucide-react-native/icons/arrow-left';
+export { default as ArrowRight } from 'lucide-react-native/icons/arrow-right';
 export { default as Award } from 'lucide-react-native/icons/award';
 export { default as Bell } from 'lucide-react-native/icons/bell';
 export { default as BellOff } from 'lucide-react-native/icons/bell-off';
+export { default as CalendarCheck } from 'lucide-react-native/icons/calendar-check';
 export { default as Car } from 'lucide-react-native/icons/car';
 export { default as Check } from 'lucide-react-native/icons/check';
 export { default as CheckCheck } from 'lucide-react-native/icons/check-check';
@@ -31,12 +33,16 @@ export { default as Moon } from 'lucide-react-native/icons/moon';
 export { default as Music } from 'lucide-react-native/icons/music';
 export { default as Pause } from 'lucide-react-native/icons/pause';
 export { default as Pencil } from 'lucide-react-native/icons/pencil';
+export { default as PersonStanding } from 'lucide-react-native/icons/person-standing';
 export { default as Play } from 'lucide-react-native/icons/play';
 export { default as Plus } from 'lucide-react-native/icons/plus';
 export { default as ScrollText } from 'lucide-react-native/icons/scroll-text';
 export { default as Settings } from 'lucide-react-native/icons/settings';
 export { default as Shield } from 'lucide-react-native/icons/shield';
 export { default as ShieldCheck } from 'lucide-react-native/icons/shield-check';
+export { default as SignalHigh } from 'lucide-react-native/icons/signal-high';
+export { default as SignalLow } from 'lucide-react-native/icons/signal-low';
+export { default as SignalMedium } from 'lucide-react-native/icons/signal-medium';
 export { default as Skull } from 'lucide-react-native/icons/skull';
 export { default as SlidersHorizontal } from 'lucide-react-native/icons/sliders-horizontal';
 export { default as Sofa } from 'lucide-react-native/icons/sofa';

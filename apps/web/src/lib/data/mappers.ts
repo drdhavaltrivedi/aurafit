@@ -1,6 +1,8 @@
 import {
   DEFAULT_SQUAD_ICON,
   getRankFromAura,
+  isFitnessGoal,
+  isFitnessLevel,
   toIconKey,
   type Exercise,
   type LeaderboardHunter,
@@ -35,6 +37,10 @@ export function rowToProfile(row: ProfileRow): UserProfile {
     streakShields: num(row.streak_shields),
     totalWorkouts: num(row.total_workouts),
     weeklyAuraGained: num(row.weekly_aura_gained),
+    fitnessGoal: isFitnessGoal(row.fitness_goal) ? row.fitness_goal : null,
+    fitnessLevel: isFitnessLevel(row.fitness_level) ? row.fitness_level : null,
+    // A row without the column (pre-migration DB) counts as onboarded: never trap users.
+    onboarded: row.onboarded_at === undefined ? true : row.onboarded_at !== null,
   };
   if (row.squad_id) profile.squadId = row.squad_id;
   if (row.gym_id) profile.gymId = row.gym_id;

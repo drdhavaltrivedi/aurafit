@@ -11,6 +11,8 @@ export interface Viewer {
   username: string;
   avatarUrl: string;
   role: UserRole;
+  /** False only when the profile exists and has not finished onboarding (see lib/onboarding/gate.ts). */
+  onboarded: boolean;
 }
 
 /**
@@ -30,11 +32,20 @@ export async function getViewer(): Promise<Viewer | null> {
     username: claims.email?.split('@')[0] ?? 'Hunter',
     avatarUrl: '',
     role: 'MEMBER',
+    // Unknown profile state: never trap the user in onboarding.
+    onboarded: true,
   };
   try {
     const data = await getRepository()?.getProfileByAuthId(claims.sub);
     if (!data) return fallback;
-    return { email: claims.email, handle: data.handle, username: data.username, avatarUrl: data.avatar_url ?? '', role: data.role };
+    return {
+      email: claims.email,
+      handle: data.handle,
+      username: data.username,
+      avatarUrl: data.avatar_url ?? '',
+      role: data.role,
+      onboarded: data.onboarded_at !== null,
+    };
   } catch {
     return fallback;
   }

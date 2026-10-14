@@ -6,6 +6,7 @@ name: Demo
 - runFlow: subflows/start.yaml
 - tapOn:
     id: "welcome-demo"
+- runFlow: subflows/skip_intros.yaml
 - extendedWaitUntil:
     visible: "Demo mode · Sample data — progress is saved on this device only."
     timeout: 15000

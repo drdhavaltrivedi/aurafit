@@ -2,10 +2,10 @@ import 'server-only';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { WorkoutDrop } from '@aurafit/shared';
 import { dropToInsertRow, rowToDrop, rowToLeaderboardHunter, rowToSquad } from './mappers';
-import type { CompleteActionInput, DropRow, GameActionResult, GameRepository, ProfileRow, QuestRow, SquadRow } from './types';
+import type { CompleteActionInput, DropRow, GameActionResult, GameRepository, ProfileRow, ProfileUpdate, QuestRow, SquadRow } from './types';
 
 const PROFILE_COLUMNS =
-  'id, auth_id, username, handle, role, avatar_url, title, bio, aura_points, rank, level, str_stat, agi_stat, end_stat, rec_stat, streak_days, streak_shields, last_active_date, squad_id, gym_id, total_workouts, weekly_aura_gained';
+  'id, auth_id, username, handle, role, avatar_url, title, bio, aura_points, rank, level, str_stat, agi_stat, end_stat, rec_stat, streak_days, streak_shields, last_active_date, squad_id, gym_id, total_workouts, weekly_aura_gained, fitness_goal, fitness_level, onboarded_at';
 const QUEST_COLUMNS =
   'id, title, subtitle, category, aura_reward, stat_reward_stat, stat_reward_amount, duration_minutes, difficulty, target_count, unit, icon, accent_color, description';
 const DROP_COLUMNS =
@@ -117,6 +117,30 @@ export function createSupabaseRepository(db: SupabaseClient): GameRepository {
       // but every API call then fails with 404 PROFILE_NOT_FOUND.
       const { error } = await db.auth.admin.deleteUser(authId, false);
       if (error && error.status !== 404) fail('deleteAuthUser', { message: error.message, code: error.code });
+    },
+
+    async updateProfile(profileId: string, patch: ProfileUpdate) {
+      const row: Record<string, unknown> = {};
+      if (patch.username !== undefined) row.username = patch.username;
+      if (patch.fitnessGoal !== undefined) row.fitness_goal = patch.fitnessGoal;
+      if (patch.fitnessLevel !== undefined) row.fitness_level = patch.fitnessLevel;
+      if (Object.keys(row).length > 0) {
+        const { data, error } = await db.from('profiles').update(row).eq('id', profileId).select('id');
+        if (error) fail('updateProfile', error);
+        if (!data || data.length === 0) return null;
+      }
+      if (patch.completeOnboarding) {
+        // First completion wins: never move an existing onboarded_at.
+        const { error } = await db
+          .from('profiles')
+          .update({ onboarded_at: new Date().toISOString() })
+          .eq('id', profileId)
+          .is('onboarded_at', null);
+        if (error) fail('updateProfile.completeOnboarding', error);
+      }
+      const { data, error } = await db.from('profiles').select(PROFILE_COLUMNS).eq('id', profileId).maybeSingle();
+      if (error) fail('updateProfile.select', error);
+      return (data as ProfileRow | null) ?? null;
     },
   };
 }

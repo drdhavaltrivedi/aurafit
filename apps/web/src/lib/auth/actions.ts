@@ -49,11 +49,11 @@ export async function signUpAction(_prev: AuthFormState, formData: FormData): Pr
   const { data, error } = await supabase.auth.signUp({
     email,
     password,
-    options: { emailRedirectTo: await callbackUrl('/arena') },
+    options: { emailRedirectTo: await callbackUrl('/onboarding') },
   });
   if (error) return { status: 'error', message: authErrorMessage(error), email };
   // Email confirmation disabled → we already have a session.
-  if (data.session) redirect('/arena');
+  if (data.session) redirect('/onboarding');
   // Same message whether or not the address was already registered (no enumeration).
   return {
     status: 'success',

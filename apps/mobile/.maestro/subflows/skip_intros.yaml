@@ -1,0 +1,41 @@
+# Gets past first-run screens so older flows keep landing on the main shell:
+#  - the one-time demo intro (skippable), and
+#  - server onboarding for accounts that have not finished it (unless KEEP_ONBOARDING=true):
+#    completed with the defaults + "Skip for now" (no notification permission prompt).
+appId: host.exp.Exponent
+---
+- extendedWaitUntil:
+    visible:
+      id: "demo-intro-skip|header-account|onboarding-screen"
+    timeout: 30000
+- runFlow:
+    when:
+      visible:
+        id: "demo-intro-skip"
+    commands:
+      - tapOn:
+          id: "demo-intro-skip"
+- runFlow:
+    when:
+      visible:
+        id: "onboarding-screen"
+      true: ${KEEP_ONBOARDING != 'true'}
+    commands:
+      - tapOn:
+          id: "onboarding-next"
+      - tapOn:
+          id: "goal-GET_FIT"
+      - tapOn:
+          id: "onboarding-next"
+      - tapOn:
+          id: "level-BEGINNER"
+      - tapOn:
+          id: "onboarding-next"
+      - tapOn:
+          id: "onboarding-skip"
+      - extendedWaitUntil:
+          visible:
+            id: "onboarding-go-arena"
+          timeout: 20000
+      - tapOn:
+          id: "onboarding-go-arena"

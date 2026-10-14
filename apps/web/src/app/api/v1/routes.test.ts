@@ -115,6 +115,9 @@ describe('GET /api/v1/me', () => {
       streakShields: 2,
       totalWorkouts: 0,
       weeklyAuraGained: 0,
+      fitnessGoal: null,
+      fitnessLevel: null,
+      onboarded: true,
     });
     expect(JSON.stringify(body)).not.toContain('auth_id');
     expect(body.quests).toHaveLength(INITIAL_QUESTS.length);

@@ -1,4 +1,4 @@
-import { DELETE_ACCOUNT_CONFIRMATION, utcDateKey, type MeResponse } from '@aurafit/shared';
+import { DELETE_ACCOUNT_CONFIRMATION, utcDateKey, validateUpdateMe, type MeResponse, type UpdateMeResponse } from '@aurafit/shared';
 import { rateLimit, requireUser } from '@/lib/api/auth';
 import { apiError, BodyError, internalError, json, NO_STORE_HEADERS, readJson } from '@/lib/api/http';
 import { accountDeletionLimiter } from '@/lib/api/rate-limit';
@@ -24,6 +24,48 @@ export async function GET(request: Request): Promise<Response> {
     return json(body);
   } catch (err) {
     console.error('[GET /api/v1/me]', err);
+    return internalError();
+  }
+}
+
+const MAX_PATCH_BODY_BYTES = 2048;
+
+/**
+ * PATCH /api/v1/me, body `UpdateMeRequest` → 200 `UpdateMeResponse`.
+ * Updates display name and onboarding answers with the server's secret key (clients have no
+ * UPDATE grant on these columns); `completeOnboarding: true` sets onboarded_at once.
+ * 400 VALIDATION_FAILED (fieldErrors) / 415 / 413 / 401 / 404 PROFILE_NOT_FOUND / 429.
+ */
+export async function PATCH(request: Request): Promise<Response> {
+  const auth = await requireUser(request);
+  if (!auth.ok) return auth.response;
+  const { user } = auth;
+
+  const limited = rateLimit(user);
+  if (limited) return limited;
+
+  let body: unknown;
+  try {
+    body = await readJson(request, MAX_PATCH_BODY_BYTES);
+  } catch (err) {
+    if (err instanceof BodyError) return err.response;
+    return apiError(400, 'BAD_REQUEST', 'Unable to read request body');
+  }
+  const v = validateUpdateMe(body);
+  if (!v.ok) {
+    return apiError(400, 'VALIDATION_FAILED', 'Some fields are invalid.', {
+      details: Object.values(v.fieldErrors),
+      fieldErrors: v.fieldErrors,
+    });
+  }
+
+  try {
+    const updated = await user.repo.updateProfile(user.profile.id, v.value);
+    if (!updated) return apiError(404, 'PROFILE_NOT_FOUND', 'No hunter profile exists for this account yet.');
+    const res: UpdateMeResponse = { profile: rowToProfile(updated) };
+    return json(res);
+  } catch (err) {
+    console.error('[PATCH /api/v1/me]', err);
     return internalError();
   }
 }

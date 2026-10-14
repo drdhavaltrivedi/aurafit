@@ -3,6 +3,22 @@
 appId: host.exp.Exponent
 ---
 - runFlow: launch.yaml
+# Demo intro still showing → skip it (lands in demo mode, handled below).
+- runFlow:
+    when:
+      visible:
+        id: "demo-intro-skip"
+    commands:
+      - tapOn:
+          id: "demo-intro-skip"
+# Signed in but onboarding not finished → sign out from its first step.
+- runFlow:
+    when:
+      visible:
+        id: "onboarding-signout"
+    commands:
+      - tapOn:
+          id: "onboarding-signout"
 # Signed in but the profile failed to load → sign out from the error state.
 - runFlow:
     when:

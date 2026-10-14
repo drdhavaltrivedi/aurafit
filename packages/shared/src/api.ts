@@ -14,7 +14,10 @@ import type { ValidDrop } from './drops';
 export const API_V1_BASE = '/api/v1';
 
 export const API_ROUTES = {
-  /** GET (auth) → MeResponse; DELETE (auth) DeleteAccountRequest → 204 (account permanently deleted) */
+  /**
+   * GET (auth) → MeResponse; PATCH (auth) UpdateMeRequest → UpdateMeResponse (see onboarding.ts);
+   * DELETE (auth) DeleteAccountRequest → 204 (account permanently deleted)
+   */
   me: `${API_V1_BASE}/me`,
   /** POST (auth, DO_QUESTS) → CompleteQuestResponse | 409 ALREADY_COMPLETED */
   completeQuest: (questId: string) => `${API_V1_BASE}/quests/${encodeURIComponent(questId)}/complete`,

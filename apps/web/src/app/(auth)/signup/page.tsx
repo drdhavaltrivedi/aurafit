@@ -29,7 +29,7 @@ export default async function SignupPage() {
         <>
           {google && (
             <>
-              <GoogleButton next="/arena" label="Sign up with Google" />
+              <GoogleButton next="/onboarding" label="Sign up with Google" />
               <p className="auth-divider">or</p>
             </>
           )}
