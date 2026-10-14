@@ -23,3 +23,10 @@ maestro test -e METRO_URL=exp://127.0.0.1:8081 -e EMAIL=... -e PASSWORD=... 04_l
 - `subflows/skip_intros.yaml` (used by `subflows/login.yaml`, `08_demo.yaml` and `09_dark_mode_tour.yaml`)
   gets past the one-time demo intro and completes onboarding with defaults for fresh accounts, so the
   older flows keep landing on the main shell. Pass `-e KEEP_ONBOARDING=true` to stop on onboarding instead.
+
+## Squads (`11_squads.yaml`)
+
+- Needs the squads migration (`20261014120000_squads.sql`) on the backend and a disposable account
+  (`EMAIL` / `PASSWORD`). The flow leaves any current squad, creates "Maestro Squad" [MAEST], opens the
+  share sheet, opens `${METRO_URL}/--/join/<CODE>` (Expo Go only routes `exp://` links; dev/store builds
+  also handle `aurafit://join/<CODE>`), then leaves again, which deletes the squad.

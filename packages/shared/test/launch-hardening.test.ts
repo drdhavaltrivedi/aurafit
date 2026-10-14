@@ -146,7 +146,7 @@ describe('weekly aura reset', () => {
 });
 
 describe('account deletion cascade (auth.users row deleted)', () => {
-  it('removes the profile, its logs and drops (incl. other users’ logs of those drops); squads lose their leader', async () => {
+  it('removes the profile, its logs and drops (incl. other users’ logs of those drops); squad leadership passes on', async () => {
     await as(null);
     const creatorId = await profileId(CREATOR);
     const memberId = await profileId(MEMBER);
@@ -166,8 +166,9 @@ describe('account deletion cascade (auth.users row deleted)', () => {
     expect(await count(`SELECT count(*)::int AS n FROM user_workout_logs WHERE user_id = '${creatorId}'`)).toBe(0);
     expect(await count(`SELECT count(*)::int AS n FROM workout_drops WHERE creator_id = '${creatorId}'`)).toBe(0);
     expect(await count(`SELECT count(*)::int AS n FROM user_workout_logs WHERE drop_id = 'drop_gone'`)).toBe(0);
+    // The squad keeps going with its remaining member as leader (20261014120000_squads.sql trigger).
     const squad = await db.query<{ leader_id: string | null }>(`SELECT leader_id FROM squads WHERE tag = 'SHDW'`);
-    expect(squad.rows[0].leader_id).toBeNull();
+    expect(squad.rows[0].leader_id).toBe(memberId);
     // Other users keep their profile, aura and squad membership.
     expect(await count(`SELECT count(*)::int AS n FROM profiles WHERE id = '${memberId}' AND squad_id IS NOT NULL`)).toBe(1);
   });

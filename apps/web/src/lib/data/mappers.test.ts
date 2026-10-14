@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { INITIAL_WORKOUT_DROPS } from '@aurafit/shared';
-import { dropToInsertRow, rowToDrop, rowToSquad } from './mappers';
+import { dropToInsertRow, rowToDrop } from './mappers';
 import type { DropRow } from './types';
 
 describe('row mappers', () => {
@@ -27,20 +27,5 @@ describe('row mappers', () => {
     const drop = rowToDrop(row);
     expect(drop.exercises).toEqual([{ id: 'ok', name: 'Ok', targetMuscle: '', repsOrSeconds: '', tips: '' }]);
     expect(drop.creatorName).toBe('Unknown creator');
-  });
-
-  it('maps squads with a 1-based rank position', () => {
-    const squad = rowToSquad(
-      { id: 's', name: 'Shadow', tag: '#S', avatar: null, total_aura: '42', member_count: 3, max_members: 5, streak_days: 2, weekly_goal_progress: 50, status: 'ON_FIRE', leader: null },
-      0,
-    );
-    expect(squad).toMatchObject({ rankPosition: 1, totalAura: 42, avatar: 'swords', leaderName: 'Unknown' });
-  });
-
-  it('normalises legacy emoji and unknown icon values to icon keys', () => {
-    const base = { id: 's', name: 'Shadow', tag: '#S', total_aura: 0, member_count: 1, max_members: 5, streak_days: 0, weekly_goal_progress: 0, status: 'ON_FIRE', leader: null } as const;
-    expect(rowToSquad({ ...base, avatar: '\u{1F525}' }, 0).avatar).toBe('flame');
-    expect(rowToSquad({ ...base, avatar: 'crown' }, 0).avatar).toBe('crown');
-    expect(rowToSquad({ ...base, avatar: 'nope' }, 0).avatar).toBe('swords');
   });
 });

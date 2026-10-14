@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Alert, BackHandler, RefreshControl, StyleSheet, View } from 'react-native';
-import { hasPermission, type Quest, type UserProfile, type UserRole, type WorkoutDrop } from '@aurafit/shared';
+import { hasPermission, rankLabel, type HunterRank, type Quest, type UserProfile, type UserRole, type WorkoutDrop } from '@aurafit/shared';
 import { AppHeader } from '../components/AppHeader';
 import { BottomTabBar, type MainTabKey } from '../components/BottomTabBar';
 import { SampleDataTag } from '../components/DataNotice';
@@ -9,6 +9,8 @@ import { WorkoutSessionModal } from '../components/WorkoutSessionModal';
 import { useActivityFeed } from '../hooks/useActivityFeed';
 import { useNotificationRouting } from '../hooks/useNotificationRouting';
 import { usePushRegistration } from '../hooks/usePushRegistration';
+import { useSquadJoinLink } from '../hooks/useSquadJoinLink';
+import { useShareCard } from '../hooks/useShareCard';
 import { diffProfileEvents } from '../lib/activity';
 import type { ProfilePatch } from '../lib/profile';
 import { AchievementsScreen } from '../screens/AchievementsScreen';
@@ -74,7 +76,27 @@ export function MainShell({ model }: { model: ShellModel }) {
 
   const open = useCallback((o: Overlay) => setOverlays((s) => [...s, o]), []);
   const close = useCallback(() => setOverlays((s) => s.slice(0, -1)), []);
-  const showToast = useCallback((text: string) => setToast({ id: Date.now(), text }), []);
+  // A rank-up toast (it has a "Share card" action) is not replaced by the quest/workout toast
+  // that arrives right after it.
+  const showToast = useCallback(
+    (text: string, action?: ToastMessage['action']) =>
+      setToast((prev) => (!action && prev?.action && Date.now() - prev.id < 2000 ? prev : { id: Date.now(), text, action })),
+    []
+  );
+
+  // Rank card sharing (signed in only; demo profiles are not public).
+  const shareCard = useShareCard(user, demo);
+  const shareRef = useRef(shareCard.share);
+  shareRef.current = shareCard.share;
+  const shareRankUp = useCallback((rank?: HunterRank) => void shareRef.current(rank), []);
+  const onCardScreen = overlays[overlays.length - 1] === 'hunterCard' || (overlays.length === 0 && tab === 'profile');
+  // Errors from the toast / notification prompts (the hunter card screen shows its own inline).
+  const { error: shareError, clearError: clearShareError } = shareCard;
+  useEffect(() => {
+    if (!shareError || onCardScreen) return;
+    Alert.alert('Share card', shareError);
+    clearShareError();
+  }, [shareError, onCardScreen, clearShareError]);
 
   // Push reminders: server settings + this device's token (signed in only), and routing for
   // taps on aurafit://quests notifications.
@@ -83,6 +105,15 @@ export function MainShell({ model }: { model: ShellModel }) {
     useCallback(() => {
       setOverlays([]);
       setTab('quests');
+    }, [])
+  );
+  // Squad invites (aurafit://join/<CODE>) open the Guild tab with a join confirmation.
+  const [joinCode, setJoinCode] = useState<string | null>(null);
+  useSquadJoinLink(
+    useCallback((code: string) => {
+      setOverlays([]);
+      setTab('guild');
+      setJoinCode(code);
     }, [])
   );
   const dismissToast = useCallback(() => setToast(null), []);
@@ -111,7 +142,11 @@ export function MainShell({ model }: { model: ShellModel }) {
     const events = diffProfileEvents(prevUser.current, user);
     prevUser.current = user;
     if (events.length) log(...events);
-  }, [user, activity.loaded, log]);
+    if (!demo && events.some((e) => e.kind === 'rank')) {
+      const rank = user.rank;
+      showToast(`You ranked up to ${rankLabel(rank)}!`, { label: 'Share card', onPress: () => shareRankUp(rank) });
+    }
+  }, [user, activity.loaded, log, demo, showToast, shareRankUp]);
 
   // One welcome entry the first time a feed is created for this user/mode.
   const welcomed = useRef(false);
@@ -223,7 +258,15 @@ export function MainShell({ model }: { model: ShellModel }) {
     );
   }
   if (overlay === 'notifications') {
-    return <NotificationsScreen activity={activity} demo={demo} onBack={close} />;
+    return (
+      <NotificationsScreen
+        activity={activity}
+        demo={demo}
+        onBack={close}
+        onShareRank={shareCard.enabled ? () => shareRankUp() : undefined}
+        shareLoading={shareCard.loading}
+      />
+    );
   }
   if (overlay === 'editProfile') {
     return <EditProfileScreen profile={user} demo={demo} onSave={onSaveProfile} onBack={close} />;
@@ -236,6 +279,7 @@ export function MainShell({ model }: { model: ShellModel }) {
         onBack={close}
         onEditProfile={() => open('editProfile')}
         onOpenAchievements={() => open('achievements')}
+        share={shareCard}
       />
     );
   }
@@ -338,6 +382,9 @@ export function MainShell({ model }: { model: ShellModel }) {
             currentUserId={user.id}
             onRetry={model.leaderboard.refetch}
             onOpenLeaderboard={() => open('leaderboard')}
+            joinCode={joinCode}
+            onJoinCodeHandled={() => setJoinCode(null)}
+            refreshKey={user.auraPoints}
             refreshControl={
               demo ? undefined : (
                 <RefreshControl
@@ -355,6 +402,7 @@ export function MainShell({ model }: { model: ShellModel }) {
             demo={demo}
             onEditProfile={() => open('editProfile')}
             onOpenAchievements={() => open('achievements')}
+            share={shareCard}
           />
         ) : null}
         <Toast toast={toast} onDismiss={dismissToast} />

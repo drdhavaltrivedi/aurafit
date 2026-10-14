@@ -2,16 +2,19 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { X } from 'lucide-react';
-import { ToastContext, type ToastApi, type ToastTone } from '@/hooks/useToast';
+import { ToastContext, type ToastAction, type ToastApi, type ToastOptions, type ToastTone } from '@/hooks/useToast';
 import { cx } from '@/lib/cx';
 
 interface ToastItem {
   id: number;
   message: string;
   tone: ToastTone;
+  action?: ToastAction;
 }
 
 const DURATION_MS = 3500;
+/** Toasts with an action stay longer so there is time to use the button. */
+const ACTION_DURATION_MS = 8000;
 const MAX_QUEUE = 4;
 
 /**
@@ -24,10 +27,10 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   const [paused, setPaused] = useState(false);
   const idRef = useRef(0);
 
-  const show = useCallback((message: string, tone: ToastTone = 'info') => {
+  const show = useCallback((message: string, tone: ToastTone = 'info', options?: ToastOptions) => {
     setQueue((q) => {
       if (q.length > 0 && q[q.length - 1].message === message) return q;
-      const item = { id: ++idRef.current, message, tone };
+      const item: ToastItem = { id: ++idRef.current, message, tone, action: options?.action };
       // Keep the visible toast; drop the oldest pending one if the queue is full.
       return q.length >= MAX_QUEUE ? [q[0], ...q.slice(2), item] : [...q, item];
     });
@@ -39,7 +42,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (!current || paused) return;
-    const timer = window.setTimeout(() => dismiss(current.id), DURATION_MS);
+    const timer = window.setTimeout(() => dismiss(current.id), current.action ? ACTION_DURATION_MS : DURATION_MS);
     return () => window.clearTimeout(timer);
   }, [current, paused, dismiss]);
 
@@ -59,6 +62,18 @@ export function ToastProvider({ children }: { children: ReactNode }) {
             onBlur={() => setPaused(false)}
           >
             <span className="toast__message">{current.message}</span>
+            {current.action && (
+              <button
+                type="button"
+                className="btn btn--primary btn--sm toast__action"
+                onClick={() => {
+                  dismiss(current.id);
+                  current.action?.onClick();
+                }}
+              >
+                {current.action.label}
+              </button>
+            )}
             <button type="button" className="toast__close" onClick={() => dismiss(current.id)} aria-label="Dismiss notification">
               <X size={16} aria-hidden="true" />
             </button>

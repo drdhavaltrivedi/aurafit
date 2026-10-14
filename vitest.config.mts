@@ -6,6 +6,8 @@ const r = (p: string) => fileURLToPath(new URL(p, import.meta.url));
 export default defineConfig({
   // Pin root so workspace scripts (run with a different cwd) resolve the same globs.
   root: r('./'),
+  // TSX under test (e.g. the next/og card routes) uses the automatic JSX runtime, like Next.
+  esbuild: { jsx: 'automatic' },
   resolve: {
     alias: [
       // Test against shared *source* so tests never depend on a stale dist build.

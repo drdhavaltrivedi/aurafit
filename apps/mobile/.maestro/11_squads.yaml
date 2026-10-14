@@ -1,0 +1,105 @@
+# Squads (signed in): leave any current squad, create one, check the leader view + invite code,
+# open the native share sheet, open an aurafit://join/<CODE> link for the own squad (explains instead
+# of joining), then leave (last member → squad deleted). Also checks demo mode keeps sample guilds.
+# Env: EMAIL / PASSWORD of a disposable confirmed account; METRO_URL.
+appId: host.exp.Exponent
+name: Squads
+---
+- runFlow: subflows/start.yaml
+- runFlow: subflows/login.yaml
+- tapOn:
+    id: "tab-guild"
+- extendedWaitUntil:
+    visible:
+      id: "squad-create|squad-view"
+    timeout: 20000
+# Start from "no squad".
+- runFlow:
+    when:
+      visible:
+        id: "squad-view"
+    commands:
+      - scrollUntilVisible:
+          element:
+            id: "squad-leave"
+      - tapOn:
+          id: "squad-leave"
+      - tapOn: "Leave"
+      - extendedWaitUntil:
+          visible:
+            id: "squad-create"
+          timeout: 15000
+- assertNotVisible: ".*Coming soon.*"
+- takeScreenshot: 11_guild_no_squad
+
+# Create
+- tapOn:
+    id: "squad-create"
+- tapOn:
+    id: "squad-name"
+- inputText: "Maestro Squad"
+- tapOn:
+    id: "squad-tag"
+- inputText: "MAEST"
+- tapOn: "Create a squad"  # dismiss keyboard
+- tapOn:
+    id: "squad-create-submit"
+- extendedWaitUntil:
+    visible:
+      id: "squad-view"
+    timeout: 20000
+- assertVisible: "Maestro Squad.*"
+- assertVisible:
+    id: "squad-invite-code"
+- assertVisible: "Weekly goal \\(automatic\\)"
+- takeScreenshot: 11_squad_leader
+
+# Native share sheet with the https join link
+- tapOn:
+    id: "squad-share"
+- takeScreenshot: 11_share_sheet
+- back
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - runFlow:
+          when:
+            visible: "Close"
+          commands:
+            - tapOn: "Close"
+
+# Deep link to a join confirmation (any valid code; we are already in a squad, so it explains).
+# Expo Go only routes exp:// links; a dev/store build also handles aurafit://join/<CODE>.
+- openLink: "${METRO_URL || 'exp://127.0.0.1:8081'}/--/join/K7MX2QPA"
+- extendedWaitUntil:
+    visible: "You're already in .*"
+    timeout: 15000
+- tapOn:
+    id: "squad-invite-dismiss"
+
+# Leave → squad deleted
+- scrollUntilVisible:
+    element:
+      id: "squad-leave"
+- tapOn:
+    id: "squad-leave"
+- assertVisible: "You are the last member, so the squad will be deleted."
+- tapOn: "Leave"
+- extendedWaitUntil:
+    visible:
+      id: "squad-create"
+    timeout: 15000
+
+# Android back on an open form closes the form first.
+- tapOn:
+    id: "squad-join"
+- assertVisible:
+    id: "squad-code"
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - back
+      - assertVisible:
+          id: "squad-create"

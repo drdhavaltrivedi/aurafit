@@ -2,14 +2,15 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { RefreshCw } from 'lucide-react';
-import { INITIAL_SQUADS, type HunterRank, type WorkoutDrop } from '@aurafit/shared';
+import { INITIAL_SQUADS, rankLabel, type HunterRank, type WorkoutDrop } from '@aurafit/shared';
 import type { AuraFitState, ActionResult } from '@/hooks/useAuraFitState';
 import { useToast } from '@/hooks/useToast';
 import { sound } from '@/utils/audio';
 import type { ValidDrop } from '@/lib/drops';
 import { RoleBanner } from './RoleBanner';
-import { HunterProfileCard } from './HunterProfileCard';
-import { SquadCard } from './SquadCard';
+import { HunterProfileCard, type ProfileShare } from './HunterProfileCard';
+import { useShareCard } from '@/components/share/useShareCard';
+import { SquadPanel } from '@/components/squads/SquadPanel';
 import { QuestBoard } from './QuestBoard';
 import { WorkoutDropList } from './WorkoutDropList';
 import { CreatorStudio } from './CreatorStudio';
@@ -26,18 +27,35 @@ export function ArenaView({ state }: { state: AuraFitState }) {
   const [activeWorkout, setActiveWorkout] = useState<WorkoutDrop | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
 
-  // Seed squads are demo-only; signed-in users see real squad data once squads ship.
+  // Seed squads are demo-only (labelled sample data); signed-in users get the live SquadPanel.
   const squad = useMemo(
     () => (state.mode === 'demo' ? INITIAL_SQUADS.find((s) => s.id === activeUser.squadId) : undefined),
     [state.mode, activeUser.squadId],
   );
 
+  // Shareable rank card (signed-in only: demo profiles are not public, so they have no card).
+  const shareCard = useShareCard(activeUser);
+  const canShare = state.mode === 'server' && shareCard.available;
+  const shareRef = useRef(shareCard.share);
+  shareRef.current = shareCard.share;
+  const profileShare: ProfileShare | undefined = canShare
+    ? { onShare: () => void shareRef.current('profile') }
+    : state.mode === 'demo'
+      ? { disabledReason: "Demo profiles aren't public, so they can't be shared. Create a free account to get your own hunter card." }
+      : undefined;
+
   const celebrate = useCallback(
     (rank: HunterRank) => {
       window.setTimeout(() => sound.playLevelUp(), 350);
-      toast.show(`Rank ascended: welcome to ${rank}!`, 'success');
+      if (canShare) {
+        toast.show(`You ranked up to ${rankLabel(rank)}!`, 'success', {
+          action: { label: 'Share your card', onClick: () => void shareRef.current('rankUp', rank) },
+        });
+      } else {
+        toast.show(`Rank ascended: welcome to ${rank}!`, 'success');
+      }
     },
-    [toast],
+    [toast, canShare],
   );
 
   const report = useCallback(
@@ -158,8 +176,8 @@ export function ArenaView({ state }: { state: AuraFitState }) {
       {showMember && (
         <div className="dashboard">
           <div className="dashboard__col">
-            <HunterProfileCard user={activeUser} rankInfo={state.rankInfo} />
-            <SquadCard squad={squad} />
+            <HunterProfileCard user={activeUser} rankInfo={state.rankInfo} share={profileShare} />
+            <SquadPanel mode={state.mode} demoSquad={squad} refreshKey={activeUser.auraPoints} />
           </div>
           <div className="dashboard__col">
             <QuestBoard quests={state.quests} canComplete={can('DO_QUESTS')} onComplete={handleCompleteQuest} />
@@ -187,6 +205,8 @@ export function ArenaView({ state }: { state: AuraFitState }) {
       {activeWorkout && <WorkoutRunner key={activeWorkout.id} drop={activeWorkout} onClose={() => setActiveWorkout(null)} onFinish={handleFinish} />}
 
       {can('PUBLISH_WORKOUT_DROP') && <CreateDropModal open={createOpen} onClose={() => setCreateOpen(false)} onSubmit={handlePublish} />}
+
+      {canShare && shareCard.dialog}
     </div>
   );
 }

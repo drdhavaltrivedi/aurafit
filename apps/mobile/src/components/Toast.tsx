@@ -8,9 +8,13 @@ import { fontSize, radius, spacing } from '../theme/tokens';
 export interface ToastMessage {
   id: number;
   text: string;
+  /** Optional action button (e.g. "Share card" after a rank-up). */
+  action?: { label: string; onPress: () => void };
 }
 
 const DURATION_MS = 3000;
+/** Toasts with an action stay longer so there is time to tap it. */
+const ACTION_DURATION_MS = 7000;
 
 /** Brief success confirmation pinned to the top of the content area; tap to dismiss. */
 export function Toast({ toast, onDismiss }: { toast: ToastMessage | null; onDismiss: () => void }) {
@@ -19,7 +23,7 @@ export function Toast({ toast, onDismiss }: { toast: ToastMessage | null; onDism
   useEffect(() => {
     if (!toast) return;
     AccessibilityInfo.announceForAccessibility(toast.text);
-    const id = setTimeout(onDismiss, DURATION_MS);
+    const id = setTimeout(onDismiss, toast.action ? ACTION_DURATION_MS : DURATION_MS);
     return () => clearTimeout(id);
   }, [toast, onDismiss]);
 
@@ -28,6 +32,8 @@ export function Toast({ toast, onDismiss }: { toast: ToastMessage | null; onDism
     <Pressable
       onPress={onDismiss}
       testID="toast"
+      // With an action, expose the text and the button separately to screen readers.
+      accessible={!toast.action}
       accessibilityRole="alert"
       accessibilityLabel={toast.text}
       accessibilityHint="Tap to dismiss"
@@ -35,6 +41,21 @@ export function Toast({ toast, onDismiss }: { toast: ToastMessage | null; onDism
     >
       <AppIcon icon={Check} size={18} color="#FFFFFF" strokeWidth={3} />
       <Text style={styles.text}>{toast.text}</Text>
+      {toast.action ? (
+        <Pressable
+          onPress={() => {
+            onDismiss();
+            toast.action?.onPress();
+          }}
+          accessibilityRole="button"
+          accessibilityLabel={toast.action.label}
+          hitSlop={8}
+          testID="toast-action"
+          style={({ pressed }) => [styles.action, { opacity: pressed ? 0.75 : 1 }]}
+        >
+          <Text style={styles.actionText}>{toast.action.label}</Text>
+        </Pressable>
+      ) : null}
     </Pressable>
   );
 }
@@ -57,6 +78,18 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     shadowOffset: { width: 0, height: 4 },
     elevation: 6,
+  },
+  action: {
+    minHeight: 36,
+    justifyContent: 'center',
+    paddingHorizontal: spacing.md,
+    borderRadius: radius.full,
+    backgroundColor: 'rgba(255, 255, 255, 0.22)',
+  },
+  actionText: {
+    color: '#FFFFFF',
+    fontSize: fontSize.body,
+    fontWeight: '900',
   },
   text: {
     flex: 1,

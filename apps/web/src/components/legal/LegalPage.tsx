@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 import { PageShell } from '@/components/shell/PageShell';
 import type { Viewer } from '@/lib/auth/viewer';
 
-export const LEGAL_LAST_UPDATED = 'October 13, 2026';
+export const LEGAL_LAST_UPDATED = 'October 14, 2026';
 
 /** Long-form legal document layout: readable measure, table of contents, prose typography. */
 export function LegalPage({

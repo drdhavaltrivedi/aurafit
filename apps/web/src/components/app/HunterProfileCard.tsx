@@ -1,9 +1,10 @@
-import { Crown, Shield } from 'lucide-react';
+import { Crown, Share2, Shield } from 'lucide-react';
 import type { PlayerAttributes, UserProfile } from '@aurafit/shared';
 import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { Avatar } from '@/components/ui/Avatar';
 import { ProgressBar, type ProgressTone } from '@/components/ui/ProgressBar';
+import { Button } from '@/components/ui/Button';
 import { formatNumber } from '@/lib/format';
 
 interface RankInfo {
@@ -20,7 +21,10 @@ const ATTRS: { key: keyof PlayerAttributes; label: string; name: string; tone: P
   { key: 'rec', label: 'REC', name: 'Recovery', tone: 'accent' },
 ];
 
-export function HunterProfileCard({ user, rankInfo }: { user: UserProfile; rankInfo: RankInfo }) {
+/** Share button state: enabled with a handler, or disabled with a visible reason (demo mode). */
+export type ProfileShare = { onShare: () => void } | { disabledReason: string };
+
+export function HunterProfileCard({ user, rankInfo, share }: { user: UserProfile; rankInfo: RankInfo; share?: ProfileShare }) {
   return (
     <Card as="section" variant="feature" aria-labelledby="profile-name">
       <div className="profile__head">
@@ -85,6 +89,31 @@ export function HunterProfileCard({ user, rankInfo }: { user: UserProfile; rankI
           <dd className="text-accent">+{formatNumber(user.weeklyAuraGained)}</dd>
         </div>
       </dl>
+
+      {share && <ShareRow share={share} />}
     </Card>
+  );
+}
+
+function ShareRow({ share }: { share: ProfileShare }) {
+  if ('onShare' in share) {
+    return (
+      <div className="profile-share">
+        <Button variant="secondary" leadingIcon={<Share2 />} onClick={share.onShare} block>
+          Share your hunter card
+        </Button>
+      </div>
+    );
+  }
+  // aria-disabled (not disabled) keeps the button focusable so the reason is discoverable.
+  return (
+    <div className="profile-share">
+      <Button variant="secondary" leadingIcon={<Share2 />} aria-disabled="true" aria-describedby="profile-share-note" title={share.disabledReason} block>
+        Share your hunter card
+      </Button>
+      <p id="profile-share-note" className="profile-share__note">
+        {share.disabledReason}
+      </p>
+    </div>
   );
 }

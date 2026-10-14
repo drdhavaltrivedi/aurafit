@@ -1,6 +1,8 @@
 /** In-memory GameRepository + helpers for API route tests (not a test file itself). */
 import { INITIAL_QUESTS, INITIAL_WORKOUT_DROPS, type LeaderboardHunter, type Squad, type WorkoutDrop } from '@aurafit/shared';
 import type { CompleteActionInput, GameActionResult, GameRepository, ProfileRow, ProfileUpdate, QuestRow } from '@/lib/data/types';
+import type { PublicHunterProfile } from '@aurafit/shared';
+import { rowToPublicProfile } from '@/lib/data/public-profile';
 
 export const AUTH_ID = '11111111-1111-4111-8111-111111111111';
 export const PROFILE_ID = '99999999-9999-4999-8999-999999999999';
@@ -134,6 +136,12 @@ export class FakeRepo implements GameRepository {
     this.guard();
     const hunters: LeaderboardHunter[] = [{ id: PROFILE_ID, username: 'Jinwoo', handle: '@jinwoo', avatarUrl: '', role: 'MEMBER', auraPoints: 950, rank: 'E-RANK', level: 1, streakDays: 4, totalWorkouts: 0 }];
     return { hunters: hunters.slice(0, limit), squads: [] };
+  }
+  publicProfileCalls: string[] = [];
+  async getPublicProfileByHandle(handle: string): Promise<PublicHunterProfile | null> {
+    this.guard();
+    this.publicProfileCalls.push(handle);
+    return !this.deleted && this.profile.handle === handle ? rowToPublicProfile(this.profile) : null;
   }
   async deleteAuthUser(authId: string) {
     this.guard();

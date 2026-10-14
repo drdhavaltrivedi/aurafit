@@ -1,5 +1,4 @@
 import {
-  DEFAULT_SQUAD_ICON,
   getRankFromAura,
   isFitnessGoal,
   isFitnessLevel,
@@ -7,11 +6,10 @@ import {
   type Exercise,
   type LeaderboardHunter,
   type Quest,
-  type Squad,
   type UserProfile,
   type WorkoutDrop,
 } from '@aurafit/shared';
-import type { DropRow, ProfileRow, QuestRow, SquadRow } from './types';
+import type { DropRow, ProfileRow, QuestRow } from './types';
 
 const num = (v: number | string | null | undefined): number => {
   const n = typeof v === 'string' ? Number(v) : v ?? 0;
@@ -61,7 +59,7 @@ export function rowToLeaderboardHunter(row: ProfileRow): LeaderboardHunter {
     streakDays: num(row.streak_days),
     totalWorkouts: num(row.total_workouts),
   };
-  if (row.squad_id) hunter.squadId = row.squad_id;
+  // squadId is deliberately omitted: squad membership is visible only to squad members.
   return hunter;
 }
 
@@ -139,22 +137,5 @@ export function dropToInsertRow(drop: WorkoutDrop) {
     cover_from: drop.coverGradient[0],
     cover_to: drop.coverGradient[1],
     creator_badge: drop.creatorBadge,
-  };
-}
-
-export function rowToSquad(row: SquadRow, index: number): Squad {
-  return {
-    id: row.id,
-    name: row.name,
-    tag: row.tag,
-    avatar: toIconKey(row.avatar, DEFAULT_SQUAD_ICON),
-    totalAura: num(row.total_aura),
-    rankPosition: index + 1,
-    memberCount: row.member_count,
-    maxMembers: row.max_members,
-    leaderName: row.leader?.username ?? 'Unknown',
-    streakDays: row.streak_days,
-    weeklyGoalProgress: row.weekly_goal_progress,
-    status: row.status,
   };
 }

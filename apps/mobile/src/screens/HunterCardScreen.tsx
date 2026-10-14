@@ -9,6 +9,8 @@ import { ScreenFrame } from '../components/ScreenFrame';
 import { SectionHeader } from '../components/SectionHeader';
 import { StatCardsRow } from '../components/StatCardsRow';
 import { SampleDataTag } from '../components/DataNotice';
+import { ShareCardButton } from '../components/ShareCardButton';
+import type { ShareCardState } from '../hooks/useShareCard';
 import { useTheme } from '../theme/ThemeProvider';
 import { fontSize, radius, spacing } from '../theme/tokens';
 
@@ -18,10 +20,12 @@ interface Props {
   onBack?: () => void;
   onEditProfile: () => void;
   onOpenAchievements: () => void;
+  /** Rank card sharing (disabled with a reason in demo mode). */
+  share?: ShareCardState;
 }
 
 /** Profile view: identity, stats and the full rank ladder (E-RANK → MONARCH). */
-export function HunterCardScreen({ user, demo, onBack, onEditProfile, onOpenAchievements }: Props) {
+export function HunterCardScreen({ user, demo, onBack, onEditProfile, onOpenAchievements, share }: Props) {
   const { colors } = useTheme();
   const info = getRankFromAura(user.auraPoints);
   const currentIdx = RANK_ORDER.indexOf(info.rank);
@@ -65,6 +69,7 @@ export function HunterCardScreen({ user, demo, onBack, onEditProfile, onOpenAchi
           <AppButton label="Edit profile" icon={Pencil} variant="secondary" onPress={onEditProfile} testID="hunter-edit-profile" style={styles.flex} />
           <AppButton label="Achievements" icon={Award} variant="secondary" onPress={onOpenAchievements} testID="hunter-achievements" style={styles.flex} />
         </View>
+        {share ? <ShareCardButton state={share} label="Share card" /> : null}
       </View>
 
       <StatCardsRow attributes={user.attributes} />

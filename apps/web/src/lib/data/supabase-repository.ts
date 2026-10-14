@@ -1,8 +1,9 @@
 import 'server-only';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { WorkoutDrop } from '@aurafit/shared';
-import { dropToInsertRow, rowToDrop, rowToLeaderboardHunter, rowToSquad } from './mappers';
-import type { CompleteActionInput, DropRow, GameActionResult, GameRepository, ProfileRow, ProfileUpdate, QuestRow, SquadRow } from './types';
+import { dropToInsertRow, rowToDrop, rowToLeaderboardHunter } from './mappers';
+import { PUBLIC_PROFILE_COLUMNS, rowToPublicProfile, type PublicProfileRow } from './public-profile';
+import type { CompleteActionInput, DropRow, GameActionResult, GameRepository, ProfileRow, ProfileUpdate, QuestRow } from './types';
 
 const PROFILE_COLUMNS =
   'id, auth_id, username, handle, role, avatar_url, title, bio, aura_points, rank, level, str_stat, agi_stat, end_stat, rec_stat, streak_days, streak_shields, last_active_date, squad_id, gym_id, total_workouts, weekly_aura_gained, fitness_goal, fitness_level, onboarded_at';
@@ -95,20 +96,19 @@ export function createSupabaseRepository(db: SupabaseClient): GameRepository {
     },
 
     async leaderboard(limit) {
-      const [hunters, squads] = await Promise.all([
-        db.from('profiles').select(PROFILE_COLUMNS).order('aura_points', { ascending: false }).order('id').limit(limit),
-        db
-          .from('squads')
-          .select('id, name, tag, avatar, total_aura, member_count, max_members, streak_days, weekly_goal_progress, status, leader:profiles!squads_leader_id_fkey(username)')
-          .order('total_aura', { ascending: false })
-          .limit(limit),
-      ]);
+      const hunters = await db.from('profiles').select(PROFILE_COLUMNS).order('aura_points', { ascending: false }).order('id').limit(limit);
       if (hunters.error) fail('leaderboard.hunters', hunters.error);
-      if (squads.error) fail('leaderboard.squads', squads.error);
       return {
         hunters: ((hunters.data ?? []) as ProfileRow[]).map(rowToLeaderboardHunter),
-        squads: ((squads.data ?? []) as unknown as SquadRow[]).map(rowToSquad),
+        // Deprecated: squads have their own weekly board (GET /api/v1/squads/leaderboard).
+        squads: [],
       };
+    },
+
+    async getPublicProfileByHandle(handle) {
+      const { data, error } = await db.from('profiles').select(PUBLIC_PROFILE_COLUMNS).eq('handle', handle).maybeSingle();
+      if (error) fail('getPublicProfileByHandle', error);
+      return data ? rowToPublicProfile(data as PublicProfileRow) : null;
     },
 
     async deleteAuthUser(authId) {

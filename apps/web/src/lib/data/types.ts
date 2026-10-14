@@ -1,4 +1,5 @@
 import type { FitnessGoal, FitnessLevel, LeaderboardHunter, PlayerAttributes, Quest, Squad, UserProfile, WorkoutDrop } from '@aurafit/shared';
+import type { PublicHunterProfile } from '@aurafit/shared';
 
 /** public.profiles row (snake_case, as returned by PostgREST / to_jsonb). */
 export interface ProfileRow {
@@ -70,20 +71,6 @@ export interface DropRow {
   creator?: Pick<ProfileRow, 'username' | 'handle' | 'avatar_url'> | null;
 }
 
-export interface SquadRow {
-  id: string;
-  name: string;
-  tag: string;
-  avatar: string | null;
-  total_aura: number | string;
-  member_count: number;
-  max_members: number;
-  streak_days: number;
-  weekly_goal_progress: number;
-  status: Squad['status'];
-  leader?: Pick<ProfileRow, 'username'> | null;
-}
-
 export type GameActionResult =
   | { status: 'completed'; profile: ProfileRow }
   | { status: 'already_completed' }
@@ -114,6 +101,11 @@ export interface GameRepository {
   createDrop(drop: WorkoutDrop): Promise<WorkoutDrop>;
   completeWorkout(input: CompleteActionInput): Promise<GameActionResult>;
   leaderboard(limit: number): Promise<{ hunters: LeaderboardHunter[]; squads: Squad[] }>;
+  /**
+   * Public card fields for one profile by its stored handle ("@name", exact match), or null.
+   * Selects public leaderboard columns only (never auth_id, email or onboarding answers).
+   */
+  getPublicProfileByHandle(handle: string): Promise<PublicHunterProfile | null>;
   /**
    * Permanently deletes the auth user (auth.users.id). The database cascades to the
    * profile, its quest/workout logs and its workout drops. Resolves when the user is

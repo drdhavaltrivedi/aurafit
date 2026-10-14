@@ -76,6 +76,10 @@ const nextConfig = {
   eslint: { ignoreDuringBuilds: true },
   transpilePackages: ['@aurafit/shared'],
   outputFileTracingRoot: path.join(__dirname, '../../'),
+  // Rank card images read their bundled Inter fonts + logo from disk at runtime (lib/share/og-assets.ts).
+  outputFileTracingIncludes: {
+    '/api/og/rank': ['./src/app/api/og/_assets/**/*'],
+  },
   images: {
     remotePatterns: [
       {

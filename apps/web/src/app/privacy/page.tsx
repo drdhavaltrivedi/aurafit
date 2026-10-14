@@ -20,6 +20,7 @@ export const dynamic = 'force-static';
 const TOC = [
   { id: 'summary', label: 'The short version' },
   { id: 'collect', label: 'What we collect' },
+  { id: 'public-cards', label: 'Public hunter cards' },
   { id: 'use', label: 'How we use it' },
   { id: 'share', label: 'Who processes it' },
   { id: 'retention', label: 'How long we keep it' },
@@ -50,6 +51,10 @@ export default function PrivacyPage() {
       <LegalSection id="summary" title="The short version">
         <ul>
           <li>We store your email, your public profile and your quest and workout history so your progress follows you.</li>
+          <li>
+            Your public profile stats can be shared as a hunter card image and a public page at <code>/u/your-handle</code>. These
+            never include your email or activity history, and they are kept out of search engines.
+          </li>
           <li>We do not show ads, and we do not sell or rent your personal data to anyone.</li>
           <li>Your data is hosted by our database and authentication provider, Supabase.</li>
           <li>
@@ -67,8 +72,9 @@ export default function PrivacyPage() {
         <h3>Profile data</h3>
         <p>
           Your display name, handle, avatar, title and bio, and game stats such as Aura points, rank, level, attribute scores and streak.
-          Your profile and game stats are <strong>public</strong>: other people can see them on leaderboards and next to workout
-          drops you publish. Your email address is never shown publicly.
+          Your profile and game stats are <strong>public</strong>: other people can see them on leaderboards, next to workout
+          drops you publish, and on your public hunter card (see <a href="#public-cards">Public hunter cards</a>). Your email address
+          is never shown publicly.
         </p>
         <h3>Activity data</h3>
         <p>
@@ -84,6 +90,26 @@ export default function PrivacyPage() {
         <p>
           We do not use advertising or cross-site tracking cookies, and we do not collect precise location, contacts or health records
           from your device.
+        </p>
+      </LegalSection>
+
+      <LegalSection id="public-cards" title="Public hunter cards">
+        <p>
+          Every account has a shareable hunter card: an image (for example for Stories or posts) and a public page at{' '}
+          <code>/u/your-handle</code>. Anyone with the link can view them. They show only fields that are already public on the
+          leaderboard: your display name, handle, rank, level, Aura points, the four attribute scores (STR, AGI, END, REC), your
+          streak and your workout count.
+        </p>
+        <p>
+          They never show your email address, avatar, bio, fitness goal or level, sign-in details, or your quest and workout history.
+          Hunter card pages ask search engines not to index them, and we do not list them in our sitemap. Cards are cached for a few
+          minutes, so a change can take a short while to appear.
+        </p>
+        <p>
+          Nothing is posted anywhere unless you choose to share it. When you share to another service (such as X, WhatsApp or
+          Telegram), that service&apos;s own privacy policy applies to what you post there. Your card exists for as long as your
+          account does; deleting your account removes the card image and the page. Copies you already posted elsewhere stay
+          where you posted them.
         </p>
       </LegalSection>
 

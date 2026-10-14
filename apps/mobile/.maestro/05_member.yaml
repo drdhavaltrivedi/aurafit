@@ -167,7 +167,11 @@ name: Member
     id: "filter-ALL"
 - tapOn:
     id: "tab-guild"
-- assertVisible: "Guilds & squad raids.*Coming soon.*"
+# Real squads (no "coming soon"): either the create/join card or the member's squad.
+- extendedWaitUntil:
+    visible:
+      id: "squad-create|squad-view"
+    timeout: 15000
 - takeScreenshot: 05_guild_tab
 - tapOn:
     id: "guild-open-leaderboard"

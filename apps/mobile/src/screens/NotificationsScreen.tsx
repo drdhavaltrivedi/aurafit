@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import { BellOff, CheckCheck, Dumbbell, Flame, ScrollText, ShieldCheck, Trophy, User, type LucideIcon } from '../components/icons';
+import { BellOff, CheckCheck, Dumbbell, Flame, ScrollText, Share2, ShieldCheck, Trophy, User, type LucideIcon } from '../components/icons';
 import { AppButton } from '../components/AppButton';
 import { AppIcon } from '../components/AppIcon';
 import { ReminderSettingsCard } from '../components/ReminderSettingsCard';
@@ -25,9 +25,12 @@ interface Props {
   activity: ActivityFeedStore;
   demo: boolean;
   onBack: () => void;
+  /** Shares the rank card from rank-up entries (signed in only). */
+  onShareRank?: () => void;
+  shareLoading?: boolean;
 }
 
-export function NotificationsScreen({ activity, demo, onBack }: Props) {
+export function NotificationsScreen({ activity, demo, onBack, onShareRank, shareLoading = false }: Props) {
   const { colors } = useTheme();
   const reminder = useReminder();
   const { feed, unread, markAllRead } = activity;
@@ -89,7 +92,8 @@ export function NotificationsScreen({ activity, demo, onBack }: Props) {
             return (
               <View
                 key={item.id}
-                accessible
+                // Entries with a button expose text and button separately to screen readers.
+                accessible={!(item.kind === 'rank' && onShareRank)}
                 accessibilityLabel={`${isNew ? 'New. ' : ''}${item.title}. ${item.body}. ${relativeTime(item.ts, now)}`}
                 style={[
                   styles.item,
@@ -106,6 +110,18 @@ export function NotificationsScreen({ activity, demo, onBack }: Props) {
                   <Text style={[styles.itemTitle, { color: colors.textPrimary }]}>{item.title}</Text>
                   <Text style={[styles.itemBody, { color: colors.textSecondary }]}>{item.body}</Text>
                   <Text style={[styles.itemTime, { color: colors.textMuted }]}>{relativeTime(item.ts, now)}</Text>
+                  {item.kind === 'rank' && onShareRank ? (
+                    <AppButton
+                      label="Share card"
+                      icon={Share2}
+                      variant="secondary"
+                      loading={shareLoading}
+                      onPress={onShareRank}
+                      accessibilityHint="Downloads your rank card image and opens the share sheet"
+                      testID="notification-share-card"
+                      style={styles.shareButton}
+                    />
+                  ) : null}
                 </View>
               </View>
             );
@@ -117,6 +133,10 @@ export function NotificationsScreen({ activity, demo, onBack }: Props) {
 }
 
 const styles = StyleSheet.create({
+  shareButton: {
+    alignSelf: 'flex-start',
+    marginTop: spacing.sm,
+  },
   empty: {
     alignItems: 'center',
     gap: spacing.sm,
