@@ -102,6 +102,46 @@ class SoundFX {
   public playTimerTick(): void {
     this.play([{ freq: 1000, at: 0, dur: 0.06, type: 'sine', gain: 0.1 }]);
   }
+
+  private beatInterval: ReturnType<typeof setInterval> | null = null;
+  private beatStep = 0;
+
+  /** Generates a driving 140 BPM Phonk electronic workout beat using Web Audio API synthesis */
+  public startPhonkBeat(bpm = 140): void {
+    if (this.beatInterval) return;
+    this.unlock();
+    const intervalMs = Math.round(60000 / bpm / 2); // 8th note steps
+    this.beatStep = 0;
+    this.beatInterval = setInterval(() => {
+      this.playBeatStep(this.beatStep);
+      this.beatStep = (this.beatStep + 1) % 8;
+    }, intervalMs);
+  }
+
+  public stopPhonkBeat(): void {
+    if (this.beatInterval) {
+      clearInterval(this.beatInterval);
+      this.beatInterval = null;
+    }
+  }
+
+  public isPhonkPlaying(): boolean {
+    return this.beatInterval !== null;
+  }
+
+  private playBeatStep(step: number): void {
+    // 8-step rhythmic pulse: Kick on 0, Hat on 2 & 6, Snare/Bass on 4
+    if (step === 0) {
+      this.play([{ freq: 140, endFreq: 45, at: 0, dur: 0.18, type: 'sine', gain: 0.22 }]);
+    } else if (step === 2 || step === 6) {
+      this.play([{ freq: 1200, at: 0, dur: 0.03, type: 'triangle', gain: 0.05 }]);
+    } else if (step === 4) {
+      this.play([
+        { freq: 220, endFreq: 90, at: 0, dur: 0.12, type: 'triangle', gain: 0.16 },
+        { freq: 900, at: 0, dur: 0.04, type: 'sawtooth', gain: 0.06 },
+      ]);
+    }
+  }
 }
 
 export const sound = new SoundFX();

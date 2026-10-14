@@ -1,7 +1,7 @@
 'use client';
 
-import { useCallback, useState } from 'react';
-import { ArrowRight, Lightbulb, Pause, Play, RotateCcw, Swords } from 'lucide-react';
+import { useCallback, useEffect, useState } from 'react';
+import { ArrowRight, Lightbulb, Music, Pause, Play, RotateCcw, Swords } from 'lucide-react';
 import type { WorkoutDrop } from '@aurafit/shared';
 import { Modal } from '@/components/ui/Modal';
 import { Badge } from '@/components/ui/Badge';
@@ -19,10 +19,47 @@ interface WorkoutRunnerProps {
   onFinish: (drop: WorkoutDrop) => void;
 }
 
+/** Resolves exercise names to anime workout demonstration artwork */
+function getExerciseVisual(exercise: { name: string; targetMuscle: string }): string {
+  const text = `${exercise.name} ${exercise.targetMuscle}`.toLowerCase();
+  if (
+    text.includes('push') ||
+    text.includes('dip') ||
+    text.includes('chest') ||
+    text.includes('tricep') ||
+    text.includes('shoulder')
+  ) {
+    return '/workouts/pushup.jpg';
+  }
+  if (
+    text.includes('squat') ||
+    text.includes('lunge') ||
+    text.includes('leg') ||
+    text.includes('quad') ||
+    text.includes('glute') ||
+    text.includes('calf')
+  ) {
+    return '/workouts/squat.jpg';
+  }
+  if (
+    text.includes('plank') ||
+    text.includes('core') ||
+    text.includes('ab') ||
+    text.includes('dead bug') ||
+    text.includes('bird dog') ||
+    text.includes('hollow')
+  ) {
+    return '/workouts/plank.jpg';
+  }
+  return '/hunter-avatar.jpg';
+}
+
 /** Mounted only while a workout is active, so all timer state resets per session. */
 export function WorkoutRunner({ drop, onClose, onFinish }: WorkoutRunnerProps) {
   const toast = useToast();
   const [index, setIndex] = useState(0);
+  const [phonkActive, setPhonkActive] = useState(false);
+
   const total = drop.exercises.length;
   const exercise = drop.exercises[Math.min(index, total - 1)];
   const isLast = index >= total - 1;
@@ -37,6 +74,23 @@ export function WorkoutRunner({ drop, onClose, onFinish }: WorkoutRunnerProps) {
     }, [isLast, toast]),
   });
 
+  // Clean up phonk beat synthesis when unmounting or completing
+  useEffect(() => {
+    return () => {
+      sound.stopPhonkBeat();
+    };
+  }, []);
+
+  const togglePhonk = () => {
+    if (phonkActive) {
+      sound.stopPhonkBeat();
+      setPhonkActive(false);
+    } else {
+      sound.startPhonkBeat(140);
+      setPhonkActive(true);
+    }
+  };
+
   const next = () => {
     if (isLast) return;
     setIndex((i) => Math.min(i + 1, total - 1));
@@ -45,8 +99,14 @@ export function WorkoutRunner({ drop, onClose, onFinish }: WorkoutRunnerProps) {
   };
 
   const finish = () => {
+    sound.stopPhonkBeat();
     timer.pause();
     onFinish(drop);
+  };
+
+  const handleClose = () => {
+    sound.stopPhonkBeat();
+    onClose();
   };
 
   const urgent = timer.secondsLeft <= 5 && timer.secondsLeft > 0;
@@ -54,7 +114,7 @@ export function WorkoutRunner({ drop, onClose, onFinish }: WorkoutRunnerProps) {
   return (
     <Modal
       open
-      onClose={onClose}
+      onClose={handleClose}
       title={drop.title}
       eyebrow={
         <Badge tone="accent" size="sm">
@@ -66,6 +126,49 @@ export function WorkoutRunner({ drop, onClose, onFinish }: WorkoutRunnerProps) {
     >
       <ProgressBar value={index + 1} max={total} label="Workout progress" valueText={`Exercise ${index + 1} of ${total}`} size="sm" />
 
+      {/* Visual Exercise Demonstration Artwork Banner */}
+      <div className="workout-hero-visual">
+        <img
+          src={getExerciseVisual(exercise)}
+          alt={`${exercise.name} demonstration form`}
+          className="workout-hero-visual__img"
+        />
+        <div className="workout-hero-visual__scrim" />
+        <div className="workout-hero-visual__overlay">
+          <Badge tone="accent" size="sm">
+            Move {index + 1} of {total} · {exercise.targetMuscle.toUpperCase()}
+          </Badge>
+          <h4 className="workout-hero-visual__title">{exercise.name}</h4>
+          <p className="workout-hero-visual__reps">{exercise.repsOrSeconds}</p>
+        </div>
+      </div>
+
+      {/* Phonk Workout Audio Beats Bar */}
+      <button
+        type="button"
+        className={cx('phonk-bar', phonkActive && 'is-active')}
+        onClick={togglePhonk}
+        aria-label={phonkActive ? 'Pause Phonk Beat' : 'Play 140 BPM Phonk Workout Beat'}
+      >
+        <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <Music className="icon-inline" />
+          <span>Shadow Surge (140 BPM Phonk Beat)</span>
+        </span>
+        <span style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          {phonkActive ? (
+            <span className="phonk-bar__waves" aria-hidden="true">
+              <span className="phonk-bar__wave" />
+              <span className="phonk-bar__wave" />
+              <span className="phonk-bar__wave" />
+              <span className="phonk-bar__wave" />
+              <span className="phonk-bar__wave" />
+            </span>
+          ) : null}
+          <span className="phonk-bar__tag">{phonkActive ? 'BEAT ON' : 'PLAY BEAT'}</span>
+        </span>
+      </button>
+
+      {/* Exercise Detail Panel */}
       <div className="panel exercise" aria-live="polite">
         <p className="text-xs text-blue fw-700">Target: {exercise.targetMuscle}</p>
         <h3 className="exercise__name">{exercise.name}</h3>

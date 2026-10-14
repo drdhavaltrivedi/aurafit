@@ -1916,6 +1916,112 @@ a {
   transition-timing-function: linear;
 }
 
+/* Workout Hero Visual & Phonk Beats */
+.workout-hero-visual {
+  position: relative;
+  width: 100%;
+  height: 180px;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  border: 1.5px solid var(--border);
+  background-color: var(--surface-2);
+  margin-bottom: var(--space-3);
+}
+.workout-hero-visual__img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0.55;
+  transition: transform 0.4s ease;
+}
+.workout-hero-visual:hover .workout-hero-visual__img {
+  transform: scale(1.03);
+}
+.workout-hero-visual__scrim {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(7, 10, 18, 0.35) 0%, rgba(7, 10, 18, 0.88) 100%);
+}
+.workout-hero-visual__overlay {
+  position: absolute;
+  inset: 0;
+  padding: var(--space-4);
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  gap: var(--space-1);
+}
+.workout-hero-visual__title {
+  color: #ffffff;
+  font-size: var(--text-lg);
+  font-weight: 900;
+  margin: 0;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.9);
+}
+.workout-hero-visual__reps {
+  color: var(--accent-fg);
+  font-size: var(--text-sm);
+  font-weight: 700;
+  margin: 0;
+}
+.phonk-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border);
+  background-color: var(--surface-2);
+  cursor: pointer;
+  width: 100%;
+  color: var(--text-primary);
+  font-size: var(--text-sm);
+  font-weight: 700;
+  transition: all var(--dur) ease;
+  margin-top: var(--space-3);
+  margin-bottom: var(--space-3);
+}
+.phonk-bar:hover {
+  border-color: var(--accent-fg);
+  background-color: rgba(139, 92, 246, 0.12);
+}
+.phonk-bar.is-active {
+  border-color: var(--accent-fg);
+  background-color: rgba(139, 92, 246, 0.2);
+  color: #ffffff;
+}
+.phonk-bar__tag {
+  font-size: var(--text-xs);
+  padding: 2px 8px;
+  border-radius: var(--radius-full);
+  background-color: var(--accent-fg);
+  color: #ffffff;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+}
+.phonk-bar__waves {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  height: 18px;
+}
+.phonk-bar__wave {
+  width: 3px;
+  background-color: var(--accent-fg);
+  border-radius: 2px;
+  animation: wavePulse 0.8s ease-in-out infinite alternate;
+}
+.phonk-bar__wave:nth-child(2) { animation-delay: 0.15s; }
+.phonk-bar__wave:nth-child(3) { animation-delay: 0.3s; }
+.phonk-bar__wave:nth-child(4) { animation-delay: 0.45s; }
+.phonk-bar__wave:nth-child(5) { animation-delay: 0.6s; }
+
+@keyframes wavePulse {
+  0% { height: 4px; }
+  100% { height: 16px; }
+}
+
 /* ==========================================================================
    Forms
    ========================================================================== */
