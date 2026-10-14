@@ -1,98 +1,74 @@
-# AuraFit: Google Play Store & ASO Listing Metadata
+# AuraFit: Google Play Store listing
+
 **Locale:** English (United Kingdom) – `en-GB`
 
----
+Every claim below must match a shipped feature. Store reviewers reject listings that describe features the app does not have, and third-party brand names (for example other anime or game titles) must not be used in the listing or keywords.
 
-## 1. App name
-**Character Limit:** 30 characters  
-**Current Length:** 27 / 30 characters  
+## 1. App name (27 / 30)
 
-```text
+```
 AuraFit: RPG Fitness Quests
 ```
 
-*Alternative options:*
-- `AuraFit: Gamified RPG Fitness` (29/30)
-- `AuraFit: Anime Fitness RPG` (26/30)
+## 2. Short description (80 / 80)
 
----
-
-## 2. Short description
-**Character Limit:** 80 characters  
-**Recommended Length:** 79 / 80 characters  
-
-```text
-Turn workouts into an anime RPG quest. Gain Aura, defeat bosses & level up IRL.
+```
+Gamified fitness: daily workout quests, streaks & RPG ranks. Level up your body.
 ```
 
-*Alternative options (en-GB):*
-- **Option B (79 chars):** `Gamified RPG fitness. Gain Aura, complete daily quests & awaken your real stats.`
-- **Option C (77 chars):** `Level up your IRL stats. Turn daily workouts into an anime RPG fitness quest.`
+## 3. Full description (2380 / 4,000)
 
----
+```
+Turn your workouts into a game. AuraFit is a gamified fitness app and RPG workout tracker that rewards every pushup, squat and sprint with Aura points, stat boosts and higher ranks. If you love anime, gaming or levelling up, this is the habit tracker that finally makes exercise fun.
 
-## 3. Full description
-**Character Limit:** 4,000 characters  
-**Current Length:** 3,216 / 4,000 characters  
+LEVEL UP IN REAL LIFE
+Complete daily fitness quests and quick home workouts to grow your four core stats: Strength (STR), Agility (AGI), Endurance (END) and Recovery (REC). Watch your hunter climb from E-Rank to S-Rank and, one day, Monarch.
 
-```text
-⚡ STOP GRINDING BORING WORKOUT LOGS. AWAKEN YOUR STATS.
+DAILY QUESTS & MOVEMENT SNACKS
+• Short daily workout challenges you can finish in 4 to 12 minutes
+• Movement snacks for desk breaks, study sessions and gaming queues
+• Posture resets, stretching and mobility routines for neck, back and hips
+• Weekly boss raids that push your endurance further
 
-AuraFit transforms your daily workouts, calisthenics, and gym sessions into an anime-inspired RPG fitness quest. Level up your real-life attributes—Strength, Agility, Endurance, and Recovery—as you climb from E-Rank Hunter to the legendary Shadow Monarch rank.
+STREAKS THAT KEEP YOU MOTIVATED
+Build a daily workout streak and earn up to 50% bonus Aura. Missed a day? Streak shields protect your progress so one off day doesn't wipe out your momentum.
 
-Whether you are hitting the gym, doing push-ups in your bedroom, or running sprints, every rep grants Aura Points, builds your streak, and unlocks rare achievements.
+CREATOR WORKOUT DROPS
+Follow guided routines from fitness creators and coaches: strength training, HIIT, cardio intervals and no-equipment bodyweight workouts. A built-in interval timer counts down every set so you can focus on your form.
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-⚔️ WHY AURAFIT HITS DIFFERENT
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+RANKS & LEADERBOARD
+See where you stand on the global hunter leaderboard and track your weekly Aura gains. Fair play matters: rewards are calculated on our servers, so everyone climbs on equal terms.
 
-Most fitness apps feel like corporate spreadsheets. AuraFit is built like an addictive RPG progression system designed to eliminate workout boredom:
+BUILT FOR BEGINNERS AND GRINDERS
+Whether you're starting your first fitness routine or chasing your next personal best, AuraFit adapts to you. Workouts need little or no equipment and fit around school, work and gaming.
 
-• SOLO LEVELING RPG PROGRESSION: Start at E-Rank and battle through D, C, B, A, S, National Level, and Shadow Monarch. Every completed workout awards Aura Points and updates your Hunter Card.
-• REAL-LIFE STAT MATRIX: Track your real attributes across four core pillars:
-  - STR (Strength): Heavy lifts, calisthenics, compound power.
-  - AGI (Agility): Sprints, HIIT, high-tempo mobility.
-  - END (Endurance): Running, cycling, long-distance stamina.
-  - REC (Recovery): Mobility, stretching, sleep, hydration.
-• DAILY SYSTEM QUESTS: Receive personalised daily fitness quests that push you out of your comfort zone. Maintain your Quest Streak to activate XP multipliers.
-• PHONK MOVEMENT SNACKS: Short on time? Engage in 10-15 minute high-intensity workout drops backed by pumping phonk beats and lo-fi timers.
-• SQUAD RAIDS & LEADERBOARDS: Form a Hunter Guild with your friends. Combine your weekly Aura scores to tackle world boss raids and dominate global squad rankings.
+FEATURES
+• Gamified fitness with RPG stats, Aura points and hunter ranks
+• Daily quests, workout streaks and streak shields
+• Home workouts, HIIT, strength, cardio and mobility routines
+• Built-in workout timer for sets and intervals
+• Global leaderboard and weekly progress
+• Light and dark themes
+• Sync your progress between phone and web
+• Delete your account and data anytime in the app
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-🎯 BUILT FOR EVERY HUNTER
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+PRIVACY FIRST
+No ads and we never sell your data. You stay in control: delete your account and all associated data whenever you like.
 
-👑 ATHLETES & GAMERS
-Turn fitness into your favourite game. Never skip leg day again when your real-life stats and rank are on the line. Complete daily quests, earn aura badges, and flex your digital Hunter Card on socials.
+HEALTH NOTE
+AuraFit is not medical advice. Check with a doctor before starting a new exercise program.
 
-🔥 CREATORS & FITNESS COACHES
-Publish exclusive workout drops, choreograph movement snacks with custom timers, and build an engaged squad of hunters.
-
-🏢 GYMS & BOXES
-Host verified gym leaderboards, foster friendly member rivalries, and turn regular gym attendance into community raid events.
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-✨ CORE FEATURES YOU WILL LOVE
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-• Live Interval Runner: Dynamic rest and work interval timers with crisp audio and haptic feedback.
-• Clean & Modern UI: Sleek dark and light themes crafted for high readability during intense workouts.
-• Web Audio Synth & SFX: Level-up chimes and workout completions that deliver instant dopamine.
-• PWA & Cloud Sync: Seamless synchronisation between Android, iOS, and Web across all your devices.
-• Privacy First: Offline-first quest logging with secure, encrypted cloud sync.
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-🛡️ ARE YOU READY TO AWAKEN?
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-Stop waiting for motivation. Build discipline through gamified RPG progression. Download AuraFit today, claim your Hunter Card, and start your awakening!
-
-Note: Always consult a GP or qualified healthcare professional before beginning any new exercise routine.
+Download AuraFit, lock in your first quest and start levelling up today.
 ```
 
----
+## 4. Search terms covered
 
-## 4. Target ASO Keywords (en-GB Market)
-- **Primary Terms:** `RPG fitness`, `gamified workout`, `fitness quest`, `Solo Leveling workout`, `anime fitness app`, `habit tracker`, `gym tracker`, `workout RPG`.
-- **Secondary Terms:** `daily workout quests`, `Aura points`, `calisthenics`, `HIIT interval timer`, `squad raids`, `fitness leaderboard`, `phonk workout`.
-- **Audience:** `Gen Z fitness`, `gamers fitness app`, `gym motivation`, `level up real life stats`.
+Google Play has no keyword field; it ranks on the title, short description and full description. The copy above naturally includes: gamified fitness, RPG workout tracker, fitness quests, home workouts, HIIT, strength training, cardio, stretching, mobility, bodyweight, interval timer, workout streak, habit tracker, leaderboard.
+
+Do not add: other brands or franchise names, "best"/"#1"/"top" claims, emoji, or features that are not live yet (guilds/squad raids, music).
+
+## 5. Store settings
+
+- **Category:** Health & Fitness
+- **Website:** https://aurafit-alpha-one.vercel.app
+- **Privacy policy:** https://aurafit-alpha-one.vercel.app/privacy

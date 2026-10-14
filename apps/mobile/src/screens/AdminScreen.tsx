@@ -3,6 +3,7 @@ import { ActivityIndicator, FlatList, StyleSheet, Text, View } from 'react-nativ
 import { INITIAL_GYM_LEADERBOARD, hasPermission, type GymLeaderboardEntry, type UserRole } from '@aurafit/shared';
 import { Shield, Swords } from '../components/icons';
 import { AppButton } from '../components/AppButton';
+import { Avatar } from '../components/Avatar';
 import { FormMessage } from '../components/AuthLayout';
 import { ComingSoonCard, SampleDataTag } from '../components/DataNotice';
 import { SectionHeader } from '../components/SectionHeader';
@@ -33,18 +34,25 @@ function GymRow({ gym }: { gym: GymLeaderboardEntry }) {
   );
 }
 
-function HunterRow({ hunter, position }: { hunter: PublicHunter; position: number }) {
+export function HunterRow({ hunter, position, isYou = false }: { hunter: PublicHunter; position: number; isYou?: boolean }) {
   const { colors } = useTheme();
   return (
     <View
       accessible
-      accessibilityLabel={`Number ${position}: ${hunter.username}, ${hunter.rank}. ${hunter.auraPoints.toLocaleString()} aura.`}
-      style={[styles.row, { backgroundColor: colors.bgSurface, borderColor: colors.border }]}
+      accessibilityLabel={`Number ${position}: ${hunter.username}${isYou ? ' (you)' : ''}, ${hunter.rank}. ${hunter.auraPoints.toLocaleString()} aura.`}
+      style={[
+        styles.row,
+        { backgroundColor: isYou ? colors.primarySubtle : colors.bgSurface, borderColor: isYou ? colors.primary : colors.border },
+      ]}
     >
       <View style={styles.rowLeft}>
         <Text style={[styles.rank, { color: colors.orange }]}>#{position}</Text>
+        <Avatar name={hunter.username} url={hunter.avatarUrl} size={36} />
         <View style={styles.rowText}>
-          <Text style={[styles.name, { color: colors.textPrimary }]}>{hunter.username}</Text>
+          <Text style={[styles.name, { color: colors.textPrimary }]} numberOfLines={1}>
+            {hunter.username}
+            {isYou ? ' (you)' : ''}
+          </Text>
           <Text style={[styles.city, { color: colors.textSecondary }]}>
             {hunter.handle} • {hunter.rank}
           </Text>

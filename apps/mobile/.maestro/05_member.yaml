@@ -1,0 +1,198 @@
+# Signed-in MEMBER: quest claim (+aura/+STR, toast), already-claimed state, notifications,
+# theme toggle, pull-to-refresh, every quick action and tab, edit profile, rank ladder.
+# Env: EMAIL, PASSWORD (fresh MEMBER account with 0 aura)
+appId: host.exp.Exponent
+name: Member
+---
+- runFlow: subflows/start.yaml
+- runFlow: subflows/login.yaml
+- extendedWaitUntil:
+    visible:
+      id: "hunter-card"
+    timeout: 30000
+- assertVisible:
+    id: "summary-aura"
+    text: "0"
+- assertVisible:
+    id: "stat-str"
+    text: "50"
+
+# --- Claim the next daily quest ---
+- tapOn:
+    id: "daily-quest-start"
+- extendedWaitUntil:
+    visible:
+      id: "toast"
+    timeout: 15000
+- assertVisible: "Quest complete! \\+\\d+ aura, \\+3 STR"
+- takeScreenshot: 05_quest_claimed_toast
+- extendedWaitUntil:
+    visible:
+      id: "summary-aura"
+      text: "[1-9][0-9,]*"
+    timeout: 15000
+- assertVisible:
+    id: "stat-str"
+    text: "53"
+- assertVisible:
+    id: "summary-quests"
+    text: "1/4"
+
+# --- Already claimed: the quest shows as done on the Quests tab (no claim button) ---
+- tapOn:
+    id: "tab-quests"
+- assertVisible:
+    id: "quests-summary"
+    text: "1 / 4 completed today"
+- assertVisible: "Daily Protocol: Pushup Ignition.*Completed\\."
+- takeScreenshot: 05_quests_tab
+- tapOn:
+    id: "tab-home"
+
+# --- Notifications: activity + unread dot ---
+- assertVisible:
+    id: "header-unread-dot"
+- tapOn:
+    id: "header-notifications"
+- assertVisible:
+    id: "notifications-screen"
+- assertVisible: ".*Completed \"Daily Protocol: Pushup Ignition\".*"
+- assertVisible: ".*Welcome to AuraFit.*"
+- takeScreenshot: 05_notifications
+- tapOn:
+    id: "screen-back"
+- assertNotVisible:
+    id: "header-unread-dot"
+
+# --- Theme toggle (light <-> dark) ---
+- tapOn:
+    id: "header-theme-toggle"
+- takeScreenshot: 05_member_home_toggled_theme
+- tapOn:
+    id: "header-theme-toggle"
+
+# --- Pull to refresh ---
+- swipe:
+    start: "50%,35%"
+    end: "50%,85%"
+- waitForAnimationToEnd
+- assertVisible:
+    id: "hunter-card"
+
+# --- Hunter card + rank ladder ---
+- tapOn:
+    id: "hunter-card"
+- assertVisible:
+    id: "hunter-card-screen"
+- assertVisible: "E-RANK, 0 aura. Your current rank\\."
+- takeScreenshot: 05_hunter_card
+- scrollUntilVisible:
+    element: "MONARCH.*"
+- takeScreenshot: 05_rank_ladder
+- scrollUntilVisible:
+    element:
+      id: "screen-back"
+    direction: UP
+- tapOn:
+    id: "screen-back"
+
+# --- Edit profile ---
+- tapOn:
+    id: "hunter-edit"
+- assertVisible:
+    id: "edit-profile-screen"
+- tapOn:
+    id: "edit-title"
+- eraseText: 120
+- inputText: "QA Night Runner"
+- tapOn: "Edit profile"
+- tapOn:
+    id: "edit-save"
+- extendedWaitUntil:
+    visible: "Profile saved."
+    timeout: 15000
+- takeScreenshot: 05_edit_profile_saved
+- tapOn:
+    id: "screen-back"
+
+# --- Quick actions ---
+- tapOn:
+    id: "qa-hunter_card"
+- assertVisible: "QA Night Runner"
+- tapOn:
+    id: "screen-back"
+- tapOn:
+    id: "qa-leaderboard"
+- assertVisible:
+    id: "leaderboard-screen"
+- extendedWaitUntil:
+    visible: ".*\\(you\\).*"
+    timeout: 15000
+- takeScreenshot: 05_leaderboard
+- tapOn:
+    id: "screen-back"
+- tapOn:
+    id: "qa-rewards"
+- assertVisible:
+    id: "achievements-screen"
+- takeScreenshot: 05_achievements
+- tapOn:
+    id: "screen-back"
+- tapOn:
+    id: "qa-snacks"
+- assertVisible:
+    id: "workouts-screen"
+- tapOn:
+    id: "tab-home"
+- tapOn:
+    id: "qa-guild"
+- assertVisible:
+    id: "guild-screen"
+- tapOn:
+    id: "tab-home"
+- tapOn:
+    id: "summary-view-all"
+- assertVisible:
+    id: "quests-screen"
+
+# --- Tabs ---
+- tapOn:
+    id: "tab-workouts"
+- assertVisible:
+    id: "workouts-screen"
+- takeScreenshot: 05_workouts_tab
+- tapOn:
+    id: "filter-HIIT"
+- tapOn:
+    id: "filter-ALL"
+- tapOn:
+    id: "tab-guild"
+- assertVisible: "Guilds & squad raids.*Coming soon.*"
+- takeScreenshot: 05_guild_tab
+- tapOn:
+    id: "guild-open-leaderboard"
+- assertVisible:
+    id: "leaderboard-screen"
+- tapOn:
+    id: "screen-back"
+- tapOn:
+    id: "tab-profile"
+- assertVisible:
+    id: "hunter-card-screen"
+- takeScreenshot: 05_profile_tab
+- tapOn:
+    id: "hunter-achievements"
+- assertVisible:
+    id: "achievements-screen"
+- tapOn:
+    id: "screen-back"
+- tapOn:
+    id: "tab-home"
+
+# --- Daily quest reload: completed quest stays completed after relaunch (server state) ---
+- runFlow: subflows/launch.yaml
+- tapOn:
+    id: "tab-quests"
+- assertVisible: "Daily Protocol: Pushup Ignition.*Completed\\."
+- tapOn:
+    id: "tab-home"

@@ -63,11 +63,13 @@ export const QuestCard = memo(function QuestCard({ quest, canComplete, onComplet
             style={[styles.doneCircle, { backgroundColor: colors.emeraldSubtle, borderColor: colors.emerald }]}
             accessible={false}
             importantForAccessibility="no-hide-descendants"
+            testID={`quest-done-${quest.id}`}
           >
             <AppIcon icon={Check} size={18} color={colors.emerald} strokeWidth={3} />
           </View>
         ) : canComplete ? (
           <AppButton
+            testID={`quest-claim-${quest.id}`}
             label="Lock In"
             accessibilityLabel={`Complete quest: ${quest.title}`}
             onPress={() => onComplete(quest.id)}

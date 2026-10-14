@@ -1,0 +1,24 @@
+# Welcome screen: primary actions, legal links and health disclaimer.
+appId: host.exp.Exponent
+name: Welcome
+---
+- runFlow: subflows/start.yaml
+- assertVisible:
+    id: "welcome-login"
+- assertVisible:
+    id: "welcome-signup"
+- assertVisible:
+    id: "welcome-demo"
+- assertVisible: "Terms of Service"
+- assertVisible: "Privacy Policy"
+- assertVisible: "Health notice:.*"
+- takeScreenshot: 01_welcome
+# Legal links open the in-app browser.
+- tapOn: "Terms of Service"
+- extendedWaitUntil:
+    visible: "Done"
+    timeout: 15000
+- takeScreenshot: 01_terms_browser
+- tapOn: "Done"
+- assertVisible:
+    id: "welcome-login"

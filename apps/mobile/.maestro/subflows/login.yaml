@@ -1,0 +1,24 @@
+# Logs in from the Welcome screen with ${EMAIL} / ${PASSWORD}.
+appId: host.exp.Exponent
+---
+- tapOn:
+    id: "welcome-login"
+- tapOn:
+    id: "login-email"
+- inputText: ${EMAIL}
+- tapOn:
+    id: "login-password"
+- inputText: ${PASSWORD}
+- tapOn: "Welcome back"  # dismiss keyboard
+- tapOn:
+    id: "login-submit"
+# iOS may offer to save the password.
+- runFlow:
+    when:
+      visible: "Not Now"
+    commands:
+      - tapOn: "Not Now"
+- extendedWaitUntil:
+    visible:
+      id: "header-account"
+    timeout: 30000

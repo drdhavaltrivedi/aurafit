@@ -1,28 +1,30 @@
-import React, { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, RefreshControl, StyleSheet, Text, View } from 'react-native';
+import React, { useCallback, useEffect, useMemo } from 'react';
+import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import * as SplashScreen from 'expo-splash-screen';
 import * as SystemUI from 'expo-system-ui';
-import { hasPermission, type UserRole, type WorkoutDrop } from '@aurafit/shared';
+import {
+  ADMIN_USER,
+  CREATOR_USER,
+  INITIAL_WORKOUT_DROPS,
+  calculateAuraGain,
+  getRankFromAura,
+  hasPermission,
+  type UserRole,
+} from '@aurafit/shared';
+import type { PublicHunter } from './src/api/types';
+import { updateOwnProfile } from './src/api/profile';
 import { AuthProvider, useAuth } from './src/auth/AuthProvider';
 import { AppButton } from './src/components/AppButton';
-import { AppHeader } from './src/components/AppHeader';
 import { FormMessage } from './src/components/AuthLayout';
-import { BottomTabBar, type MainTabKey } from './src/components/BottomTabBar';
 import { DemoBanner } from './src/components/DemoBanner';
 import { RoleSwitcher } from './src/components/RoleSwitcher';
-import { WorkoutSessionModal } from './src/components/WorkoutSessionModal';
 import { useCompleteQuest, useCompleteWorkout, useDrops, useLeaderboard, useMe } from './src/hooks/useApi';
 import { useGameStore, type GameStore } from './src/hooks/useGameStore';
-import { AdminScreen } from './src/screens/AdminScreen';
-import { CreatorScreen } from './src/screens/CreatorScreen';
-import { GuildScreen } from './src/screens/GuildScreen';
-import { MemberScreen } from './src/screens/MemberScreen';
-import { MovementSnacksScreen } from './src/screens/MovementSnacksScreen';
-import { AccountScreen } from './src/screens/account/AccountScreen';
 import { AuthNavigator } from './src/screens/auth/AuthNavigator';
 import { ResetPasswordScreen } from './src/screens/auth/ResetPasswordScreen';
+import { MainShell, alertAlreadyClaimed, type ShellModel } from './src/shell/MainShell';
 import { ThemeProvider, useTheme } from './src/theme/ThemeProvider';
 import { spacing } from './src/theme/tokens';
 
@@ -84,100 +86,76 @@ function Screens({ store }: { store: GameStore }) {
   );
 }
 
-/** Original local-only experience (seed data + AsyncStorage reducer). */
+/** Local-only experience (seed data + AsyncStorage reducer), clearly labelled as sample data. */
 function DemoShell({ store, onToggleTheme }: { store: GameStore; onToggleTheme: () => void }) {
   const auth = useAuth();
-  const { state, setRole, completeQuest, finishWorkout, resetGame } = store;
+  const { state, setRole, completeQuest, finishWorkout, resetGame, setTheme, updateProfile } = store;
   const { role, user, quests } = state;
-  const [activeTab, setActiveTab] = useState<MainTabKey>('home');
-  const [activeWorkout, setActiveWorkout] = useState<WorkoutDrop | null>(null);
-  const [accountOpen, setAccountOpen] = useState(false);
-  const openAccount = useCallback(() => setAccountOpen(true), []);
-  const closeAccount = useCallback(() => setAccountOpen(false), []);
 
-  const startWorkout = useCallback(
-    (drop: WorkoutDrop) => {
-      if (hasPermission(role, 'START_WORKOUT')) setActiveWorkout(drop);
+  const leaderboard = useMemo(() => {
+    const hunters: PublicHunter[] = [user, CREATOR_USER, ADMIN_USER]
+      .map((u) => ({
+        id: u.id,
+        username: u.username,
+        handle: u.handle,
+        avatarUrl: u.avatarUrl,
+        role: u.role,
+        auraPoints: u.auraPoints,
+        rank: getRankFromAura(u.auraPoints).rank,
+        level: u.level,
+        streakDays: u.streakDays,
+        totalWorkouts: u.totalWorkouts,
+      }))
+      .sort((a, b) => b.auraPoints - a.auraPoints);
+    return { hunters, loading: false, error: null, refetch: () => {}, sample: true };
+  }, [user]);
+
+  const model: ShellModel = {
+    demo: true,
+    activityScope: 'demo',
+    role,
+    user,
+    email: null,
+    quests,
+    drops: INITIAL_WORKOUT_DROPS,
+    dropsLoading: false,
+    dropsError: null,
+    leaderboard,
+    topSlot: (
+      <>
+        <DemoBanner onSignIn={auth.backendAvailable ? auth.exitDemo : undefined} />
+        {/* The role switcher is a demo-only affordance; real roles come from the server profile. */}
+        <RoleSwitcher value={role} onChange={setRole} />
+      </>
+    ),
+    completeQuest: async (questId) => {
+      const quest = quests.find((q) => q.id === questId);
+      if (!quest || !hasPermission(role, 'DO_QUESTS')) return null;
+      if (quest.completed) {
+        alertAlreadyClaimed();
+        return null;
+      }
+      const auraEarned = calculateAuraGain(quest.auraReward, user.streakDays);
+      completeQuest(questId);
+      return { auraEarned, stat: quest.statReward.stat, amount: quest.statReward.amount };
     },
-    [role]
-  );
-  const closeWorkout = useCallback(() => setActiveWorkout(null), []);
-  const claimWorkout = useCallback(
-    (drop: WorkoutDrop) => {
+    claimWorkout: async (drop) => {
+      if (!hasPermission(role, 'START_WORKOUT')) return null;
+      const auraEarned = calculateAuraGain(drop.xpPoints, user.streakDays, drop.auraMultiplier);
       finishWorkout(drop);
-      setActiveWorkout(null);
+      return { auraEarned };
     },
-    [finishWorkout]
-  );
+    saveProfile: async (patch) => {
+      updateProfile(patch);
+      return {};
+    },
+    resetLocalData: resetGame,
+    themePreference: state.themePreference,
+    setTheme,
+    toggleTheme: onToggleTheme,
+  };
 
-  if (accountOpen) {
-    return <AccountScreen demo email={null} profile={user} onClose={closeAccount} onResetLocalData={resetGame} />;
-  }
-
-  return (
-    <>
-      <AppHeader
-        auraPoints={user.auraPoints}
-        streakDays={user.streakDays}
-        onToggleTheme={onToggleTheme}
-        onOpenAccount={openAccount}
-      />
-      <DemoBanner onSignIn={auth.backendAvailable ? auth.exitDemo : undefined} />
-      {/* The role switcher is a demo-only affordance; real roles come from the server profile. */}
-      <RoleSwitcher value={role} onChange={setRole} />
-
-      <View style={styles.body}>
-        {activeTab === 'home' && (
-          <>
-            {role === 'MEMBER' && (
-              <MemberScreen
-                role={role}
-                user={user}
-                quests={quests}
-                onCompleteQuest={completeQuest}
-                onStartWorkout={startWorkout}
-                onNavigateAction={(key) => {
-                  if (key === 'snacks') setActiveTab('workouts');
-                  else if (key === 'guild') setActiveTab('guild');
-                  else if (key === 'hunter_card' || key === 'rewards') openAccount();
-                  else if (key === 'leaderboard') setActiveTab('guild');
-                }}
-                onOpenAccount={openAccount}
-              />
-            )}
-            {role === 'CREATOR' && <CreatorScreen role={role} sample />}
-            {role === 'ADMIN' && <AdminScreen role={role} sample />}
-          </>
-        )}
-        {activeTab === 'guild' && (
-          <GuildScreen onBack={() => setActiveTab('home')} onOpenSettings={openAccount} />
-        )}
-        {activeTab === 'workouts' && (
-          <MovementSnacksScreen onBack={() => setActiveTab('home')} onStartWorkout={startWorkout} />
-        )}
-        {activeTab === 'quests' && (
-          <MemberScreen
-            role={role}
-            user={user}
-            quests={quests}
-            onCompleteQuest={completeQuest}
-            onStartWorkout={startWorkout}
-            onOpenAccount={openAccount}
-          />
-        )}
-      </View>
-
-      <BottomTabBar
-        activeTab={activeTab}
-        onSelectTab={(tab) => {
-          if (tab === 'profile') openAccount();
-          else setActiveTab(tab);
-        }}
-      />
-
-      <WorkoutSessionModal drop={activeWorkout} onClose={closeWorkout} onClaim={claimWorkout} />
-    </>
-  );
+  return <MainShell model={model} />;
 }
 
 const ROLES: readonly UserRole[] = ['MEMBER', 'CREATOR', 'ADMIN'];
@@ -192,174 +170,79 @@ function ServerShell({ store, onToggleTheme }: { store: GameStore; onToggleTheme
   const role: UserRole = profile && ROLES.includes(profile.role) ? profile.role : 'MEMBER';
 
   const drops = useDrops(!!profile);
-  const leaderboard = useLeaderboard(!!profile && role === 'ADMIN');
+  const leaderboard = useLeaderboard(!!profile);
   const completeQuest = useCompleteQuest(me);
   const completeWorkout = useCompleteWorkout(me);
-  const [activeTab, setActiveTab] = useState<MainTabKey>('home');
-  const [activeWorkout, setActiveWorkout] = useState<WorkoutDrop | null>(null);
-
-  const startWorkout = useCallback(
-    (drop: WorkoutDrop) => {
-      if (hasPermission(role, 'START_WORKOUT')) setActiveWorkout(drop);
-    },
-    [role]
-  );
-  const closeWorkout = useCallback(() => setActiveWorkout(null), []);
-  const claimWorkout = useCallback(
-    (drop: WorkoutDrop) => {
-      setActiveWorkout(null);
-      void completeWorkout(drop);
-    },
-    [completeWorkout]
-  );
-  const onQuest = useCallback((id: string) => void completeQuest(id), [completeQuest]);
-
   const signOut = useCallback(() => void auth.signOut(), [auth]);
-  const [accountOpen, setAccountOpen] = useState(false);
-  const openAccount = useCallback(() => setAccountOpen(true), []);
-  const closeAccount = useCallback(() => setAccountOpen(false), []);
-
-  if (accountOpen) {
-    return (
-      <AccountScreen
-        demo={false}
-        email={auth.session?.user.email ?? null}
-        profile={profile}
-        onClose={closeAccount}
-        onResetLocalData={store.resetGame}
-      />
-    );
-  }
 
   if (!me.data) {
     return (
-      <>
-        <AppHeader auraPoints={0} streakDays={0} onToggleTheme={onToggleTheme} onOpenAccount={openAccount} />
-        <View style={styles.center}>
-          {me.loading ? (
-            <ActivityIndicator size="large" color={colors.primary} accessibilityLabel="Loading your profile" />
-          ) : (
-            <View style={styles.errorBox}>
-              <FormMessage tone="error" message={me.error ?? "Couldn't load your profile."} />
-              <AppButton label="Try again" onPress={() => void me.refetch()} />
-              <AppButton label="Sign out" variant="ghost" onPress={signOut} />
-            </View>
-          )}
-        </View>
-      </>
+      <View style={styles.center}>
+        {me.loading ? (
+          <ActivityIndicator size="large" color={colors.primary} accessibilityLabel="Loading your profile" />
+        ) : (
+          <View style={styles.errorBox}>
+            <FormMessage tone="error" message={me.error ?? "Couldn't load your profile."} />
+            <AppButton label="Try again" onPress={() => void me.refetch()} testID="profile-retry" />
+            <AppButton label="Sign out" variant="ghost" onPress={signOut} testID="profile-signout" />
+          </View>
+        )}
+      </View>
     );
   }
 
-  const { quests } = me.data;
   const user = me.data.profile;
-  const refresh = (
-    <RefreshControl
-      refreshing={me.refreshing}
-      onRefresh={() => {
+  const syncError = me.error ?? drops.error;
+  const model: ShellModel = {
+    demo: false,
+    activityScope: user.id,
+    role,
+    user,
+    email: auth.session?.user.email ?? null,
+    quests: me.data.quests,
+    drops: drops.data ?? [],
+    dropsLoading: drops.loading,
+    dropsError: drops.error,
+    leaderboard: {
+      hunters: leaderboard.data?.hunters ?? [],
+      loading: leaderboard.loading,
+      refreshing: leaderboard.refreshing,
+      error: leaderboard.error,
+      refetch: () => void leaderboard.refetch(),
+      sample: false,
+    },
+    homeHeader: syncError ? <FormMessage tone="error" message={syncError} /> : null,
+    refresh: {
+      refreshing: me.refreshing,
+      onRefresh: () => {
         void me.refetch();
         void drops.refetch();
-      }}
-      tintColor={colors.primary}
-      colors={[colors.primaryStrong]}
-    />
-  );
+      },
+    },
+    completeQuest: async (questId) => {
+      const res = await completeQuest(questId);
+      return res ? { auraEarned: res.auraEarned, stat: res.statGain.stat, amount: res.statGain.amount } : null;
+    },
+    claimWorkout: async (drop) => {
+      const res = await completeWorkout(drop);
+      return res ? { auraEarned: res.auraEarned } : null;
+    },
+    saveProfile: async (patch) => {
+      const res = await updateOwnProfile(user.id, patch);
+      if (!res.error) await me.refetch();
+      return res;
+    },
+    resetLocalData: store.resetGame,
+    themePreference: store.state.themePreference,
+    setTheme: store.setTheme,
+    toggleTheme: onToggleTheme,
+  };
 
-  return (
-    <>
-      <AppHeader
-        auraPoints={user.auraPoints}
-        streakDays={user.streakDays}
-        onToggleTheme={onToggleTheme}
-        onOpenAccount={openAccount}
-      />
-      <View style={styles.body}>
-        {activeTab === 'home' && (
-          <>
-            {role === 'MEMBER' && (
-              <MemberScreen
-                role={role}
-                user={user}
-                quests={quests}
-                drops={drops.data ?? []}
-                onCompleteQuest={onQuest}
-                onStartWorkout={startWorkout}
-                refreshControl={refresh}
-                onNavigateAction={(key) => {
-                  if (key === 'snacks') setActiveTab('workouts');
-                  else if (key === 'guild') setActiveTab('guild');
-                  else if (key === 'hunter_card' || key === 'rewards') openAccount();
-                  else if (key === 'leaderboard') setActiveTab('guild');
-                }}
-                onOpenAccount={openAccount}
-                header={
-                  me.error || drops.error ? (
-                    <FormMessage tone="error" message={me.error ?? drops.error ?? ''} />
-                  ) : drops.loading ? (
-                    <Text style={{ color: colors.textMuted }}>Loading workout drops…</Text>
-                  ) : null
-                }
-              />
-            )}
-            {role === 'CREATOR' && (
-              <CreatorScreen
-                role={role}
-                sample={false}
-                profile={user}
-                drops={drops.data ?? []}
-                dropsLoading={drops.loading}
-                dropsError={drops.error}
-              />
-            )}
-            {role === 'ADMIN' && (
-              <AdminScreen
-                role={role}
-                sample={false}
-                hunters={leaderboard.data?.hunters ?? []}
-                huntersLoading={leaderboard.loading}
-                huntersError={leaderboard.error}
-                onRetry={() => void leaderboard.refetch()}
-              />
-            )}
-          </>
-        )}
-        {activeTab === 'guild' && (
-          <GuildScreen onBack={() => setActiveTab('home')} onOpenSettings={openAccount} />
-        )}
-        {activeTab === 'workouts' && (
-          <MovementSnacksScreen onBack={() => setActiveTab('home')} onStartWorkout={startWorkout} />
-        )}
-        {activeTab === 'quests' && (
-          <MemberScreen
-            role={role}
-            user={user}
-            quests={quests}
-            drops={drops.data ?? []}
-            onCompleteQuest={onQuest}
-            onStartWorkout={startWorkout}
-            refreshControl={refresh}
-            onOpenAccount={openAccount}
-          />
-        )}
-      </View>
-
-      <BottomTabBar
-        activeTab={activeTab}
-        onSelectTab={(tab) => {
-          if (tab === 'profile') openAccount();
-          else setActiveTab(tab);
-        }}
-      />
-
-      <WorkoutSessionModal drop={activeWorkout} onClose={closeWorkout} onClaim={claimWorkout} />
-    </>
-  );
+  return <MainShell model={model} />;
 }
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
-  },
-  body: {
     flex: 1,
   },
   center: {

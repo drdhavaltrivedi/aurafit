@@ -1,0 +1,16 @@
+# Relaunches Expo Go and reopens the dev server without changing the signed-in state.
+appId: host.exp.Exponent
+---
+- launchApp:
+    appId: host.exp.Exponent
+    stopApp: true
+- openLink: ${METRO_URL || 'exp://127.0.0.1:8081'}
+- runFlow:
+    when:
+      visible: "Continue"
+    commands:
+      - tapOn: "Continue"
+- extendedWaitUntil:
+    visible:
+      id: "welcome-login|header-account|profile-signout"
+    timeout: 60000

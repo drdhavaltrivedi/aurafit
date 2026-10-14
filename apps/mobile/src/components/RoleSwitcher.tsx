@@ -24,6 +24,7 @@ export function RoleSwitcher({ value, onChange }: { value: UserRole; onChange: (
           <Pressable
             key={role}
             onPress={() => onChange(role)}
+            testID={`role-${role}`}
             accessibilityRole="tab"
             accessibilityLabel={`${label} view`}
             accessibilityState={{ selected: active }}

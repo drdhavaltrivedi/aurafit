@@ -7,16 +7,16 @@ import { fontSize, radius, spacing } from '../theme/tokens';
 
 interface TodaySummaryCardProps {
   auraPoints: number;
-  workoutsCompleted: number;
-  workoutsTarget?: number;
+  questsCompleted: number;
+  questsTotal: number;
   streakDays: number;
   onViewAll?: () => void;
 }
 
 export function TodaySummaryCard({
   auraPoints,
-  workoutsCompleted,
-  workoutsTarget = 1,
+  questsCompleted,
+  questsTotal,
   streakDays,
   onViewAll,
 }: TodaySummaryCardProps) {
@@ -27,7 +27,14 @@ export function TodaySummaryCard({
       <View style={styles.headerRow}>
         <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>Today's Summary</Text>
         {onViewAll ? (
-          <Pressable hitSlop={8} onPress={onViewAll} style={styles.viewAllBtn}>
+          <Pressable
+            hitSlop={12}
+            onPress={onViewAll}
+            style={styles.viewAllBtn}
+            testID="summary-view-all"
+            accessibilityRole="button"
+            accessibilityLabel="View all quests"
+          >
             <Text style={[styles.viewAllText, { color: colors.textSecondary }]}>View All</Text>
             <AppIcon icon={ChevronRight} size={14} color={colors.textSecondary} />
           </Pressable>
@@ -42,7 +49,9 @@ export function TodaySummaryCard({
           </View>
           <View style={styles.tileTextCol}>
             <Text style={[styles.tileSub, { color: colors.textSecondary }]}>Aura Points</Text>
-            <Text style={[styles.tileVal, { color: colors.textPrimary }]}>{auraPoints.toLocaleString()}</Text>
+            <Text style={[styles.tileVal, { color: colors.textPrimary }]} testID="summary-aura">
+              {auraPoints.toLocaleString()}
+            </Text>
           </View>
         </View>
 
@@ -52,9 +61,9 @@ export function TodaySummaryCard({
             <AppIcon icon={Check} size={15} color={colors.emerald} strokeWidth={3} />
           </View>
           <View style={styles.tileTextCol}>
-            <Text style={[styles.tileSub, { color: colors.textSecondary }]}>Workouts</Text>
-            <Text style={[styles.tileVal, { color: colors.textPrimary }]}>
-              {workoutsCompleted}/{workoutsTarget}
+            <Text style={[styles.tileSub, { color: colors.textSecondary }]}>Quests</Text>
+            <Text style={[styles.tileVal, { color: colors.textPrimary }]} testID="summary-quests">
+              {questsCompleted}/{questsTotal}
             </Text>
           </View>
         </View>
@@ -66,7 +75,7 @@ export function TodaySummaryCard({
           </View>
           <View style={styles.tileTextCol}>
             <Text style={[styles.tileSub, { color: colors.textSecondary }]}>Streak</Text>
-            <Text style={[styles.tileVal, { color: colors.textPrimary }]}>{streakDays} days</Text>
+            <Text style={[styles.tileVal, { color: colors.textPrimary }]}>{streakDays} {streakDays === 1 ? 'day' : 'days'}</Text>
           </View>
         </View>
       </View>

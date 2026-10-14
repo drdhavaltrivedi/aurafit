@@ -1,162 +1,109 @@
 import React from 'react';
-import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { getRankFromAura, type UserProfile } from '@aurafit/shared';
 import { useTheme } from '../theme/ThemeProvider';
 import { AppIcon } from './AppIcon';
-import { Pencil, Shield } from './icons';
+import { Avatar } from './Avatar';
+import { ChevronRight, Pencil, Shield } from './icons';
 import { fontSize, radius, spacing } from '../theme/tokens';
 
 interface HunterHeroCardProps {
   user: UserProfile;
-  onEditProfile?: () => void;
-  onViewRankDetails?: () => void;
+  onEditProfile: () => void;
+  onViewRankDetails: () => void;
 }
 
 export function HunterHeroCard({ user, onEditProfile, onViewRankDetails }: HunterHeroCardProps) {
   const { colors } = useTheme();
   const rankInfo = getRankFromAura(user.auraPoints);
   const nextTarget = rankInfo.nextRank
-    ? `${user.auraPoints.toLocaleString()} / ${(user.auraPoints + rankInfo.pointsNeeded).toLocaleString()} Aura Points`
-    : `${user.auraPoints.toLocaleString()} Aura Points (MAX)`;
+    ? `${user.auraPoints.toLocaleString()} / ${(user.auraPoints + rankInfo.pointsNeeded).toLocaleString()} aura to ${rankInfo.nextRank}`
+    : `${user.auraPoints.toLocaleString()} aura (max rank)`;
 
   return (
-    <Pressable
-      onPress={onViewRankDetails}
-      accessibilityRole="button"
-      accessibilityLabel={`Hunter card for ${user.username}, ${rankInfo.rank} rank`}
-      style={({ pressed }) => [
-        styles.card,
-        {
-          backgroundColor: colors.bgSurface,
-          borderColor: colors.border,
-          opacity: pressed ? 0.95 : 1,
-        },
-      ]}
-    >
-      <View style={styles.contentRow}>
-        {/* Avatar with glowing ring */}
-        <View style={[styles.avatarWrap, { borderColor: colors.primary }]}>
-          <Image
-            source={require('../../assets/hunter-avatar.jpg')}
-            style={styles.avatarImg}
-            resizeMode="cover"
-          />
-          <View style={[styles.avatarGlow, { backgroundColor: colors.primary }]} />
-        </View>
+    <View style={[styles.card, { backgroundColor: colors.bgSurface, borderColor: colors.border }]}>
+      <Pressable
+        onPress={onViewRankDetails}
+        testID="hunter-card"
+        accessibilityRole="button"
+        accessibilityLabel={`Hunter card for ${user.username}, ${rankInfo.rank}, ${user.auraPoints.toLocaleString()} aura points`}
+        accessibilityHint="Opens your hunter card and rank ladder"
+        style={({ pressed }) => [styles.contentRow, { opacity: pressed ? 0.85 : 1 }]}
+      >
+        <Avatar name={user.username} url={user.avatarUrl} size={60} />
 
-        {/* Hunter Info & Progress */}
         <View style={styles.infoCol}>
-          <View style={styles.nameRow}>
-            <Text style={[styles.nameText, { color: colors.textPrimary }]} numberOfLines={1}>
-              {user.username || 'Hunter'}
-            </Text>
-            {onEditProfile ? (
-              <Pressable hitSlop={8} onPress={onEditProfile} style={styles.pencilBtn}>
-                <AppIcon icon={Pencil} size={14} color={colors.textSecondary} />
-              </Pressable>
-            ) : null}
-          </View>
-
+          <Text style={[styles.nameText, { color: colors.textPrimary }]} numberOfLines={1}>
+            {user.username || 'Hunter'}
+          </Text>
           <View style={styles.rankPillRow}>
             <View style={[styles.rankPill, { backgroundColor: colors.primarySubtle }]}>
-              <View style={[styles.rankDot, { backgroundColor: colors.primary }]} />
-              <Text style={[styles.rankPillText, { color: colors.primary }]}>
-                {rankInfo.rank}-Rank
+              <AppIcon icon={Shield} size={12} color={colors.primary} strokeWidth={2.5} />
+              <Text style={[styles.rankPillText, { color: colors.primary }]} testID="hunter-rank">
+                {rankInfo.rank}
               </Text>
             </View>
           </View>
-
           <View style={styles.progressContainer}>
             <View style={[styles.track, { backgroundColor: colors.bgElevated }]}>
               <View
                 style={[
                   styles.fill,
-                  {
-                    backgroundColor: colors.primary,
-                    width: `${Math.min(Math.max(rankInfo.progressToNext, 6), 100)}%`,
-                  },
+                  { backgroundColor: colors.primary, width: `${Math.min(Math.max(rankInfo.progressToNext, 2), 100)}%` },
                 ]}
               />
             </View>
-            <Text style={[styles.progressLabel, { color: colors.textSecondary }]}>
+            <Text style={[styles.progressLabel, { color: colors.textSecondary }]} numberOfLines={1}>
               {nextTarget}
             </Text>
           </View>
         </View>
+        <AppIcon icon={ChevronRight} size={18} color={colors.textMuted} />
+      </Pressable>
 
-        {/* E-Rank Crest Shield Badge on Right */}
-        <View style={styles.crestBadge}>
-          <View style={styles.crestShieldWrap}>
-            <AppIcon icon={Shield} size={32} color="#8B5CF6" />
-            <Text style={styles.crestLetter}>
-              {rankInfo.rank.charAt(0)}
-            </Text>
-          </View>
-          <Text style={styles.crestRankName}>
-            {rankInfo.rank}-RANK
-          </Text>
-        </View>
-      </View>
-    </Pressable>
+      <Pressable
+        onPress={onEditProfile}
+        testID="hunter-edit"
+        accessibilityRole="button"
+        accessibilityLabel="Edit profile"
+        hitSlop={4}
+        style={({ pressed }) => [
+          styles.editBtn,
+          { backgroundColor: colors.bgElevated, borderColor: colors.border, opacity: pressed ? 0.7 : 1 },
+        ]}
+      >
+        <AppIcon icon={Pencil} size={15} color={colors.textSecondary} />
+      </Pressable>
+    </View>
   );
 }
+
+// 36pt visual + 4pt hitSlop on each side = 44pt touch target.
+const EDIT_SIZE = 36;
 
 const styles = StyleSheet.create({
   card: {
     borderRadius: radius.lg,
     borderWidth: 1,
     padding: spacing.md + 2,
-    shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 10,
-    elevation: 4,
+    paddingRight: spacing.md + EDIT_SIZE,
   },
   contentRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.md,
   },
-  avatarWrap: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    borderWidth: 2.5,
-    overflow: 'hidden',
-    position: 'relative',
-  },
-  avatarImg: {
-    width: '100%',
-    height: '100%',
-  },
-  avatarGlow: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    height: 3,
-    opacity: 0.8,
-  },
   infoCol: {
     flex: 1,
     gap: 4,
-  },
-  nameRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
   },
   nameText: {
     fontSize: fontSize.title,
     fontWeight: '800',
     letterSpacing: -0.3,
   },
-  pencilBtn: {
-    padding: 2,
-  },
   rankPillRow: {
     flexDirection: 'row',
-    alignItems: 'center',
   },
   rankPill: {
     flexDirection: 'row',
@@ -165,11 +112,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: radius.full,
-  },
-  rankDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
   },
   rankPillText: {
     fontSize: fontSize.caption,
@@ -193,40 +135,16 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '700',
   },
-  crestBadge: {
-    width: 68,
-    height: 72,
-    borderRadius: radius.md,
-    borderWidth: 1.5,
-    borderColor: '#7C3AED',
-    backgroundColor: 'rgba(124, 58, 237, 0.22)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    position: 'relative',
-    paddingTop: 4,
-  },
-  crestShieldWrap: {
-    width: 34,
-    height: 34,
-    alignItems: 'center',
-    justifyContent: 'center',
-    position: 'relative',
-  },
-  crestLetter: {
+  editBtn: {
     position: 'absolute',
-    color: '#FFFFFF',
-    fontSize: 14,
-    fontWeight: '900',
-    textAlign: 'center',
-    textShadowColor: 'rgba(0, 0, 0, 0.95)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 3,
-  },
-  crestRankName: {
-    color: '#DDD6FE',
-    fontSize: 9,
-    fontWeight: '900',
-    letterSpacing: 0.5,
-    marginTop: 4,
+    top: spacing.sm,
+    right: spacing.sm,
+    width: EDIT_SIZE,
+    height: EDIT_SIZE,
+    minWidth: EDIT_SIZE,
+    borderRadius: EDIT_SIZE / 2,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });

@@ -16,7 +16,9 @@ export function DemoBanner({ onSignIn }: DemoBannerProps) {
       accessibilityRole="summary"
     >
       <Text style={[styles.text, { color: colors.orange }]} maxFontSizeMultiplier={1.4}>
-        {onSignIn ? 'Demo mode — progress is saved on this device only.' : 'Demo mode — backend not configured. Progress stays on this device.'}
+        {onSignIn
+          ? 'Demo mode · Sample data — progress is saved on this device only.'
+          : 'Demo mode · Sample data — backend not configured. Progress stays on this device.'}
       </Text>
       {onSignIn ? (
         <Pressable

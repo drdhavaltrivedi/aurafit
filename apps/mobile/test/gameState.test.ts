@@ -19,3 +19,20 @@ describe('game state reset', () => {
     expect(reset).toEqual({ ...createInitialState(today), themePreference: 'light' });
   });
 });
+
+describe('demo profile edits and sessions', () => {
+  it('updates username/title/bio and ignores a blank username', () => {
+    const today = '2026-10-13';
+    const s = createInitialState(today);
+    const next = gameReducer(s, { type: 'UPDATE_PROFILE', patch: { username: ' Neo ', title: 'Runner', bio: 'hi' } });
+    expect(next.user).toMatchObject({ username: 'Neo', title: 'Runner', bio: 'hi' });
+    expect(gameReducer(s, { type: 'UPDATE_PROFILE', patch: { username: '  ', title: '', bio: '' } })).toBe(s);
+  });
+
+  it('counts a completed quest as a session, like the server', () => {
+    const today = '2026-10-13';
+    const s = createInitialState(today);
+    const next = gameReducer(s, { type: 'COMPLETE_QUEST', questId: s.quests[0].id, today });
+    expect(next.user.totalWorkouts).toBe(s.user.totalWorkouts + 1);
+  });
+});

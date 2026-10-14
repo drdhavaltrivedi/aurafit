@@ -292,12 +292,12 @@ export * from './api';
 // ==========================================
 
 export const INITIAL_USER: UserProfile = {
-  id: 'usr_jinwoo_99',
-  username: 'Jinwoo Kai',
-  handle: '@jinwoo_leveling',
+  id: 'usr_kai_99',
+  username: 'Kai Rivers',
+  handle: '@kai_levels',
   role: 'MEMBER',
   avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=80',
-  title: 'Shadow Monarch in Training',
+  title: 'Rising Hunter in Training',
   bio: 'Locking in every morning. Road to S-Rank. 0 excuses, max aura.',
   auraPoints: 8450,
   rank: 'B-RANK',
@@ -576,14 +576,14 @@ export const INITIAL_WORKOUT_DROPS: WorkoutDrop[] = [
 export const INITIAL_SQUADS: Squad[] = [
   {
     id: 'sq_shadow_unit',
-    name: 'Shadow Monarch Unit',
+    name: 'Night Shift Unit',
     tag: '#SOLO',
     avatar: 'swords',
     totalAura: 48920,
     rankPosition: 1,
     memberCount: 5,
     maxMembers: 5,
-    leaderName: 'Jinwoo Kai',
+    leaderName: 'Kai Rivers',
     streakDays: 14,
     weeklyGoalProgress: 88,
     status: 'ON_FIRE',
@@ -639,7 +639,7 @@ export const INITIAL_GYM_LEADERBOARD: GymLeaderboardEntry[] = [
     city: 'Tokyo',
     activeSquads: 142,
     totalAuraEarned: 1845000,
-    topHunter: '@jinwoo_leveling',
+    topHunter: '@kai_levels',
     growthRate: '+34% this month',
   },
   {
@@ -648,7 +648,7 @@ export const INITIAL_GYM_LEADERBOARD: GymLeaderboardEntry[] = [
     city: 'Seoul',
     activeSquads: 118,
     totalAuraEarned: 1512000,
-    topHunter: '@sung_hunter',
+    topHunter: '@seoul_sprinter',
     growthRate: '+28% this month',
   },
   {

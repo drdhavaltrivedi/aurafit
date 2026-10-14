@@ -3,7 +3,7 @@ import { Alert, AppState } from 'react-native';
 import type { WorkoutDrop } from '@aurafit/shared';
 import { api, isApiError, type ApiClient } from '../api';
 import { markQuestCompleted, optimisticCompleteQuest, optimisticCompleteWorkout } from '../api/optimistic';
-import type { LeaderboardResponse, MeResponse } from '../api/types';
+import type { CompleteQuestResponse, CompleteWorkoutResponse, LeaderboardResponse, MeResponse } from '../api/types';
 
 export interface QueryState<T> {
   data: T | null;
@@ -104,7 +104,7 @@ export function useLeaderboard(enabled = true) {
 
 const ALREADY_CLAIMED_TITLE = 'Already claimed today';
 
-/** Completes a quest with an optimistic update; rolls back on failure. */
+/** Completes a quest with an optimistic update; rolls back on failure. Resolves with the server result on success. */
 export function useCompleteQuest(me: QueryState<MeResponse>) {
   const pending = useRef(new Set<string>());
   const { setData, refetch } = me;
@@ -112,17 +112,23 @@ export function useCompleteQuest(me: QueryState<MeResponse>) {
   meRef.current = me.data;
 
   return useCallback(
-    async (questId: string) => {
+    async (questId: string): Promise<CompleteQuestResponse | null> => {
       const current = meRef.current;
-      if (!api || !current || pending.current.has(questId)) return;
+      if (!api || !current || pending.current.has(questId)) return null;
       const optimistic = optimisticCompleteQuest(current, questId);
-      if (!optimistic) return;
+      if (!optimistic) {
+        if (current.quests.some((q) => q.id === questId && q.completed)) {
+          Alert.alert(ALREADY_CLAIMED_TITLE, 'You already completed this quest today. Come back tomorrow!');
+        }
+        return null;
+      }
       pending.current.add(questId);
       setData(optimistic);
       try {
         const res = await api.completeQuest(questId);
         // Server is authoritative for aura/stats/rank.
         setData((d) => (d ? { ...markQuestCompleted(d, questId), profile: res.profile } : d));
+        return res;
       } catch (err) {
         if (isApiError(err) && err.code === 'ALREADY_COMPLETED') {
           // Roll back the optimistic aura but keep the quest checked, then resync.
@@ -135,6 +141,7 @@ export function useCompleteQuest(me: QueryState<MeResponse>) {
           );
           Alert.alert("Couldn't complete quest", errorMessage(err));
         }
+        return null;
       } finally {
         pending.current.delete(questId);
       }
@@ -143,7 +150,7 @@ export function useCompleteQuest(me: QueryState<MeResponse>) {
   );
 }
 
-/** Claims a finished workout with an optimistic update; rolls back on failure. Resolves true on success. */
+/** Claims a finished workout with an optimistic update; rolls back on failure. Resolves with the server result on success. */
 export function useCompleteWorkout(me: QueryState<MeResponse>) {
   const pending = useRef(new Set<string>());
   const { setData, refetch } = me;
@@ -151,15 +158,15 @@ export function useCompleteWorkout(me: QueryState<MeResponse>) {
   meRef.current = me.data;
 
   return useCallback(
-    async (drop: WorkoutDrop): Promise<boolean> => {
+    async (drop: WorkoutDrop): Promise<CompleteWorkoutResponse | null> => {
       const current = meRef.current;
-      if (!api || !current || pending.current.has(drop.id)) return false;
+      if (!api || !current || pending.current.has(drop.id)) return null;
       pending.current.add(drop.id);
       setData(optimisticCompleteWorkout(current, drop));
       try {
         const res = await api.completeWorkout(drop.id);
         setData((d) => (d ? { ...d, profile: res.profile } : d));
-        return true;
+        return res;
       } catch (err) {
         setData((d) => (d ? { ...d, profile: current.profile } : d));
         if (isApiError(err) && err.code === 'ALREADY_COMPLETED') {
@@ -168,7 +175,7 @@ export function useCompleteWorkout(me: QueryState<MeResponse>) {
         } else {
           Alert.alert("Couldn't claim workout", errorMessage(err));
         }
-        return false;
+        return null;
       } finally {
         pending.current.delete(drop.id);
       }

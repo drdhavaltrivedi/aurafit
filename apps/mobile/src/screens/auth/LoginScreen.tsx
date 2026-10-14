@@ -48,6 +48,7 @@ export function LoginScreen({ onBack, onForgot, onSignup }: Props) {
     <AuthLayout title="Welcome back" subtitle="Log in to sync your aura across devices." onBack={onBack}>
       {formError || linkError ? <FormMessage tone="error" message={(formError ?? linkError)!} /> : null}
       <TextField
+        testID="login-email"
         label="Email"
         value={email}
         onChangeText={(t) => {
@@ -68,6 +69,7 @@ export function LoginScreen({ onBack, onForgot, onSignup }: Props) {
       />
       <TextField
         ref={passwordRef}
+        testID="login-password"
         label="Password"
         value={password}
         onChangeText={(t) => {
@@ -84,7 +86,7 @@ export function LoginScreen({ onBack, onForgot, onSignup }: Props) {
         onSubmitEditing={submit}
         editable={!busy}
       />
-      <AppButton label="Log in" size="lg" onPress={submit} loading={busy === 'password'} disabled={!!busy} />
+      <AppButton testID="login-submit" label="Log in" size="lg" onPress={submit} loading={busy === 'password'} disabled={!!busy} />
       {googleEnabled ? (
         <AppButton
           label="Continue with Google"
@@ -95,7 +97,7 @@ export function LoginScreen({ onBack, onForgot, onSignup }: Props) {
         />
       ) : null}
       <View style={styles.links}>
-        <AppButton label="Forgot password?" variant="ghost" onPress={() => onForgot(email)} disabled={!!busy} />
+        <AppButton testID="login-forgot" label="Forgot password?" variant="ghost" onPress={() => onForgot(email)} disabled={!!busy} />
         <AppButton label="Create account" variant="ghost" onPress={onSignup} disabled={!!busy} />
       </View>
     </AuthLayout>

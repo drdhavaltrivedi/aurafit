@@ -65,7 +65,9 @@ export function StatCardsRow({ attributes }: StatCardsRowProps) {
             <AppIcon icon={s.icon} size={18} color={s.color} strokeWidth={2.4} />
           </View>
           <Text style={[styles.statLabel, { color: colors.textSecondary }]}>{s.label}</Text>
-          <Text style={[styles.statVal, { color: colors.textPrimary }]}>{s.value}</Text>
+          <Text style={[styles.statVal, { color: colors.textPrimary }]} testID={`stat-${s.key}`}>
+            {s.value}
+          </Text>
           <View style={[styles.statBarTrack, { backgroundColor: colors.bgElevated }]}>
             <View
               style={[

@@ -1,0 +1,22 @@
+# ADMIN: live top hunters from the API + "Coming soon" gym card (no sample gyms).
+# Env: EMAIL, PASSWORD (an ADMIN account)
+appId: host.exp.Exponent
+name: Admin
+---
+- runFlow: subflows/start.yaml
+- runFlow: subflows/login.yaml
+- extendedWaitUntil:
+    visible: "Top Hunters"
+    timeout: 30000
+- extendedWaitUntil:
+    visible: "Number 1: .*"
+    timeout: 20000
+- scrollUntilVisible:
+    element: "Gym leaderboard & affiliations.*Coming soon.*"
+- assertNotVisible: "Sample data\\..*"
+- takeScreenshot: 07_admin_home
+- tapOn:
+    id: "header-account"
+- assertVisible: "Role: Admin"
+- tapOn:
+    id: "screen-back"

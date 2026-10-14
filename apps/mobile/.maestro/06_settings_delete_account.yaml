@@ -1,0 +1,89 @@
+# Settings: account details, theme, daily reminder (local notification), edit profile, legal links,
+# then the delete-account confirmation step and a REAL deletion of the signed-in account.
+# Env: EMAIL, PASSWORD (a disposable MEMBER account — it is permanently deleted)
+appId: host.exp.Exponent
+name: Settings and account deletion
+---
+- runFlow: subflows/start.yaml
+- runFlow: subflows/login.yaml
+- tapOn:
+    id: "header-account"
+- assertVisible: "Settings"
+- assertVisible: "Email: ${EMAIL}"
+- assertVisible: "Handle: @.*"
+- assertVisible: "Role: Member"
+- takeScreenshot: 06_settings
+# Theme: explicit dark, then back to system.
+- tapOn:
+    id: "theme-dark"
+- takeScreenshot: 06_settings_dark
+- tapOn:
+    id: "theme-system"
+# Daily reminder (device-level setting): start from off, then enable — asks for permission the first time.
+- runFlow:
+    when:
+      visible: "On — every day at.*"
+    commands:
+      - tapOn:
+          id: "reminder-switch"
+- assertVisible: "A gentle nudge to train, once a day."
+- tapOn:
+    id: "reminder-switch"
+- tapOn:
+    text: "Allow"
+    optional: true
+- extendedWaitUntil:
+    visible: "On — every day at 6:00 PM"
+    timeout: 10000
+- tapOn:
+    id: "reminder-later"
+- assertVisible: "On — every day at 6:15 PM"
+- takeScreenshot: 06_settings_reminder_on
+- tapOn:
+    id: "reminder-earlier"
+- tapOn:
+    id: "reminder-switch"
+- assertVisible: "A gentle nudge to train, once a day."
+# Edit profile entry point
+- tapOn:
+    id: "settings-edit-profile"
+- assertVisible:
+    id: "edit-profile-screen"
+- tapOn:
+    id: "screen-back"
+# Legal links + version at the bottom
+- scrollUntilVisible:
+    element:
+      id: "settings-version"
+- assertVisible: "Terms of Service"
+- assertVisible: "Privacy Policy"
+- takeScreenshot: 06_settings_bottom
+# Delete account: confirm step, button disabled until DELETE is typed.
+- tapOn:
+    id: "account-delete"
+- assertVisible: "Delete account"
+- assertVisible: "This can't be undone."
+- assertVisible:
+    id: "delete-confirm-submit"
+    enabled: false
+- takeScreenshot: 06_delete_confirm
+- tapOn:
+    id: "delete-confirm-input"
+- inputText: "DELET"
+- assertVisible:
+    id: "delete-confirm-submit"
+    enabled: false
+- inputText: "E"
+- tapOn: "Delete account"
+- assertVisible:
+    id: "delete-confirm-submit"
+    enabled: true
+- takeScreenshot: 06_delete_enabled
+- tapOn:
+    id: "delete-confirm-submit"
+- extendedWaitUntil:
+    visible: "Your AuraFit account and its data have been permanently deleted."
+    timeout: 30000
+- assertVisible:
+    id: "welcome-login"
+- takeScreenshot: 06_deleted_welcome

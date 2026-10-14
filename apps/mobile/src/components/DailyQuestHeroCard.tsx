@@ -1,67 +1,87 @@
 import React from 'react';
 import { ImageBackground, Pressable, StyleSheet, Text, View } from 'react-native';
 import type { Quest } from '@aurafit/shared';
-import { useTheme } from '../theme/ThemeProvider';
 import { AppIcon } from './AppIcon';
-import { ChevronRight, Flame, Users } from './icons';
+import { Check, ChevronRight, Flame, ScrollText } from './icons';
 import { fontSize, radius, spacing } from '../theme/tokens';
 
 interface DailyQuestHeroCardProps {
+  /** Next open daily quest; when undefined all of today's quests are done (or none exist). */
   quest?: Quest;
-  onStartQuest?: (questId: string) => void;
+  canComplete: boolean;
+  /** Completed / total quests today. */
+  doneCount: number;
+  totalCount: number;
+  onCompleteQuest: (questId: string) => void;
+  /** Opens the Quests tab. */
+  onOpenQuests: () => void;
 }
 
-export function DailyQuestHeroCard({ quest, onStartQuest }: DailyQuestHeroCardProps) {
-  const { colors } = useTheme();
-
-  const title = quest ? quest.title : 'Complete 5 Sets of Push Ups';
-  const auraReward = quest ? quest.auraReward : 150;
-  const progressText = quest ? (quest.completed ? '5/5' : '0/5') : '0/5';
+/** Highlights the next open quest (always dark artwork, so colours are fixed for contrast). */
+export function DailyQuestHeroCard({ quest, canComplete, doneCount, totalCount, onCompleteQuest, onOpenQuests }: DailyQuestHeroCardProps) {
+  const allDone = !quest;
+  const title = quest ? quest.title : totalCount > 0 ? 'All quests done for today' : 'No quests today';
+  const counter = quest ? `${quest.currentCount}/${quest.targetCount} ${quest.unit}`.trim() : `${doneCount}/${totalCount}`;
 
   return (
-    <View style={[styles.card, { borderColor: colors.border }]}>
-      {/* Background artwork overlay */}
+    <View style={styles.card}>
+      {/* Decorative artwork only (not anyone's photo). */}
       <ImageBackground
         source={require('../../assets/hunter-avatar.jpg')}
         style={styles.bgImg}
         imageStyle={styles.bgImgStyle}
+        accessible={false}
       >
-        {/* Solid dark gradient backing scrim ensuring 100% readability */}
         <View style={styles.scrim} />
-
         <View style={styles.content}>
           <View style={styles.topRow}>
             <View style={styles.badge}>
-              <AppIcon icon={Users} size={13} color="#C4B5FD" />
-              <Text style={styles.badgeText}>DAILY QUEST</Text>
+              <AppIcon icon={ScrollText} size={13} color="#C4B5FD" />
+              <Text style={styles.badgeText}>{allDone ? 'DAILY QUESTS' : 'NEXT QUEST'}</Text>
             </View>
             <View style={styles.counterBadge}>
-              <Text style={styles.counterText}>{progressText}</Text>
+              <Text style={styles.counterText} testID="daily-quest-counter">{counter}</Text>
             </View>
           </View>
 
-          {/* Guaranteed crisp white title with subtle shadow */}
-          <Text style={styles.title}>{title}</Text>
-
-          <View style={styles.rewardRow}>
-            <AppIcon icon={Flame} size={16} color="#A78BFA" />
+          <Text style={styles.title} testID="daily-quest-title">{title}</Text>
+          {quest ? (
+            <View style={styles.rewardRow}>
+              <AppIcon icon={Flame} size={16} color="#A78BFA" />
+              <Text style={styles.rewardText}>
+                +{quest.auraReward} aura • +{quest.statReward.amount} {quest.statReward.stat.toUpperCase()}
+              </Text>
+            </View>
+          ) : (
             <Text style={styles.rewardText}>
-              +{auraReward} Aura Points
+              {totalCount > 0 ? `${doneCount} of ${totalCount} completed. New quests tomorrow.` : 'Check back tomorrow.'}
             </Text>
-          </View>
+          )}
 
-          <Pressable
-            onPress={() => (quest && onStartQuest ? onStartQuest(quest.id) : null)}
-            accessibilityRole="button"
-            accessibilityLabel={`Start quest: ${title}`}
-            style={({ pressed }) => [
-              styles.startBtn,
-              { opacity: pressed ? 0.85 : 1 },
-            ]}
-          >
-            <Text style={styles.startBtnText}>Start Quest</Text>
-            <AppIcon icon={ChevronRight} size={16} color="#FFFFFF" strokeWidth={2.5} />
-          </Pressable>
+          <View style={styles.btnRow}>
+            {quest && canComplete ? (
+              <Pressable
+                onPress={() => onCompleteQuest(quest.id)}
+                testID="daily-quest-start"
+                accessibilityRole="button"
+                accessibilityLabel={`Complete quest: ${quest.title}`}
+                style={({ pressed }) => [styles.primaryBtn, { opacity: pressed ? 0.85 : 1 }]}
+              >
+                <AppIcon icon={Check} size={16} color="#FFFFFF" strokeWidth={2.5} />
+                <Text style={styles.primaryBtnText}>Mark complete</Text>
+              </Pressable>
+            ) : null}
+            <Pressable
+              onPress={onOpenQuests}
+              testID="daily-quest-all"
+              accessibilityRole="button"
+              accessibilityLabel="See all quests"
+              style={({ pressed }) => [styles.secondaryBtn, { opacity: pressed ? 0.85 : 1 }]}
+            >
+              <Text style={styles.secondaryBtnText}>All quests</Text>
+              <AppIcon icon={ChevronRight} size={16} color="#FFFFFF" strokeWidth={2.5} />
+            </Pressable>
+          </View>
         </View>
       </ImageBackground>
     </View>
@@ -72,13 +92,9 @@ const styles = StyleSheet.create({
   card: {
     borderRadius: radius.lg,
     borderWidth: 1,
+    borderColor: 'rgba(167, 139, 250, 0.25)',
     overflow: 'hidden',
     backgroundColor: '#0A0F1D',
-    shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.45,
-    shadowRadius: 12,
-    elevation: 6,
   },
   bgImg: {
     width: '100%',
@@ -90,16 +106,16 @@ const styles = StyleSheet.create({
   },
   scrim: {
     ...StyleSheet.absoluteFill,
-    backgroundColor: 'rgba(6, 10, 20, 0.90)',
+    backgroundColor: 'rgba(6, 10, 20, 0.88)',
   },
   content: {
-    position: 'relative',
     gap: spacing.sm,
   },
   topRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    gap: spacing.sm,
   },
   badge: {
     flexDirection: 'row',
@@ -125,6 +141,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(15, 23, 42, 0.85)',
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.2)',
+    flexShrink: 1,
   },
   counterText: {
     color: '#FFFFFF',
@@ -137,9 +154,6 @@ const styles = StyleSheet.create({
     fontWeight: '900',
     letterSpacing: -0.3,
     marginTop: 4,
-    textShadowColor: 'rgba(0, 0, 0, 0.95)',
-    textShadowOffset: { width: 0, height: 1.5 },
-    textShadowRadius: 4,
   },
   rewardRow: {
     flexDirection: 'row',
@@ -150,31 +164,42 @@ const styles = StyleSheet.create({
     color: '#C4B5FD',
     fontSize: fontSize.caption + 2,
     fontWeight: '800',
-    textShadowColor: 'rgba(0, 0, 0, 0.8)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 2,
   },
-  startBtn: {
+  btnRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+    marginTop: 6,
+  },
+  primaryBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    minHeight: 44,
+    paddingHorizontal: 18,
+    borderRadius: radius.full,
+    backgroundColor: '#7C3AED',
+  },
+  primaryBtnText: {
+    color: '#FFFFFF',
+    fontSize: fontSize.body,
+    fontWeight: '900',
+  },
+  secondaryBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 4,
-    paddingVertical: 11,
-    paddingHorizontal: 20,
+    minHeight: 44,
+    paddingHorizontal: 16,
     borderRadius: radius.full,
-    alignSelf: 'flex-start',
-    backgroundColor: '#7C3AED',
-    marginTop: 6,
-    shadowColor: '#7C3AED',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.4,
-    shadowRadius: 8,
-    elevation: 3,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.3)',
   },
-  startBtnText: {
+  secondaryBtnText: {
     color: '#FFFFFF',
     fontSize: fontSize.body,
-    fontWeight: '900',
-    letterSpacing: 0.2,
+    fontWeight: '800',
   },
 });

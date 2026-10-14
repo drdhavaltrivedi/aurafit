@@ -58,6 +58,7 @@ export function SignupScreen({ onBack, onLogin }: Props) {
     <AuthLayout title="Create your hunter" subtitle="Start at E-Rank. Grind your way to Monarch." onBack={onBack}>
       {formError ? <FormMessage tone="error" message={formError} /> : null}
       <TextField
+        testID="signup-email"
         label="Email"
         value={email}
         onChangeText={(t) => {
@@ -78,6 +79,7 @@ export function SignupScreen({ onBack, onLogin }: Props) {
       />
       <TextField
         ref={passwordRef}
+        testID="signup-password"
         label="Password"
         hint={`At least ${PASSWORD_MIN_LENGTH} characters.`}
         value={password}
@@ -99,6 +101,7 @@ export function SignupScreen({ onBack, onLogin }: Props) {
       />
       <TextField
         ref={confirmRef}
+        testID="signup-confirm"
         label="Confirm password"
         value={confirm}
         onChangeText={(t) => {
@@ -116,7 +119,7 @@ export function SignupScreen({ onBack, onLogin }: Props) {
         editable={!busy}
       />
       <LegalAgreement prefix="By creating an account you agree to the AuraFit" />
-      <AppButton label="Create account" size="lg" onPress={submit} loading={busy} />
+      <AppButton testID="signup-submit" label="Create account" size="lg" onPress={submit} loading={busy} />
       <AppButton label="Already have an account? Log in" variant="ghost" onPress={onLogin} disabled={busy} />
     </AuthLayout>
   );

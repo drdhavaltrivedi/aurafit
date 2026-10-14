@@ -33,6 +33,7 @@ export function BottomTabBar({ activeTab, onSelectTab }: BottomTabBarProps) {
           <Pressable
             key={t.key}
             onPress={() => onSelectTab(t.key)}
+            testID={`tab-${t.key}`}
             accessibilityRole="tab"
             accessibilityState={{ selected: isActive }}
             accessibilityLabel={t.label}

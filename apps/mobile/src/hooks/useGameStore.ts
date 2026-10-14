@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react';
 import { AppState } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import type { UserRole, WorkoutDrop } from '@aurafit/shared';
+import type { UserProfile, UserRole, WorkoutDrop } from '@aurafit/shared';
 import { toDateKey } from '../lib/date';
 import {
   STORAGE_KEY,
@@ -23,6 +23,7 @@ export interface GameStore {
   finishWorkout: (drop: WorkoutDrop) => void;
   /** Clears all local progress (seed data again); the theme preference is kept. */
   resetGame: () => void;
+  updateProfile: (patch: Pick<UserProfile, 'username' | 'title' | 'bio'>) => void;
 }
 
 const SAVE_DEBOUNCE_MS = 300;
@@ -106,9 +107,13 @@ export function useGameStore(): GameStore {
   );
 
   const resetGame = useCallback(() => dispatch({ type: 'RESET', today: toDateKey() }), []);
+  const updateProfile = useCallback(
+    (patch: Pick<UserProfile, 'username' | 'title' | 'bio'>) => dispatch({ type: 'UPDATE_PROFILE', patch }),
+    []
+  );
 
   return useMemo(
-    () => ({ state, hydrated, setRole, setTheme, completeQuest, finishWorkout, resetGame }),
-    [state, hydrated, setRole, setTheme, completeQuest, finishWorkout, resetGame]
+    () => ({ state, hydrated, setRole, setTheme, completeQuest, finishWorkout, resetGame, updateProfile }),
+    [state, hydrated, setRole, setTheme, completeQuest, finishWorkout, resetGame, updateProfile]
   );
 }

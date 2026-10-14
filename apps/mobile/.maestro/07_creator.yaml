@@ -1,0 +1,26 @@
+# CREATOR: Creator Studio shows only real figures plus a "Coming soon" card (no fake revenue).
+# Env: EMAIL, PASSWORD (a CREATOR account)
+appId: host.exp.Exponent
+name: Creator
+---
+- runFlow: subflows/start.yaml
+- runFlow: subflows/login.yaml
+- extendedWaitUntil:
+    visible: "Creator Studio"
+    timeout: 30000
+- assertVisible: "Drops Published: 0"
+- assertVisible: "Subscribers & revenue.*Coming soon.*"
+- assertNotVisible: ".*MRR.*"
+- assertNotVisible: ".*\\$2,450.*"
+- assertNotVisible: "Sample data\\..*"
+- takeScreenshot: 07_creator_home
+- tapOn:
+    id: "header-theme-toggle"
+- takeScreenshot: 07_creator_home_toggled_theme
+- tapOn:
+    id: "header-theme-toggle"
+- tapOn:
+    id: "header-account"
+- assertVisible: "Role: Creator"
+- tapOn:
+    id: "screen-back"

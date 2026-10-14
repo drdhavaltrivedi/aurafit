@@ -1,0 +1,75 @@
+# Visual pass of every main screen in dark theme (demo mode, so no account is needed).
+appId: host.exp.Exponent
+name: Dark mode tour
+---
+- runFlow: subflows/start.yaml
+- tapOn:
+    id: "welcome-demo"
+- extendedWaitUntil:
+    visible:
+      id: "header-account"
+    timeout: 15000
+- tapOn:
+    id: "role-MEMBER"
+- tapOn:
+    id: "header-account"
+- tapOn:
+    id: "theme-dark"
+- tapOn:
+    id: "screen-back"
+- takeScreenshot: 09_dark_home
+- tapOn:
+    id: "header-notifications"
+- takeScreenshot: 09_dark_notifications
+- tapOn:
+    id: "screen-back"
+- tapOn:
+    id: "hunter-edit"
+- assertVisible:
+    id: "edit-profile-screen"
+- takeScreenshot: 09_dark_edit_profile
+- tapOn:
+    id: "screen-back"
+- tapOn:
+    id: "qa-leaderboard"
+- takeScreenshot: 09_dark_leaderboard
+- tapOn:
+    id: "screen-back"
+- tapOn:
+    id: "qa-rewards"
+- takeScreenshot: 09_dark_achievements
+- tapOn:
+    id: "screen-back"
+- tapOn:
+    id: "tab-quests"
+- takeScreenshot: 09_dark_quests
+- tapOn:
+    id: "tab-workouts"
+- takeScreenshot: 09_dark_workouts
+- tapOn:
+    id: "tab-guild"
+- takeScreenshot: 09_dark_guild
+- tapOn:
+    id: "tab-profile"
+- takeScreenshot: 09_dark_profile
+- tapOn:
+    id: "tab-home"
+- scrollUntilVisible:
+    element:
+      id: "drop-start-drop_phonk_1"
+- tapOn:
+    id: "drop-start-drop_phonk_1"
+- takeScreenshot: 09_dark_workout_modal
+- tapOn:
+    id: "workout-close"
+- scrollUntilVisible:
+    element:
+      id: "header-account"
+    direction: UP
+- tapOn:
+    id: "header-account"
+- takeScreenshot: 09_dark_settings
+- tapOn:
+    id: "theme-system"
+- tapOn:
+    id: "screen-back"

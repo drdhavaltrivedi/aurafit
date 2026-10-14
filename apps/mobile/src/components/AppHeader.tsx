@@ -1,19 +1,21 @@
 import React from 'react';
 import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
-import { Bell, CircleUser, Flame, Moon, Settings, Sparkles, Sun } from './icons';
+import { Bell, Moon, Settings, Sun } from './icons';
 import { useTheme } from '../theme/ThemeProvider';
 import { AppIcon } from './AppIcon';
-import { MIN_TOUCH_TARGET, fontSize, radius, spacing } from '../theme/tokens';
+import { fontSize, radius, spacing } from '../theme/tokens';
 
 interface AppHeaderProps {
-  auraPoints: number;
-  streakDays: number;
   onToggleTheme: () => void;
-  /** When set, an account button is shown that opens the account screen. */
-  onOpenAccount?: () => void;
+  /** Opens the settings screen. */
+  onOpenSettings: () => void;
+  /** Opens the notifications / activity screen. */
+  onOpenNotifications: () => void;
+  /** Unread activity items; the dot is shown only when > 0. */
+  unreadCount: number;
 }
 
-export function AppHeader({ auraPoints, streakDays, onToggleTheme, onOpenAccount }: AppHeaderProps) {
+export function AppHeader({ onToggleTheme, onOpenSettings, onOpenNotifications, unreadCount }: AppHeaderProps) {
   const { colors, isDark } = useTheme();
   const nextMode = isDark ? 'light' : 'dark';
 
@@ -41,8 +43,10 @@ export function AppHeader({ auraPoints, streakDays, onToggleTheme, onOpenAccount
 
       <View style={styles.actionsRow}>
         <Pressable
+          onPress={onOpenNotifications}
+          testID="header-notifications"
           accessibilityRole="button"
-          accessibilityLabel="Notifications"
+          accessibilityLabel={unreadCount > 0 ? `Notifications, ${unreadCount} unread` : 'Notifications'}
           hitSlop={8}
           style={({ pressed }) => [
             styles.iconBtn,
@@ -50,11 +54,14 @@ export function AppHeader({ auraPoints, streakDays, onToggleTheme, onOpenAccount
           ]}
         >
           <AppIcon icon={Bell} size={19} color={colors.textPrimary} />
-          <View style={[styles.notifDot, { backgroundColor: colors.primary }]} />
+          {unreadCount > 0 ? (
+            <View testID="header-unread-dot" style={[styles.notifDot, { backgroundColor: colors.pink, borderColor: colors.bgSurface }]} />
+          ) : null}
         </Pressable>
 
         <Pressable
           onPress={onToggleTheme}
+          testID="header-theme-toggle"
           accessibilityRole="button"
           accessibilityLabel={`Switch to ${nextMode} mode`}
           hitSlop={8}
@@ -66,20 +73,19 @@ export function AppHeader({ auraPoints, streakDays, onToggleTheme, onOpenAccount
           <AppIcon icon={isDark ? Moon : Sun} size={18} color={colors.textPrimary} />
         </Pressable>
 
-        {onOpenAccount ? (
-          <Pressable
-            onPress={onOpenAccount}
-            accessibilityRole="button"
-            accessibilityLabel="Settings"
-            hitSlop={8}
-            style={({ pressed }) => [
-              styles.iconBtn,
-              { backgroundColor: colors.bgSurface, borderColor: colors.border, opacity: pressed ? 0.7 : 1 },
-            ]}
-          >
-            <AppIcon icon={Settings} size={19} color={colors.textPrimary} />
-          </Pressable>
-        ) : null}
+        <Pressable
+          onPress={onOpenSettings}
+          testID="header-account"
+          accessibilityRole="button"
+          accessibilityLabel="Settings"
+          hitSlop={8}
+          style={({ pressed }) => [
+            styles.iconBtn,
+            { backgroundColor: colors.bgSurface, borderColor: colors.border, opacity: pressed ? 0.7 : 1 },
+          ]}
+        >
+          <AppIcon icon={Settings} size={19} color={colors.textPrimary} />
+        </Pressable>
       </View>
     </View>
   );
@@ -134,10 +140,11 @@ const styles = StyleSheet.create({
   },
   notifDot: {
     position: 'absolute',
-    top: 8,
-    right: 8,
-    width: 7,
-    height: 7,
-    borderRadius: 3.5,
+    top: 7,
+    right: 7,
+    width: 9,
+    height: 9,
+    borderRadius: 4.5,
+    borderWidth: 1.5,
   },
 });

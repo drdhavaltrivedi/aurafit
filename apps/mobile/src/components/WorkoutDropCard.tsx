@@ -40,7 +40,7 @@ export const WorkoutDropCard = memo(function WorkoutDropCard({ drop, canStart, o
           </Text>
         </View>
         {canStart ? (
-          <AppButton label="Start" accessibilityLabel={`Start workout: ${drop.title}`} onPress={() => onStart(drop)} />
+          <AppButton testID={`drop-start-${drop.id}`} label="Start" accessibilityLabel={`Start workout: ${drop.title}`} onPress={() => onStart(drop)} />
         ) : null}
       </View>
     </View>

@@ -23,9 +23,10 @@ export function WelcomeScreen({ onLogin, onSignup }: Props) {
     <AuthLayout title="Level up IRL" subtitle="Daily quests, creator workout drops and squad raids. Your aura awaits.">
       {notice ? <FormMessage tone="success" message={notice} /> : null}
       {linkError ? <FormMessage tone="error" message={linkError} /> : null}
-      <AppButton label="Log in" size="lg" onPress={onLogin} />
-      <AppButton label="Create account" variant="secondary" size="lg" onPress={onSignup} />
+      <AppButton testID="welcome-login" label="Log in" size="lg" onPress={onLogin} />
+      <AppButton testID="welcome-signup" label="Create account" variant="secondary" size="lg" onPress={onSignup} />
       <AppButton
+        testID="welcome-demo"
         label="Try demo"
         variant="ghost"
         onPress={enterDemo}

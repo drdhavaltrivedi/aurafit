@@ -1,0 +1,34 @@
+# Wrong password shows a generic error; correct login lands on the member home with the server profile.
+# Env: EMAIL, PASSWORD (a fresh MEMBER account)
+appId: host.exp.Exponent
+name: Login
+---
+- runFlow: subflows/start.yaml
+- tapOn:
+    id: "welcome-login"
+- takeScreenshot: 04_login
+- tapOn:
+    id: "login-email"
+- inputText: ${EMAIL}
+- tapOn:
+    id: "login-password"
+- inputText: "definitely-wrong-password"
+- tapOn: "Welcome back"  # dismiss keyboard
+- tapOn:
+    id: "login-submit"
+- extendedWaitUntil:
+    visible: ".*(incorrect|Invalid|invalid).*"
+    timeout: 20000
+- takeScreenshot: 04_login_wrong_password
+- tapOn:
+    id: "auth-back"
+- runFlow: subflows/login.yaml
+- extendedWaitUntil:
+    visible:
+      id: "hunter-card"
+    timeout: 30000
+- assertVisible: "Hunter card for .*, E-RANK, 0 aura points"
+- assertVisible:
+    id: "hunter-rank"
+    text: "E-RANK"
+- takeScreenshot: 04_member_home

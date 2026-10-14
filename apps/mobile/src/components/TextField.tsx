@@ -1,5 +1,5 @@
 import React, { forwardRef, useState } from 'react';
-import { StyleSheet, Text, TextInput, View, type TextInputProps } from 'react-native';
+import { StyleSheet, Text, TextInput, View, type StyleProp, type TextInputProps, type TextStyle } from 'react-native';
 import { useTheme } from '../theme/ThemeProvider';
 import { MIN_TOUCH_TARGET, fontSize, radius, spacing } from '../theme/tokens';
 
@@ -7,10 +7,12 @@ export interface TextFieldProps extends Omit<TextInputProps, 'style'> {
   label: string;
   error?: string;
   hint?: string;
+  /** Extra input styles (e.g. height for multiline). */
+  inputStyle?: StyleProp<TextStyle>;
 }
 
 export const TextField = forwardRef<TextInput, TextFieldProps>(function TextField(
-  { label, error, hint, onFocus, onBlur, ...rest },
+  { label, error, hint, inputStyle, onFocus, onBlur, ...rest },
   ref
 ) {
   const { colors, isDark } = useTheme();
@@ -31,7 +33,7 @@ export const TextField = forwardRef<TextInput, TextFieldProps>(function TextFiel
         keyboardAppearance={isDark ? 'dark' : 'light'}
         selectionColor={colors.primary}
         maxFontSizeMultiplier={1.6}
-        style={[styles.input, { backgroundColor: colors.bgInput, borderColor, color: colors.textPrimary }]}
+        style={[styles.input, { backgroundColor: colors.bgInput, borderColor, color: colors.textPrimary }, inputStyle]}
         onFocus={(e) => {
           setFocused(true);
           onFocus?.(e);

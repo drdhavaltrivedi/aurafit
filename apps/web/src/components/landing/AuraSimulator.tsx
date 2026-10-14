@@ -18,7 +18,7 @@ const RANK_SHORT: Record<HunterRank, string> = {
 };
 
 function statusFor(aura: number): string {
-  if (aura >= 60000) return 'Shadow Monarch unlocked — global leaderboard dominance.';
+  if (aura >= 60000) return 'Monarch rank unlocked — global leaderboard dominance.';
   if (aura >= 30000) return 'S-Rank Hunter — elite conditioning and top squad status.';
   return 'Hunter in training — keep locking in daily pushups and micro-snacks.';
 }

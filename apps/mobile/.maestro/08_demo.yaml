@@ -1,0 +1,129 @@
+# Try demo: sample-data labels, role switcher, local quest claim, workout session modal
+# (timer start/pause/reset/next set, close, claim), guild/workouts tabs, Settings → Reset demo data.
+appId: host.exp.Exponent
+name: Demo
+---
+- runFlow: subflows/start.yaml
+- tapOn:
+    id: "welcome-demo"
+- extendedWaitUntil:
+    visible: "Demo mode · Sample data — progress is saved on this device only."
+    timeout: 15000
+# Start from the seed data.
+- tapOn:
+    id: "header-account"
+- assertVisible: "Mode: Demo \\(this device only\\)"
+- assertVisible: "Leave demo and sign in"
+- takeScreenshot: 08_demo_settings
+- tapOn:
+    id: "account-reset-demo"
+- tapOn: "Reset"
+- assertVisible: "Demo data reset to the starting sample."
+- tapOn:
+    id: "screen-back"
+- tapOn:
+    id: "role-MEMBER"
+- takeScreenshot: 08_demo_home
+
+# Local quest claim
+- tapOn:
+    id: "daily-quest-start"
+- extendedWaitUntil:
+    visible:
+      id: "toast"
+    timeout: 5000
+- assertVisible: "Quest complete! \\+\\d+ aura, \\+3 STR"
+
+# Workout session modal (sample drop)
+- scrollUntilVisible:
+    element:
+      id: "drop-start-drop_phonk_1"
+- assertVisible: "Sample data\\..*"
+- takeScreenshot: 08_demo_drops
+- tapOn:
+    id: "drop-start-drop_phonk_1"
+- assertVisible:
+    id: "workout-close"
+- assertVisible: "Set timer: 45 seconds remaining, stopped"
+- takeScreenshot: 08_workout_modal
+- tapOn:
+    id: "workout-timer-toggle"
+- assertVisible: "Pause timer"
+- tapOn:
+    id: "workout-timer-toggle"
+- assertVisible: "Resume timer"
+- takeScreenshot: 08_workout_paused
+- tapOn:
+    id: "workout-timer-reset"
+- assertVisible: "Start set timer"
+- assertVisible: "Set timer: 45 seconds remaining, stopped"
+- tapOn:
+    id: "workout-timer-toggle"
+- extendedWaitUntil:
+    visible: "Next set timer"
+    timeout: 60000
+- takeScreenshot: 08_workout_set_done
+- tapOn:
+    id: "workout-timer-toggle"
+- assertVisible: "Pause timer"
+- tapOn:
+    id: "workout-close"
+- assertNotVisible:
+    id: "workout-close"
+# Start again and claim
+- tapOn:
+    id: "drop-start-drop_phonk_1"
+- tapOn:
+    id: "workout-claim"
+- extendedWaitUntil:
+    visible: "Workout complete! \\+\\d+ aura"
+    timeout: 5000
+
+# Notifications have the local activity
+- scrollUntilVisible:
+    element:
+      id: "header-notifications"
+    direction: UP
+- tapOn:
+    id: "header-notifications"
+- assertVisible: ".*Finished \"Phonk.*"
+- takeScreenshot: 08_demo_notifications
+- tapOn:
+    id: "screen-back"
+
+# Role switcher
+- tapOn:
+    id: "role-CREATOR"
+- assertVisible: "Creator Studio"
+- assertVisible: "Sample data\\..*"
+- takeScreenshot: 08_demo_creator
+- tapOn:
+    id: "role-ADMIN"
+- assertVisible: "Gym Leaderboard & Platform"
+- assertVisible: "Sample data\\..*"
+- takeScreenshot: 08_demo_admin
+- tapOn:
+    id: "role-MEMBER"
+
+# Tabs in demo mode
+- tapOn:
+    id: "tab-guild"
+- assertVisible: "Sample data\\..*"
+- takeScreenshot: 08_demo_guild
+- tapOn:
+    id: "tab-workouts"
+- assertVisible: "Sample data\\..*"
+- tapOn:
+    id: "filter-POSTURE_RESET"
+- takeScreenshot: 08_demo_workouts_filtered
+- tapOn:
+    id: "tab-profile"
+- assertVisible: "Sample data\\..*"
+- tapOn:
+    id: "tab-home"
+# Dark theme
+- tapOn:
+    id: "header-theme-toggle"
+- takeScreenshot: 08_demo_home_toggled_theme
+- tapOn:
+    id: "header-theme-toggle"

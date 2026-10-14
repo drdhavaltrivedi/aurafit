@@ -3,21 +3,24 @@ import {
   AccessibilityInfo,
   Alert,
   BackHandler,
-  KeyboardAvoidingView,
-  Platform,
   Pressable,
-  ScrollView,
   StyleSheet,
   Text,
   View,
 } from 'react-native';
+import Constants from 'expo-constants';
 import type { UserProfile, UserRole } from '@aurafit/shared';
 import { useAuth } from '../../auth/AuthProvider';
 import { AppButton } from '../../components/AppButton';
 import { FormMessage } from '../../components/AuthLayout';
 import { HealthDisclaimer, LegalLinks } from '../../components/Legal';
+import { ScreenFrame } from '../../components/ScreenFrame';
+import { Pencil } from '../../components/icons';
+import { ReminderSettingsCard } from '../../components/ReminderSettingsCard';
+import { SectionHeader } from '../../components/SectionHeader';
 import { TextField } from '../../components/TextField';
-import { useTheme } from '../../theme/ThemeProvider';
+import { useReminder } from '../../hooks/useReminder';
+import { useTheme, type ThemePreference } from '../../theme/ThemeProvider';
 import { MIN_TOUCH_TARGET, fontSize, radius, spacing } from '../../theme/tokens';
 
 const CONFIRM_WORD = 'DELETE';
@@ -47,9 +50,22 @@ interface AccountScreenProps {
   onClose: () => void;
   /** Clears local game state; demo reset, and after a confirmed account deletion. */
   onResetLocalData: () => void;
+  themePreference: ThemePreference;
+  onSetTheme: (preference: ThemePreference) => void;
+  /** Opens the edit-profile screen (hidden while the profile is unavailable). */
+  onEditProfile?: () => void;
 }
 
-export function AccountScreen({ demo, email, profile, onClose, onResetLocalData }: AccountScreenProps) {
+const THEME_OPTIONS: { value: ThemePreference; label: string }[] = [
+  { value: null, label: 'System' },
+  { value: 'light', label: 'Light' },
+  { value: 'dark', label: 'Dark' },
+];
+
+const APP_VERSION = Constants.expoConfig?.version ?? '1.0.0';
+
+export function AccountScreen(props: AccountScreenProps) {
+  const { onClose, onResetLocalData } = props;
   const [step, setStep] = useState<'overview' | 'delete'>('overview');
   const busyRef = useRef(false);
 
@@ -71,57 +87,7 @@ export function AccountScreen({ demo, email, profile, onClose, onResetLocalData 
       busyRef={busyRef}
     />
   ) : (
-    <Overview
-      demo={demo}
-      email={email}
-      profile={profile}
-      onClose={onClose}
-      onResetLocalData={onResetLocalData}
-      onDelete={() => setStep('delete')}
-      busyRef={busyRef}
-    />
-  );
-}
-
-function ScreenFrame({
-  title,
-  backLabel,
-  onBack,
-  backDisabled,
-  children,
-}: {
-  title: string;
-  backLabel: string;
-  onBack: () => void;
-  backDisabled?: boolean;
-  children: React.ReactNode;
-}) {
-  const { colors } = useTheme();
-  return (
-    <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      <ScrollView
-        contentContainerStyle={styles.content}
-        keyboardShouldPersistTaps="handled"
-        keyboardDismissMode="interactive"
-        showsVerticalScrollIndicator={false}
-      >
-        <Pressable
-          onPress={onBack}
-          disabled={backDisabled}
-          accessibilityRole="button"
-          accessibilityLabel={backLabel}
-          accessibilityState={{ disabled: !!backDisabled }}
-          hitSlop={8}
-          style={({ pressed }) => [styles.back, { opacity: backDisabled ? 0.4 : pressed ? 0.6 : 1 }]}
-        >
-          <Text style={[styles.backText, { color: colors.textSecondary }]}>‹ Back</Text>
-        </Pressable>
-        <Text accessibilityRole="header" style={[styles.title, { color: colors.textPrimary }]}>
-          {title}
-        </Text>
-        {children}
-      </ScrollView>
-    </KeyboardAvoidingView>
+    <Overview {...props} onDelete={() => setStep('delete')} busyRef={busyRef} />
   );
 }
 
@@ -143,6 +109,9 @@ function Overview({
   profile,
   onClose,
   onResetLocalData,
+  themePreference,
+  onSetTheme,
+  onEditProfile,
   onDelete,
   busyRef,
 }: AccountScreenProps & {
@@ -153,6 +122,7 @@ function Overview({
   const auth = useAuth();
   const [signingOut, setSigningOut] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  const reminder = useReminder();
 
   const signOut = async () => {
     if (signingOut) return;
@@ -183,7 +153,8 @@ function Overview({
   };
 
   return (
-    <ScreenFrame title="Account" backLabel="Close account" onBack={onClose} backDisabled={signingOut}>
+    <ScreenFrame title="Settings" backLabel="Close settings" onBack={onClose} backDisabled={signingOut}>
+      <SectionHeader title="Account" />
       <View style={[styles.card, { backgroundColor: colors.bgSurface, borderColor: colors.border }]}>
         {demo ? (
           <InfoRow label="Mode" value="Demo (this device only)" />
@@ -199,13 +170,43 @@ function Overview({
         ) : (
           <Text style={[styles.muted, { color: colors.textMuted }]}>Profile details are unavailable right now.</Text>
         )}
+        {profile && onEditProfile ? (
+          <AppButton label="Edit profile" icon={Pencil} variant="secondary" onPress={onEditProfile} testID="settings-edit-profile" />
+        ) : null}
       </View>
+
+      <SectionHeader title="Appearance" />
+      <View accessibilityRole="radiogroup" style={[styles.segment, { backgroundColor: colors.bgElevated, borderColor: colors.border }]}>
+        {THEME_OPTIONS.map((o) => {
+          const selected = themePreference === o.value;
+          return (
+            <Pressable
+              key={o.label}
+              onPress={() => onSetTheme(o.value)}
+              testID={`theme-${o.label.toLowerCase()}`}
+              accessibilityRole="radio"
+              accessibilityLabel={`${o.label} theme`}
+              accessibilityState={{ checked: selected }}
+              style={({ pressed }) => [
+                styles.segmentItem,
+                { backgroundColor: selected ? colors.primaryStrong : 'transparent', opacity: pressed ? 0.8 : 1 },
+              ]}
+            >
+              <Text style={[styles.segmentText, { color: selected ? colors.onPrimary : colors.textSecondary }]}>{o.label}</Text>
+            </Pressable>
+          );
+        })}
+      </View>
+
+      <SectionHeader title="Reminders" />
+      <ReminderSettingsCard reminder={reminder} />
 
       {message ? <FormMessage tone="success" message={message} /> : null}
 
       {demo ? (
         <View style={styles.actions}>
           <AppButton
+            testID="account-reset-demo"
             label="Reset demo data"
             variant="secondary"
             onPress={resetDemo}
@@ -218,7 +219,7 @@ function Overview({
       ) : (
         <>
           <View style={styles.actions}>
-            <AppButton label="Sign out" variant="secondary" onPress={signOut} loading={signingOut} />
+            <AppButton testID="account-signout" label="Sign out" variant="secondary" onPress={signOut} loading={signingOut} />
           </View>
           <View style={[styles.danger, { borderColor: colors.pink, backgroundColor: colors.pinkSubtle }]}>
             <Text accessibilityRole="header" style={[styles.dangerTitle, { color: colors.pink }]}>
@@ -228,6 +229,7 @@ function Overview({
               Permanently delete your AuraFit account and all of its data.
             </Text>
             <AppButton
+              testID="account-delete"
               label="Delete account"
               variant="danger"
               onPress={onDelete}
@@ -241,6 +243,9 @@ function Overview({
       <View style={styles.footer}>
         <LegalLinks />
         <HealthDisclaimer />
+        <Text style={[styles.version, { color: colors.textMuted }]} testID="settings-version">
+          AuraFit v{APP_VERSION}
+        </Text>
       </View>
     </ScreenFrame>
   );
@@ -309,6 +314,7 @@ function DeleteAccountStep({
       {error ? <FormMessage tone="error" message={error} /> : null}
 
       <TextField
+        testID="delete-confirm-input"
         label={`Type ${CONFIRM_WORD} to confirm`}
         hint="Must match exactly, in capital letters."
         value={typed}
@@ -328,6 +334,7 @@ function DeleteAccountStep({
 
       <View style={styles.actions}>
         <AppButton
+          testID="delete-confirm-submit"
           label="Permanently delete account"
           variant="danger"
           size="lg"
@@ -343,26 +350,7 @@ function DeleteAccountStep({
 }
 
 const styles = StyleSheet.create({
-  flex: { flex: 1 },
-  content: {
-    padding: spacing.lg,
-    paddingBottom: spacing.xxl,
-    gap: spacing.lg,
-  },
-  back: {
-    alignSelf: 'flex-start',
-    minHeight: MIN_TOUCH_TARGET,
-    justifyContent: 'center',
-  },
-  backText: {
-    fontSize: fontSize.bodyLg,
-    fontWeight: '700',
-  },
-  title: {
-    fontSize: fontSize.headline,
-    fontWeight: '900',
-  },
-  card: {
+    card: {
     borderRadius: radius.lg,
     borderWidth: 1,
     padding: spacing.lg,
@@ -407,5 +395,27 @@ const styles = StyleSheet.create({
   footer: {
     gap: spacing.xs,
     alignItems: 'center',
+  },
+  version: {
+    fontSize: fontSize.caption,
+    marginTop: spacing.xs,
+  },
+  segment: {
+    flexDirection: 'row',
+    borderRadius: radius.full,
+    borderWidth: 1,
+    padding: 4,
+    gap: 4,
+  },
+  segmentItem: {
+    flex: 1,
+    minHeight: MIN_TOUCH_TARGET - 4,
+    borderRadius: radius.full,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  segmentText: {
+    fontSize: fontSize.body,
+    fontWeight: '800',
   },
 });

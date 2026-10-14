@@ -1,0 +1,40 @@
+# Launches Expo Go, opens the dev server and lands on the Welcome screen (signing out / leaving demo if needed).
+# Env: METRO_URL (default exp://127.0.0.1:8081)
+appId: host.exp.Exponent
+---
+- runFlow: launch.yaml
+# Signed in but the profile failed to load → sign out from the error state.
+- runFlow:
+    when:
+      visible:
+        id: "profile-signout"
+    commands:
+      - tapOn:
+          id: "profile-signout"
+# Already signed in or in demo mode → go back to Welcome.
+- runFlow:
+    when:
+      visible:
+        id: "header-account"
+    commands:
+      - tapOn:
+          id: "header-account"
+      - scrollUntilVisible:
+          element:
+            id: "account-signout|account-reset-demo"
+      - runFlow:
+          when:
+            visible:
+              id: "account-signout"
+          commands:
+            - tapOn:
+                id: "account-signout"
+      - runFlow:
+          when:
+            visible: "Leave demo and sign in"
+          commands:
+            - tapOn: "Leave demo and sign in"
+- extendedWaitUntil:
+    visible:
+      id: "welcome-login"
+    timeout: 20000

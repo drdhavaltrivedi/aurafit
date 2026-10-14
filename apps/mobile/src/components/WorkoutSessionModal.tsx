@@ -90,6 +90,7 @@ export function WorkoutSessionModal({ drop, onClose, onClaim }: WorkoutSessionMo
                 </Text>
                 <Pressable
                   onPress={onClose}
+                  testID="workout-close"
                   accessibilityRole="button"
                   accessibilityLabel="Close workout"
                   hitSlop={8}
@@ -104,6 +105,7 @@ export function WorkoutSessionModal({ drop, onClose, onClaim }: WorkoutSessionMo
 
               <View
                 style={styles.timerWrap}
+                testID="workout-timer"
                 accessible
                 accessibilityLabel={`Set timer: ${timer.remaining} seconds remaining${running ? '' : ', stopped'}`}
               >
@@ -118,8 +120,9 @@ export function WorkoutSessionModal({ drop, onClose, onClaim }: WorkoutSessionMo
                 </Text>
               </View>
               <View style={styles.timerControls}>
-                <AppButton label={timerLabel} accessibilityLabel={`${timerLabel} timer`} onPress={timerAction} />
+                <AppButton testID="workout-timer-toggle" label={timerLabel} accessibilityLabel={`${timerLabel} timer`} onPress={timerAction} />
                 <AppButton
+                  testID="workout-timer-reset"
                   label="Reset"
                   accessibilityLabel="Reset timer"
                   variant="secondary"
@@ -142,6 +145,7 @@ export function WorkoutSessionModal({ drop, onClose, onClaim }: WorkoutSessionMo
               </View>
 
               <AppButton
+                testID="workout-claim"
                 label="Claim Workout Aura"
                 icon={Swords}
                 accessibilityLabel="Finish workout and claim aura"

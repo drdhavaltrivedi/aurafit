@@ -31,6 +31,7 @@ export type GameAction =
   | { type: 'COMPLETE_QUEST'; questId: string; today: string }
   | { type: 'FINISH_WORKOUT'; drop: WorkoutDrop; today: string }
   | { type: 'DAY_ROLLOVER'; today: string }
+  | { type: 'UPDATE_PROFILE'; patch: Pick<UserProfile, 'username' | 'title' | 'bio'> }
   /** Wipes all local game progress (demo reset / account deletion); keeps the theme preference. */
   | { type: 'RESET'; today: string };
 
@@ -125,6 +126,15 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
     case 'DAY_ROLLOVER':
       return rollover(state, action.today);
 
+    case 'UPDATE_PROFILE': {
+      const username = action.patch.username.trim();
+      if (!username) return state;
+      return {
+        ...state,
+        user: { ...state.user, username, title: action.patch.title.trim(), bio: action.patch.bio.trim() },
+      };
+    }
+
     case 'RESET':
       return { ...createInitialState(action.today), themePreference: state.themePreference };
 
@@ -145,6 +155,8 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         user: {
           ...grantAura(current.user, earned),
           attributes: { ...current.user.attributes, [stat]: current.user.attributes[stat] + amount },
+          // Matches the server: every completed quest or workout counts as a session.
+          totalWorkouts: current.user.totalWorkouts + 1,
         },
       };
       return recordActivity(next, action.today);

@@ -23,6 +23,7 @@ export function AuthLayout({ title, subtitle, onBack, children }: AuthLayoutProp
         {onBack ? (
           <Pressable
             onPress={onBack}
+            testID="auth-back"
             accessibilityRole="button"
             accessibilityLabel="Go back"
             hitSlop={8}

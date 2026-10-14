@@ -45,6 +45,7 @@ export function ForgotPasswordScreen({ initialEmail = '', onBack }: Props) {
         <>
           {formError ? <FormMessage tone="error" message={formError} /> : null}
           <TextField
+            testID="forgot-email"
             label="Email"
             value={email}
             onChangeText={(t) => {
@@ -62,7 +63,7 @@ export function ForgotPasswordScreen({ initialEmail = '', onBack }: Props) {
             onSubmitEditing={submit}
             editable={!busy}
           />
-          <AppButton label="Send reset link" size="lg" onPress={submit} loading={busy} />
+          <AppButton testID="forgot-submit" label="Send reset link" size="lg" onPress={submit} loading={busy} />
         </>
       )}
     </AuthLayout>

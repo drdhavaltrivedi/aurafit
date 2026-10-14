@@ -1,0 +1,37 @@
+# Sign-up form validation only — never submits a real sign-up.
+appId: host.exp.Exponent
+name: Signup validation
+---
+- runFlow: subflows/start.yaml
+- tapOn:
+    id: "welcome-signup"
+- assertVisible: "Create your hunter"
+- takeScreenshot: 02_signup
+# Empty submit
+- tapOn:
+    id: "signup-submit"
+- assertVisible: "Enter your email address."
+- assertVisible: "Enter a password."
+- assertVisible: "Confirm your password."
+- takeScreenshot: 02_signup_empty_errors
+# Invalid email, short password, mismatched confirm
+- tapOn:
+    id: "signup-email"
+- inputText: "not-an-email"
+- tapOn:
+    id: "signup-password"
+- inputText: "short"
+- tapOn:
+    id: "signup-confirm"
+- inputText: "different"
+- tapOn: "Create your hunter"  # dismiss keyboard
+- tapOn:
+    id: "signup-submit"
+- assertVisible: "Enter a valid email address."
+- assertVisible: "Use at least 8 characters."
+- assertVisible: "Passwords do not match."
+- takeScreenshot: 02_signup_invalid_errors
+- tapOn:
+    id: "auth-back"
+- assertVisible:
+    id: "welcome-login"

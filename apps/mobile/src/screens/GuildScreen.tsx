@@ -1,599 +1,157 @@
-import React, { useState } from 'react';
-import { Image, ImageBackground, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { useTheme } from '../theme/ThemeProvider';
+import React, { useEffect } from 'react';
+import { ActivityIndicator, ScrollView, StyleSheet, Text, View, type RefreshControlProps } from 'react-native';
+import { INITIAL_SQUADS, type Squad } from '@aurafit/shared';
+import { Trophy, Users } from '../components/icons';
+import { AppButton } from '../components/AppButton';
 import { AppIcon } from '../components/AppIcon';
-import {
-  ArrowLeft,
-  ChevronRight,
-  Crown,
-  Flame,
-  MessageSquare,
-  Settings,
-  Shield,
-  Swords,
-  Timer,
-  Trophy,
-  Users,
-} from '../components/icons';
+import { FormMessage } from '../components/AuthLayout';
+import { ComingSoonCard, SampleDataTag } from '../components/DataNotice';
+import { ProgressBar } from '../components/ProgressBar';
+import { SectionHeader } from '../components/SectionHeader';
+import type { PublicHunter } from '../api/types';
+import { useTheme } from '../theme/ThemeProvider';
 import { fontSize, radius, spacing } from '../theme/tokens';
+import { HunterRow } from './AdminScreen';
 
-interface GuildScreenProps {
-  onBack?: () => void;
-  onOpenSettings?: () => void;
+const STATUS_LABEL: Record<Squad['status'], string> = {
+  LOCKED_IN: 'Locked in',
+  ON_FIRE: 'On fire',
+  NEEDS_SAVING: 'Needs saving',
+};
+
+interface Props {
+  /** Demo mode: show the sample squads (labelled). Signed-in mode: guilds are not live yet. */
+  sample: boolean;
+  /** Live top hunters (signed-in mode) so the tab always has real content. */
+  hunters: PublicHunter[];
+  huntersLoading: boolean;
+  huntersError: string | null;
+  currentUserId: string;
+  onRetry: () => void;
+  onOpenLeaderboard: () => void;
+  refreshControl?: React.ReactElement<RefreshControlProps>;
 }
 
-export function GuildScreen({ onBack, onOpenSettings }: GuildScreenProps) {
+export function GuildScreen({
+  sample,
+  hunters,
+  huntersLoading,
+  huntersError,
+  currentUserId,
+  onRetry,
+  onOpenLeaderboard,
+  refreshControl,
+}: Props) {
   const { colors } = useTheme();
-  const [bossHp, setBossHp] = useState(68);
-  const [damageDealt, setDamageDealt] = useState(2.4);
-  const [raidAttacked, setRaidAttacked] = useState(false);
+  const top = hunters.slice(0, 5);
 
-  const handleAttackBoss = () => {
-    if (bossHp > 0) {
-      setBossHp((prev) => Math.max(prev - 2, 0));
-      setDamageDealt((prev) => +(prev + 0.1).toFixed(1));
-      setRaidAttacked(true);
-      setTimeout(() => setRaidAttacked(false), 800);
-    }
-  };
-
-  const leaderboard = [
-    { rank: 1, name: 'Shadow Reapers', aura: 48320, members: '24/30', medalColor: '#F59E0B' },
-    { rank: 2, name: 'Iron Fangs', aura: 41205, members: '22/30', medalColor: '#94A3B8' },
-    { rank: 3, name: 'Crimson Blades', aura: 36780, members: '20/30', medalColor: '#D97706' },
-    { rank: 4, name: 'Nova Force', aura: 32410, members: '18/30', medalColor: '#64748B' },
-    { rank: 5, name: 'Celestial Path', aura: 28960, members: '17/30', medalColor: '#64748B' },
-  ];
+  // Refresh the live board each time the tab is opened.
+  useEffect(() => {
+    if (!sample) onRetry();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
-    <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
-      {/* Screen Header */}
-      <View style={styles.topHeader}>
-        <View style={styles.titleWrap}>
-          {onBack && (
-            <Pressable hitSlop={8} onPress={onBack} style={styles.backBtn}>
-              <AppIcon icon={ArrowLeft} size={22} color={colors.textPrimary} />
-            </Pressable>
-          )}
-          <View>
-            <Text style={[styles.screenTitle, { color: colors.textPrimary }]}>Hunter Guild</Text>
-            <Text style={[styles.screenSub, { color: colors.textSecondary }]}>Train Together. Raid Bigger.</Text>
-          </View>
-        </View>
-        <View style={styles.headerIcons}>
-          <Pressable style={[styles.iconCircle, { backgroundColor: colors.bgSurface, borderColor: colors.border }]}>
-            <AppIcon icon={Users} size={18} color={colors.textPrimary} />
-          </Pressable>
-          {onOpenSettings && (
-            <Pressable
-              onPress={onOpenSettings}
-              style={[styles.iconCircle, { backgroundColor: colors.bgSurface, borderColor: colors.border }]}
-            >
-              <AppIcon icon={Settings} size={18} color={colors.textPrimary} />
-            </Pressable>
-          )}
-        </View>
-      </View>
+    <ScrollView
+      testID="guild-screen"
+      contentContainerStyle={styles.content}
+      showsVerticalScrollIndicator={false}
+      refreshControl={refreshControl}
+    >
+      <SectionHeader icon={Users} title="Hunter Guild" subtitle="Train together. Raid bigger." />
 
-      {/* Guild Hero Banner */}
-      <View style={[styles.guildHero, { borderColor: colors.border }]}>
-        <ImageBackground
-          source={require('../../assets/hunter-avatar.jpg')}
-          style={styles.guildBg}
-          imageStyle={styles.guildBgImg}
-        >
-          <View style={styles.heroScrim} />
-          <View style={styles.guildHeroContent}>
-            <View style={styles.guildBadgeRow}>
-              <View style={[styles.crestIcon, { borderColor: '#A78BFA', backgroundColor: 'rgba(124, 58, 237, 0.35)' }]}>
-                <AppIcon icon={Crown} size={24} color="#C4B5FD" />
-              </View>
-              <View style={styles.guildNameCol}>
-                <Text style={styles.guildName}>Shadow Reapers</Text>
-                <Text style={styles.guildStats}>Lv. 5 • 24/30 Hunters</Text>
-                <Text style={styles.guildMotto}>Stronger Together. Higher Forever.</Text>
-              </View>
-              <View style={styles.guildAuraPill}>
-                <AppIcon icon={Flame} size={15} color="#A78BFA" />
-                <View>
-                  <Text style={styles.auraPillLabel}>Guild Aura</Text>
-                  <Text style={styles.auraPillVal}>48,320</Text>
+      {sample ? (
+        <>
+          <SampleDataTag />
+          {INITIAL_SQUADS.map((s) => (
+            <View
+              key={s.id}
+              accessible
+              accessibilityLabel={`Number ${s.rankPosition}: ${s.name}. ${s.memberCount} of ${s.maxMembers} members. ${s.totalAura.toLocaleString()} aura. Weekly goal ${s.weeklyGoalProgress} percent. ${STATUS_LABEL[s.status]}.`}
+              style={[styles.squad, { backgroundColor: colors.bgSurface, borderColor: colors.border }]}
+            >
+              <View style={styles.squadTop}>
+                <Text style={[styles.pos, { color: colors.orange }]}>#{s.rankPosition}</Text>
+                <View style={[styles.squadIcon, { backgroundColor: colors.primarySubtle }]}>
+                  <AppIcon name={s.avatar} size={20} color={colors.primary} />
                 </View>
+                <View style={styles.flex}>
+                  <Text style={[styles.name, { color: colors.textPrimary }]} numberOfLines={1}>
+                    {s.name} <Text style={{ color: colors.textMuted }}>[{s.tag}]</Text>
+                  </Text>
+                  <Text style={[styles.muted, { color: colors.textSecondary }]}>
+                    {s.memberCount}/{s.maxMembers} hunters • led by {s.leaderName} • {STATUS_LABEL[s.status]}
+                  </Text>
+                </View>
+                <Text style={[styles.aura, { color: colors.primary }]}>{s.totalAura.toLocaleString()}</Text>
               </View>
+              <ProgressBar value={s.weeklyGoalProgress} label={`${s.name} weekly goal`} />
             </View>
-          </View>
-        </ImageBackground>
-      </View>
+          ))}
+        </>
+      ) : (
+        <ComingSoonCard
+          title="Guilds & squad raids"
+          body="Joining a guild, squad raids and guild chat aren't live yet. Until then, compete on the global leaderboard below."
+        />
+      )}
 
-      {/* Guild Action Buttons */}
-      <View style={styles.actionGrid}>
-        {[
-          { label: 'Guild Raid', icon: Swords, color: colors.primary, bg: colors.primarySubtle },
-          { label: 'Leaderboard', icon: Trophy, color: colors.blue, bg: colors.cyanSubtle },
-          { label: 'Members', icon: Users, color: colors.pink, bg: colors.pinkSubtle },
-          { label: 'Chat', icon: MessageSquare, color: colors.cyan, bg: colors.cyanSubtle },
-        ].map((act, idx) => (
-          <Pressable
-            key={idx}
-            style={({ pressed }) => [
-              styles.actionBox,
-              { backgroundColor: colors.bgSurface, borderColor: colors.border, opacity: pressed ? 0.8 : 1 },
-            ]}
-          >
-            <View style={[styles.actionIconWrap, { backgroundColor: act.bg }]}>
-              <AppIcon icon={act.icon} size={20} color={act.color} strokeWidth={2.4} />
-            </View>
-            <Text style={[styles.actionLabel, { color: colors.textPrimary }]}>{act.label}</Text>
-          </Pressable>
-        ))}
-      </View>
-
-      {/* World Boss Raid Card */}
-      <View style={[styles.bossCard, { borderColor: colors.border }]}>
-        <ImageBackground
-          source={require('../../assets/hunter-avatar.jpg')}
-          style={styles.bossBg}
-          imageStyle={styles.bossBgImg}
-        >
-          <View style={styles.heroScrim} />
-          <View style={styles.bossContent}>
-            <View style={styles.bossTagRow}>
-              <View style={styles.raidBadge}>
-                <Text style={styles.raidBadgeText}>WORLD BOSS RAID</Text>
-              </View>
-              <View style={styles.timerRow}>
-                <AppIcon icon={Timer} size={13} color="#E2E8F0" />
-                <Text style={styles.timerText}>Ends in 2d 14h</Text>
-              </View>
-            </View>
-
-            <Text style={styles.bossName}>The Shadow Monarch</Text>
-
-            <View style={styles.bossBarSection}>
-              <View style={styles.bossBarTrack}>
-                <View style={[styles.bossBarFill, { width: `${bossHp}%` }]} />
-              </View>
-              <View style={styles.damageRow}>
-                <Text style={styles.damageLabel}>
-                  Your Guild Damage: {damageDealt}M / 3.5M
-                </Text>
-                <Text style={styles.damagePct}>{bossHp}%</Text>
-              </View>
-            </View>
-
-            <Pressable
-              onPress={handleAttackBoss}
-              style={({ pressed }) => [
-                styles.raidBtn,
-                { opacity: pressed || raidAttacked ? 0.75 : 1 },
-              ]}
-            >
-              <Text style={styles.raidBtnText}>{raidAttacked ? 'CRITICAL HIT! -100K HP' : 'Join Raid'}</Text>
-              <AppIcon icon={ChevronRight} size={16} color="#FFFFFF" strokeWidth={2.5} />
-            </Pressable>
-          </View>
-        </ImageBackground>
-      </View>
-
-      {/* Guild Leaderboard */}
-      <View style={styles.sectionHeaderRow}>
-        <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>Guild Leaderboard</Text>
-        <Pressable style={styles.viewAllRow}>
-          <Text style={[styles.viewAllText, { color: colors.textSecondary }]}>View All</Text>
-          <AppIcon icon={ChevronRight} size={14} color={colors.textSecondary} />
-        </Pressable>
-      </View>
-
-      <View style={styles.leaderboardList}>
-        {leaderboard.map((item) => (
-          <View
-            key={item.rank}
-            style={[styles.leaderboardRow, { backgroundColor: colors.bgSurface, borderColor: colors.border }]}
-          >
-            <View style={[styles.rankBadgeNum, { backgroundColor: item.rank === 1 ? colors.primarySubtle : colors.bgElevated }]}>
-              <Text style={[styles.rankNumText, { color: item.medalColor }]}>#{item.rank}</Text>
-            </View>
-
-            <Image source={require('../../assets/hunter-avatar.jpg')} style={styles.leaderAvatar} />
-
-            <View style={styles.guildInfoCol}>
-              <Text style={[styles.guildRowName, { color: colors.textPrimary }]}>{item.name}</Text>
-              <View style={styles.auraRow}>
-                <AppIcon icon={Flame} size={13} color={colors.danger} />
-                <Text style={[styles.auraScore, { color: colors.textSecondary }]}>{item.aura.toLocaleString()}</Text>
-              </View>
-            </View>
-
-            <View style={styles.membersCol}>
-              <AppIcon icon={Users} size={14} color={colors.textMuted} />
-              <Text style={[styles.membersText, { color: colors.textMuted }]}>{item.members}</Text>
-            </View>
-          </View>
-        ))}
-      </View>
-
-      {/* Guild Chat Snippet */}
-      <View style={styles.sectionHeaderRow}>
-        <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>Guild Chat</Text>
-        <AppIcon icon={ChevronRight} size={14} color={colors.textSecondary} />
-      </View>
-
-      <View style={[styles.chatSnippet, { backgroundColor: colors.bgSurface, borderColor: colors.border }]}>
-        <Image source={require('../../assets/hunter-avatar.jpg')} style={styles.chatAvatar} />
-        <View style={styles.chatBubbleCol}>
-          <View style={styles.chatMetaRow}>
-            <Text style={[styles.chatSender, { color: colors.textPrimary }]}>Rohan_07</Text>
-            <View style={[styles.leaderBadge, { backgroundColor: colors.primarySubtle }]}>
-              <Text style={[styles.leaderBadgeText, { color: colors.primary }]}>Leader</Text>
-            </View>
-            <Text style={[styles.chatTime, { color: colors.textMuted }]}>2h ago</Text>
-          </View>
-          <Text style={[styles.chatMsg, { color: colors.textSecondary }]}>Let's finish the raid tonight! 🔥</Text>
-        </View>
-      </View>
+      <SectionHeader icon={Trophy} title="Top hunters" subtitle={sample ? 'Sample leaderboard' : 'Live global leaderboard'} />
+      {huntersError ? (
+        <>
+          <FormMessage tone="error" message={huntersError} />
+          <AppButton label="Try again" variant="secondary" onPress={onRetry} />
+        </>
+      ) : huntersLoading && top.length === 0 ? (
+        <ActivityIndicator color={colors.primary} accessibilityLabel="Loading leaderboard" />
+      ) : top.length === 0 ? (
+        <Text style={[styles.muted, { color: colors.textSecondary }]}>No hunters on the board yet.</Text>
+      ) : (
+        top.map((h, i) => <HunterRow key={h.id} hunter={h} position={i + 1} isYou={h.id === currentUserId} />)
+      )}
+      <AppButton label="See full leaderboard" variant="secondary" onPress={onOpenLeaderboard} testID="guild-open-leaderboard" />
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  flex: { flex: 1 },
+  content: {
     padding: spacing.lg,
-    paddingBottom: spacing.xxl + 24,
-    gap: spacing.lg,
+    paddingBottom: spacing.xxl,
+    gap: spacing.md,
   },
-  topHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+  squad: {
+    padding: spacing.md,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    gap: spacing.sm,
   },
-  titleWrap: {
+  squadTop: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm,
   },
-  backBtn: {
-    padding: 4,
-  },
-  screenTitle: {
-    fontSize: fontSize.title + 2,
+  pos: {
+    fontSize: fontSize.body,
     fontWeight: '900',
-    letterSpacing: -0.3,
   },
-  screenSub: {
-    fontSize: 12,
-    fontWeight: '700',
-  },
-  headerIcons: {
-    flexDirection: 'row',
-    gap: spacing.sm,
-  },
-  iconCircle: {
+  squadIcon: {
     width: 36,
     height: 36,
-    borderRadius: 18,
-    borderWidth: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  guildHero: {
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    overflow: 'hidden',
-    backgroundColor: '#0A0F1D',
-  },
-  guildBg: {
-    padding: spacing.md + 2,
-  },
-  guildBgImg: {
-    opacity: 0.35,
-    resizeMode: 'cover',
-  },
-  heroScrim: {
-    ...StyleSheet.absoluteFill,
-    backgroundColor: 'rgba(6, 10, 20, 0.92)',
-  },
-  guildHeroContent: {
-    position: 'relative',
-  },
-  guildBadgeRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm + 2,
-  },
-  crestIcon: {
-    width: 52,
-    height: 52,
-    borderRadius: radius.md,
-    borderWidth: 1.5,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  guildNameCol: {
-    flex: 1,
-    gap: 2,
-  },
-  guildName: {
-    color: '#FFFFFF',
-    fontSize: fontSize.title,
-    fontWeight: '900',
-    letterSpacing: -0.2,
-    textShadowColor: 'rgba(0, 0, 0, 0.95)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 3,
-  },
-  guildStats: {
-    color: '#E2E8F0',
-    fontSize: 11,
-    fontWeight: '800',
-  },
-  guildMotto: {
-    color: '#94A3B8',
-    fontSize: 10,
-    fontWeight: '700',
-  },
-  guildAuraPill: {
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: 'rgba(167, 139, 250, 0.4)',
-    backgroundColor: 'rgba(124, 58, 237, 0.35)',
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  auraPillLabel: {
-    color: '#CBD5E1',
-    fontSize: 9,
-    fontWeight: '700',
-  },
-  auraPillVal: {
-    color: '#FFFFFF',
-    fontSize: 13,
-    fontWeight: '900',
-  },
-  actionGrid: {
-    flexDirection: 'row',
-    gap: spacing.sm,
-  },
-  actionBox: {
-    flex: 1,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    paddingVertical: spacing.md,
-    alignItems: 'center',
-    gap: 6,
-  },
-  actionIconWrap: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  actionLabel: {
-    fontSize: 11,
-    fontWeight: '800',
-  },
-  bossCard: {
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    overflow: 'hidden',
-    backgroundColor: '#0A0F1D',
-  },
-  bossBg: {
-    padding: spacing.lg,
-  },
-  bossBgImg: {
-    opacity: 0.35,
-    resizeMode: 'cover',
-  },
-  bossContent: {
-    position: 'relative',
-    gap: spacing.sm,
-  },
-  bossTagRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  raidBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 3,
     borderRadius: radius.sm,
-    backgroundColor: 'rgba(239, 68, 68, 0.35)',
-    borderWidth: 1,
-    borderColor: '#EF4444',
-  },
-  raidBadgeText: {
-    color: '#FCA5A5',
-    fontSize: 10,
-    fontWeight: '900',
-    letterSpacing: 0.5,
-  },
-  timerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  timerText: {
-    color: '#E2E8F0',
-    fontSize: 11,
-    fontWeight: '700',
-  },
-  bossName: {
-    color: '#FFFFFF',
-    fontSize: fontSize.title + 2,
-    fontWeight: '900',
-    textShadowColor: 'rgba(0, 0, 0, 0.95)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 3,
-  },
-  bossBarSection: {
-    gap: 4,
-    marginTop: 4,
-  },
-  bossBarTrack: {
-    height: 8,
-    borderRadius: 4,
-    overflow: 'hidden',
-    backgroundColor: 'rgba(255, 255, 255, 0.12)',
-  },
-  bossBarFill: {
-    height: '100%',
-    borderRadius: 4,
-    backgroundColor: '#8B5CF6',
-  },
-  damageRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  damageLabel: {
-    color: '#E2E8F0',
-    fontSize: 11,
-    fontWeight: '700',
-  },
-  damagePct: {
-    color: '#C4B5FD',
-    fontSize: 12,
-    fontWeight: '900',
-  },
-  raidBtn: {
-    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 4,
-    backgroundColor: '#7C3AED',
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    borderRadius: radius.full,
-    alignSelf: 'flex-start',
-    marginTop: 6,
-    shadowColor: '#7C3AED',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.4,
-    shadowRadius: 8,
-    elevation: 3,
   },
-  raidBtnText: {
-    color: '#FFFFFF',
+  name: {
     fontSize: fontSize.body,
     fontWeight: '800',
   },
-  sectionHeaderRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginTop: spacing.xs,
+  muted: {
+    fontSize: fontSize.caption,
   },
-  sectionTitle: {
-    fontSize: fontSize.title - 1,
-    fontWeight: '800',
-  },
-  viewAllRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 2,
-  },
-  viewAllText: {
-    fontSize: 12,
-    fontWeight: '700',
-  },
-  leaderboardList: {
-    gap: spacing.sm,
-  },
-  leaderboardRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: spacing.md,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    gap: spacing.sm + 2,
-  },
-  rankBadgeNum: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  rankNumText: {
-    fontSize: 12,
+  aura: {
+    fontSize: fontSize.caption + 1,
     fontWeight: '900',
-  },
-  leaderAvatar: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-  },
-  guildInfoCol: {
-    flex: 1,
-    gap: 2,
-  },
-  guildRowName: {
-    fontSize: 14,
-    fontWeight: '800',
-  },
-  auraRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  auraScore: {
-    fontSize: 12,
-    fontWeight: '700',
-  },
-  membersCol: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  membersText: {
-    fontSize: 12,
-    fontWeight: '700',
-  },
-  chatSnippet: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: spacing.md,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    gap: spacing.md,
-  },
-  chatAvatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-  },
-  chatBubbleCol: {
-    flex: 1,
-    gap: 3,
-  },
-  chatMetaRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  chatSender: {
-    fontSize: 13,
-    fontWeight: '800',
-  },
-  leaderBadge: {
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 4,
-  },
-  leaderBadgeText: {
-    fontSize: 10,
-    fontWeight: '800',
-  },
-  chatTime: {
-    fontSize: 10,
-    fontWeight: '600',
-  },
-  chatMsg: {
-    fontSize: 13,
-    fontWeight: '600',
   },
 });

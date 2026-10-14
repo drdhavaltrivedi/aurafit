@@ -3,7 +3,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useTheme } from '../theme/ThemeProvider';
 import { AppIcon } from './AppIcon';
 import { Gift, Shield, Trophy, Users, Zap } from './icons';
-import { fontSize, radius, spacing } from '../theme/tokens';
+import { radius } from '../theme/tokens';
 
 interface QuickActionsRowProps {
   onPressAction: (actionKey: 'snacks' | 'hunter_card' | 'guild' | 'leaderboard' | 'rewards') => void;
@@ -43,7 +43,7 @@ export function QuickActionsRow({ onPressAction }: QuickActionsRowProps) {
     },
     {
       key: 'rewards' as const,
-      label: 'Hunter\nRewards',
+      label: 'My\nBadges',
       icon: Gift,
       color: colors.pink,
       bg: colors.pinkSubtle,
@@ -56,6 +56,7 @@ export function QuickActionsRow({ onPressAction }: QuickActionsRowProps) {
         <Pressable
           key={act.key}
           onPress={() => onPressAction(act.key)}
+          testID={`qa-${act.key}`}
           accessibilityRole="button"
           accessibilityLabel={act.label.replace('\n', ' ')}
           style={({ pressed }) => [

@@ -23,7 +23,11 @@ export function optimisticCompleteQuest(me: MeResponse, questId: string): MeResp
   const { stat, amount } = quest.statReward;
   const profile = withAura(me.profile, earned);
   return {
-    profile: { ...profile, attributes: { ...profile.attributes, [stat]: profile.attributes[stat] + amount } },
+    profile: {
+      ...profile,
+      attributes: { ...profile.attributes, [stat]: profile.attributes[stat] + amount },
+      totalWorkouts: profile.totalWorkouts + 1,
+    },
     quests: me.quests.map((q) =>
       q.id === questId ? { ...q, completed: true, progress: 100, currentCount: q.targetCount } : q
     ),
