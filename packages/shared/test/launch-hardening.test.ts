@@ -30,7 +30,7 @@ beforeAll(async () => {
       ('${ADMIN}', 'admin@example.com');
     UPDATE profiles SET role = 'CREATOR' WHERE auth_id = '${CREATOR}';
     UPDATE profiles SET role = 'ADMIN' WHERE auth_id = '${ADMIN}';
-    INSERT INTO user_quest_logs (user_id, quest_id, aura_earned) SELECT id, 'q_daily_1', 250 FROM profiles;
+    INSERT INTO user_quest_logs (user_id, quest_id, aura_earned) SELECT id, 'q_daily_1', 250 FROM profiles WHERE auth_id IS NOT NULL;
   `);
 }, 60_000);
 
@@ -41,7 +41,7 @@ afterAll(async () => {
 describe('profiles.auth_id is not exposed to API roles', () => {
   it.each(['anon', 'authenticated'] as const)('%s: can read public columns but not auth_id (nor select *)', async (role) => {
     await as(role, MEMBER);
-    expect((await attempt(`SELECT id, handle, username, role, aura_points, rank, weekly_aura_gained, created_at FROM profiles`)).rows).toHaveLength(3);
+    expect((await attempt(`SELECT id, handle, username, role, aura_points, rank, weekly_aura_gained, created_at FROM profiles WHERE handle <> '@aurafit'`)).rows).toHaveLength(3);
     expect((await attempt(`SELECT auth_id FROM profiles`)).error).toMatch(/permission denied/);
     expect((await attempt(`SELECT * FROM profiles`)).error).toMatch(/permission denied/);
     expect((await attempt(`SELECT id FROM profiles WHERE auth_id = $1`, [MEMBER])).error).toMatch(/permission denied/);

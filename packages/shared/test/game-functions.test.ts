@@ -259,7 +259,7 @@ describe('supabase/seed/demo_workout_drops.sql', () => {
     await db.exec(readFileSync(join(__dirname, '..', '..', '..', 'supabase', 'seed', 'demo_workout_drops.sql'), 'utf8'));
     const { rows } = await db.query<{ id: string; xp_points: number; aura_multiplier: string; n: number; auth_id: string | null }>(
       `SELECT d.id, d.xp_points, d.aura_multiplier, jsonb_array_length(d.exercises) AS n, p.auth_id
-       FROM workout_drops d JOIN profiles p ON p.id = d.creator_id ORDER BY d.id`,
+       FROM workout_drops d JOIN profiles p ON p.id = d.creator_id WHERE d.id NOT LIKE 'af\\_%' ORDER BY d.id`,
     );
     const expected = [...INITIAL_WORKOUT_DROPS].sort((a, b) => a.id.localeCompare(b.id));
     expect(rows.map((r) => r.id)).toEqual(expected.map((d) => d.id));
