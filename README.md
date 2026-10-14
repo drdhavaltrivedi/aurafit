@@ -1,7 +1,7 @@
 # AuraFit — RPG Gamified Fitness Platform
 
 <p align="center">
-  <img src="apps/web/public/logo-header.png" alt="AuraFit Logo" width="140" height="auto" />
+  <img src="apps/web/public/logo.png" alt="AuraFit Logo" width="140" height="auto" />
 </p>
 
 <p align="center">
@@ -15,7 +15,7 @@
   <img src="https://img.shields.io/badge/React_Native-0.76+-61DAFB?style=for-the-badge&logo=react&logoColor=black" alt="React Native" />
   <img src="https://img.shields.io/badge/Supabase-PostgreSQL_15-3FCF8E?style=for-the-badge&logo=supabase" alt="Supabase" />
   <img src="https://img.shields.io/badge/TypeScript-5.0+-3178C6?style=for-the-badge&logo=typescript&logoColor=white" alt="TypeScript" />
-  <img src="https://img.shields.io/badge/Tests-237_Passing-success?style=for-the-badge&logo=vitest" alt="Vitest Tests" />
+  <img src="https://img.shields.io/badge/Tests-243_Passing-success?style=for-the-badge&logo=vitest" alt="Vitest Tests" />
   <img src="https://img.shields.io/badge/License-MIT-blue?style=for-the-badge" alt="MIT License" />
 </p>
 
@@ -184,6 +184,31 @@ A calendar-day UTC state machine protects hunter streaks:
 
 ---
 
+## 🏋️ Official Starter Workout Library (Live in Production)
+
+AuraFit ships with **10 official zero-equipment bodyweight routines** authored by the verified system coach account (`@aurafit`, "AuraFit Coach", `auth_id IS NULL` so it cannot be logged into or compromised). All routines start organically at 0 likes and 0 completions with zero fabricated vanity metrics.
+
+| Workout | Vibe & Category | Length | Difficulty | Exercises & Focus |
+|---|---|:---:|:---:|---|
+| **First Quest: Full-Body Starter** | `LEVEL ONE` (Strength) | 12 min | Novice | Squats, Push-Ups, Glute Bridges, Plank, Jumping Jacks |
+| **Desk Reset: 5-Minute Posture Fix** | `POSTURE RESET` (Posture) | 5 min | Novice | Chin Tucks, Wall Angels, Doorway Stretch, Hip Flexors |
+| **Core Armor: 10-Minute Abs** | `STEEL CORE` (Strength) | 10 min | Novice | Dead Bugs, Side Planks, Bird Dogs, Hollow Body Hold |
+| **Cardio Snack: 7-Minute Energy Boost** | `QUICK HIT` (Cardio) | 7 min | Novice | Jog in Place, Step Jacks, Fast Feet, Shadow Boxing |
+| **Recovery Flow: 12-Minute Mobility** | `CALM MODE` (Mobility) | 12 min | Novice | Cat-Cow, World's Greatest Stretch, 90/90 Hip Switches |
+| **Ignite: 15-Minute HIIT Circuit** | `PHONK BEAST` (HIIT) | 15 min | Hunter | High Knees, Mountain Climbers, Jump Squats, Plank Hold |
+| **Push Power: Chest, Shoulders & Triceps** | `IRON FOCUS` (Strength) | 20 min | Hunter | Push-Ups, Pike Push-Ups, Chair Dips, Shoulder Taps |
+| **Leg Day Lite: No-Equipment Lower Body** | `GROUNDED` (Strength) | 18 min | Hunter | Reverse Lunges, Split Squat Pulses, Wall Sit, Calf Raises |
+| **Tabata Burn: 4 Rounds of Max Effort** | `REDLINE` (HIIT) | 16 min | Beast | Burpees, Jump Squats, Push-Up Plank Jacks, Speed Skaters |
+| **Monarch Challenge: 25-Minute Ladder** | `FINAL BOSS` (Strength) | 25 min | Shadow | Push-Up Ladder (1→5→1), Jumping Lunges, Burpee Finisher |
+
+- **Zero Equipment Needed**: 100% bodyweight movements that can be performed anywhere (home, office, dorm, or gym).
+- **Accessible Regressions & Safety Notes**: Built-in exercise tips provide scalable alternatives (e.g., knee push-ups, step-back burpees, wall angels).
+- **Live in Production**: The production API (`GET /api/v1/drops`) returns all 10 routines.
+- **Extensible Scripting**: Routines are seeded via `supabase/migrations/20261014090000_starter_library.sql` and generated from [`scripts/starter-library.mjs`](file:///Users/admin/.gemini/antigravity-ide/scratch/aurafit/scripts/starter-library.mjs) for easy editing.
+- **Tested**: Verified by 5 automated database tests in `packages/shared/test/starter-library.test.ts`.
+
+---
+
 ## 🛠️ Technology Stack
 
 | Domain | Technology | Purpose |
@@ -196,7 +221,7 @@ A calendar-day UTC state machine protects hunter streaks:
 | **Database & Identity** | Supabase (PostgreSQL 15) | Row-Level Security (RLS), column grants, OAuth PKCE, stored procedures |
 | **Background Scheduling**| `pg_cron` | Monday 00:00 UTC weekly aura reset & maintenance routines |
 | **Icons & Design Tokens** | Lucide Icons + HSL Obsidian Theme | Custom design system with tailored dark obsidian palettes (`#070A12`, `#0D1322`) |
-| **Testing Suite** | Vitest 3.x + PGlite | 237 automated tests across game math, API routes, and SQL schema migrations |
+| **Testing Suite** | Vitest 3.x + PGlite | 243 automated tests across 20 test suites (game math, API routes, SQL schema) |
 | **Build & Deployment** | EAS Build + Docker + Vercel | Native app store binaries (iOS/Android) and standalone web container |
 
 ---

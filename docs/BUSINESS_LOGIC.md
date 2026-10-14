@@ -156,3 +156,27 @@ Designed for gamers, desk workers, and students who cannot spend 2 hours in a gy
 - **Format**: 5 to 15-minute high-intensity drops.
 - **Music Synchronization**: Integrated high-energy Phonk audio tracks (120–160 BPM) with animated audio waveform visualizations.
 - **Micro-Dose Frequency**: Built to reset posture, activate glutes, and raise heart rates between desk sessions.
+
+---
+
+## 8. Official Starter Workout Library
+
+AuraFit features **10 live production bodyweight routines** published by the unauthenticated system coach account (`@aurafit`, "AuraFit Coach", `auth_id IS NULL`). All routines initialize with 0 likes and 0 completions:
+
+| ID | Title | Tagline | Vibe | Duration | Multiplier | XP | Difficulty | Category | Focus |
+|---|---|---|---|:---:|:---:|:---:|:---:|:---:|---|
+| `af_first_quest_12` | First Quest: Full-Body Starter | Bodyweight basics for day one | `LEVEL ONE` | 12m | 1.2x | 160 | Novice | STRENGTH | Squats, Push-Ups, Bridges, Plank, Jacks |
+| `af_desk_reset_5` | Desk Reset: 5-Minute Posture Fix | Fix slouching and tight hips | `POSTURE RESET` | 5m | 1.0x | 90 | Novice | POSTURE_RESET | Chin Tucks, Wall Angels, Doorway Stretch, Kneeling Hip Flexor |
+| `af_core_armor_10` | Core Armor: 10-Minute Abs | Tight, controlled core work | `STEEL CORE` | 10m | 1.3x | 200 | Novice | STRENGTH | Dead Bugs, Side Planks, Bird Dogs, Hollow Body |
+| `af_cardio_snack_7` | Cardio Snack: 7-Minute Energy Boost | Quick burst to wake up | `QUICK HIT` | 7m | 1.2x | 130 | Novice | CARDIO_SNACK | Jog in Place, Step Jacks, Fast Feet, Shadow Boxing |
+| `af_mobility_flow_12` | Recovery Flow: 12-Minute Mobility | Loosen tight hips and spine | `CALM MODE` | 12m | 1.1x | 140 | Novice | POSTURE_RESET | Cat-Cow, World's Greatest Stretch, 90/90 Switches |
+| `af_ignite_15` | Ignite: 15-Minute HIIT Circuit | Short intervals, zero equipment | `PHONK BEAST` | 15m | 1.8x | 350 | Hunter | HIIT | High Knees, Mountain Climbers, Jump Squats, Plank Hold |
+| `af_push_power_20` | Push Power: Chest, Shoulders & Triceps | Scalable push session | `IRON FOCUS` | 20m | 1.5x | 320 | Hunter | STRENGTH | Push-Ups, Pike Push-Ups, Chair Dips, Shoulder Taps |
+| `af_leg_day_lite_18` | Leg Day Lite: No-Equipment Lower Body | Strong legs at home | `GROUNDED` | 18m | 1.4x | 280 | Hunter | STRENGTH | Reverse Lunges, Split Squat Pulses, Single-Leg Bridges, Wall Sit |
+| `af_tabata_burn_16` | Tabata Burn: 4 Rounds of Max Effort | 20s all-out, 10s rest | `REDLINE` | 16m | 2.0x | 380 | Beast | HIIT | Burpees, Jump Squats, Push-Up Plank Jacks, Speed Skaters |
+| `af_monarch_challenge_25`| Monarch Challenge: 25-Minute Ladder | Advanced bodyweight ladder | `FINAL BOSS` | 25m | 2.5x | 450 | Shadow | STRENGTH | Push-Up Ladder (1→5→1), Jumping Lunges, Pike Push-Ups, Burpee Finisher |
+
+- **No Equipment Needed**: Pure bodyweight movements suited for bedrooms, offices, or hotel rooms.
+- **Built-in Regressions**: Every exercise contains scaling tips (e.g., knee push-ups, step-back burpees).
+- **Migration & Code Source**: Generated from [`scripts/starter-library.mjs`](file:///Users/admin/.gemini/antigravity-ide/scratch/aurafit/scripts/starter-library.mjs) and migrated via `supabase/migrations/20261014090000_starter_library.sql`.
+
