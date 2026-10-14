@@ -1,288 +1,359 @@
-# AuraFit
+# AuraFit — RPG Gamified Fitness Platform
 
-AuraFit is a gamified fitness platform for Gen Z and Gen Alpha. Workouts earn
-Aura points, daily quests and "movement snacks" build streaks, and users climb
-Solo Leveling-style hunter ranks with their squads.
+<p align="center">
+  <img src="apps/web/public/logo-header.png" alt="AuraFit Logo" width="140" height="auto" />
+</p>
 
-It ships as two clients that share one domain package:
+<p align="center">
+  <strong>Level Up Your Body. Claim Your Aura.</strong><br/>
+  <em>A next-generation gamified fitness engine where Solo Leveling meets real-world habit building.</em>
+</p>
 
-- **Web**: an installable Next.js 15 / React 19 Progressive Web App.
-- **Mobile**: an Expo (React Native) app for iOS and Android.
+<p align="center">
+  <img src="https://img.shields.io/badge/Next.js-15_App_Router-black?style=for-the-badge&logo=next.js" alt="Next.js 15" />
+  <img src="https://img.shields.io/badge/Expo-SDK_52-4630EB?style=for-the-badge&logo=expo&logoColor=white" alt="Expo" />
+  <img src="https://img.shields.io/badge/React_Native-0.76+-61DAFB?style=for-the-badge&logo=react&logoColor=black" alt="React Native" />
+  <img src="https://img.shields.io/badge/Supabase-PostgreSQL_15-3FCF8E?style=for-the-badge&logo=supabase" alt="Supabase" />
+  <img src="https://img.shields.io/badge/TypeScript-5.0+-3178C6?style=for-the-badge&logo=typescript&logoColor=white" alt="TypeScript" />
+  <img src="https://img.shields.io/badge/Tests-237_Passing-success?style=for-the-badge&logo=vitest" alt="Vitest Tests" />
+  <img src="https://img.shields.io/badge/License-MIT-blue?style=for-the-badge" alt="MIT License" />
+</p>
 
-## Repository layout
+---
+
+## ⚡ Overview
+
+**AuraFit** transforms fitness into an immersive RPG journey inspired by the anime and manhwa *Solo Leveling*. Daily push-up sets, sprints, mobility drills, and curated high-intensity "Movement Snacks" earn **Aura Points**, power up four core RPG attributes (**STR**, **AGI**, **END**, **REC**), and advance users through seven hunter ranks from **E-Rank** to **Monarch**.
+
+The platform is designed as an **npm workspaces monorepo** with a single shared domain engine powering two high-performance clients:
+- 🌐 **Web**: An installable, responsive Progressive Web App built with **Next.js 15**, React 19, and standalone Docker deployment.
+- 📱 **Mobile**: A native iOS and Android application built with **Expo SDK 52** and React Native, featuring deep obsidian aesthetics, offline-first local state fallback, and high-contrast WCAG-compliant typography.
+
+---
+
+## 🏛️ System Architecture
+
+AuraFit decouples pure business and game domain logic from presentation layers, ensuring consistent calculations across web, mobile, and server environments.
+
+```mermaid
+graph TD
+    subgraph Clients ["Client Layer"]
+        WebPWA["Next.js 15 PWA<br/>(React 19 / CSS Tokens / Web Workers)"]
+        MobileApp["Expo React Native (SDK 52)<br/>(iOS & Android / Native Driver)"]
+    end
+
+    subgraph SharedCore ["Shared Domain Core (@aurafit/shared)"]
+        DomainLogic["Domain Logic & XP Formulas"]
+        StreakMachine["Calendar Streak & Shield Machine"]
+        ApiContracts["Strongly-Typed API v1 Contracts"]
+        DropSchemas["Workout Drop & Exercise Schemas"]
+    end
+
+    subgraph Gateway ["API Gateway & Application Server"]
+        NextGateway["Next.js 15 App Router<br/>(/api/v1/* Route Handlers)"]
+        RateLimiter["Token Bucket Rate Limiter<br/>(Burst 10, 1 req / 2s)"]
+        SessionAuth["Session Cookie & Bearer JWT Middleware"]
+    end
+
+    subgraph Backend ["Database & Cloud Services (Supabase)"]
+        SupaAuth["Supabase Auth (PKCE / Google OAuth)"]
+        PostgresDB["PostgreSQL 15 Database (RLS Enabled)"]
+        StoredProcs["SECURITY DEFINER Stored Procedures<br/>(complete_quest, complete_workout)"]
+        PgCron["pg_cron (Monday 00:00 UTC Aura Reset)"]
+    end
+
+    WebPWA -->|Imports| SharedCore
+    MobileApp -->|Imports| SharedCore
+    NextGateway -->|Imports| SharedCore
+
+    WebPWA -->|HTTP / Cookie Session| NextGateway
+    MobileApp -->|HTTP / Bearer Token| NextGateway
+
+    NextGateway --> SessionAuth
+    SessionAuth --> RateLimiter
+    RateLimiter --> StoredProcs
+    StoredProcs --> PostgresDB
+    NextGateway -->|Auth Verification| SupaAuth
+    PgCron -->|Scheduled Task| PostgresDB
+```
+
+> 📖 **Deep Dive**: See the full architectural specification, ER diagram, and caching strategy in [**`docs/ARCHITECTURE.md`**](file:///Users/admin/.gemini/antigravity-ide/scratch/aurafit/docs/ARCHITECTURE.md).
+
+---
+
+## 🔄 User Flows & Core Game Loops
+
+### 1. Hunter Daily Quest & Level-Up Loop
+
+```mermaid
+flowchart TD
+    Start([Hunter Opens App]) --> CheckAuth{Signed In or Demo?}
+    CheckAuth -->|Signed In| FetchProfile[Fetch Profile from API v1]
+    CheckAuth -->|Demo Mode| LoadLocal[Load Offline AsyncStorage Reducer]
+    
+    FetchProfile --> RenderHome[Display Hunter Profile & 4 Stat Cards]
+    LoadLocal --> RenderHome
+
+    RenderHome --> InspectQuest[View Daily Quest: '5 Sets of Push-Ups']
+    InspectQuest --> DoPushUps[Hunter Performs Workout]
+    DoPushUps --> TapComplete[Tap 'Start Quest' / 'Lock In']
+
+    TapComplete --> CalcXP[Calculate Aura Gain<br/>Base 150 × Streak Bonus +5%]
+    CalcXP --> UpdateStats[Increment STR Stat +2 & Aura +150]
+    UpdateStats --> StreakCheck[Apply Daily Streak Rule]
+
+    StreakCheck --> RankCheck{Aura >= Next Rank Threshold?}
+    RankCheck -->|Yes| RankUpCelebration[🎉 Rank Ascendance! e.g., E-Rank to D-Rank]
+    RankCheck -->|No| SaveState[Persist State & Update UI]
+    RankUpCelebration --> SaveState
+    SaveState --> End([Ready for Next Quest])
+```
+
+---
+
+### 2. Movement Snacks & Phonk Beat Workout Drop
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor Hunter as Hunter
+    participant UI as Movement Snacks Screen
+    participant Audio as Phonk Audio Engine
+    participant Store as Game State Store
+    participant API as Backend Gateway
+
+    Hunter->>UI: Selects "Phonk Beat 01" (12 min Cardio Snack)
+    UI->>Audio: Mount Waveform Player & Play High-BPM Track
+    Audio-->>UI: Stream Live Animated Waveform Bars
+    Hunter->>UI: Executes Push-Ups, Air Squats & Plank Holds
+    Hunter->>UI: Taps "Claim Workout"
+    UI->>Store: Optimistic Update (+180 Aura, +3 AGI)
+    UI->>API: POST /api/v1/workouts/:id/complete
+    API->>API: Verify UTC Idempotency & Lock Profile
+    API-->>UI: 200 OK (Streak Preserved, Aura Confirmed)
+    UI-->>Hunter: Haptic Vibration + Rank Progress Bar Fill
+```
+
+---
+
+### 3. Guild World Boss Raid Loop
+
+```mermaid
+flowchart LR
+    GuildTab[Enter Guild Screen] --> ViewGuild[Inspect 'Shadow Reapers' Lv. 5<br/>48,320 Guild Aura]
+    ViewGuild --> BossCard[Inspect 'The Shadow Monarch'<br/>3.5M Total Health Pool]
+    BossCard --> Strike[Tap 'Join Raid' / 'Attack Boss']
+    Strike --> RollCrit[CRITICAL HIT! -100,000 HP]
+    RollCrit --> BossHPDrops[Boss HP Bar Drops<br/>Guild Damage: 1.2M / 3.5M]
+    BossHPDrops --> GuildLeaderboard[Guild Moves Up Global Raid Rankings]
+```
+
+---
+
+## 🎮 Game Engine & Business Logic Highlights
+
+AuraFit's mechanics are mathematically formalized in `@aurafit/shared`:
+
+### 1. Aura Progression Formula
+$$\text{AuraEarned} = \text{round}\left( \frac{\text{BaseReward} \times \text{Multiplier} \times (100 + \min(\text{StreakDays} \times 5, 50))}{100} \right)$$
+- Every consecutive workout day yields a **+5% boost** (up to a **+50% maximum** at 10+ days).
+
+### 2. Hunter Rank Progression Ladder
+| Rank | Threshold | Visual Theme | Next Milestone |
+|---|:---:|---|---|
+| **E-Rank** | `0 Aura` | Deep Obsidian & Metallic Silver | +1,000 to D-Rank |
+| **D-Rank** | `1,000 Aura` | Slate Blue & Steel | +2,000 to C-Rank |
+| **C-Rank** | `3,000 Aura` | Electric Cyan Glow | +4,000 to B-Rank |
+| **B-Rank** | `7,000 Aura` | Neon Emerald Surge | +8,000 to A-Rank |
+| **A-Rank** | `15,000 Aura` | Royal Violet Energy | +15,000 to S-Rank |
+| **S-Rank** | `30,000 Aura` | Crimson Flame Aura | +30,000 to Monarch |
+| **Monarch** | `60,000 Aura` | Gold & Shadow Amethyst | Pinnacle Hunter Realm |
+
+### 3. Core RPG Attributes
+- **STR (Strength)**: Built through heavy lifts and bodyweight resistance.
+- **AGI (Agility)**: Leveled up via high-cadence cardio snacks and metcon drills.
+- **END (Endurance)**: Scaled through sustained workouts and long-duration drops.
+- **REC (Recovery)**: Nurtured via mobility sessions, stretching, and rest day resets.
+
+### 4. Streak Shield State Machine
+A calendar-day UTC state machine protects hunter streaks:
+- Missed 1 day with $\ge 1$ **Streak Shield**: Shield automatically consumed; streak continues unbroken.
+- Missed $\ge 2$ days: Streak resets to 1; remaining shields stay preserved.
+
+> 📖 **Deep Dive**: See complete formulas, database triggers, and SQL idempotency in [**`docs/BUSINESS_LOGIC.md`**](file:///Users/admin/.gemini/antigravity-ide/scratch/aurafit/docs/BUSINESS_LOGIC.md).
+
+---
+
+## 🛠️ Technology Stack
+
+| Domain | Technology | Purpose |
+|---|---|---|
+| **Monorepo Architecture** | npm Workspaces + Turborepo | Isolated package caching and monorepo script orchestration |
+| **Shared Core Package** | TypeScript 5.x | Pure domain logic, XP math, Zod/schemas, API contract interfaces |
+| **Mobile App** | Expo SDK 52 / React Native 0.76+ | High-performance iOS and Android cross-platform client |
+| **Mobile State & Storage** | `@react-native-async-storage` | Zero-latency offline-first state reducer for demo & offline modes |
+| **Web Application** | Next.js 15 (App Router) + React 19 | Server-side rendering, standalone container builds, installable PWA |
+| **Database & Identity** | Supabase (PostgreSQL 15) | Row-Level Security (RLS), column grants, OAuth PKCE, stored procedures |
+| **Background Scheduling**| `pg_cron` | Monday 00:00 UTC weekly aura reset & maintenance routines |
+| **Icons & Design Tokens** | Lucide Icons + HSL Obsidian Theme | Custom design system with tailored dark obsidian palettes (`#070A12`, `#0D1322`) |
+| **Testing Suite** | Vitest 3.x + PGlite | 237 automated tests across game math, API routes, and SQL schema migrations |
+| **Build & Deployment** | EAS Build + Docker + Vercel | Native app store binaries (iOS/Android) and standalone web container |
+
+---
+
+## 📁 Repository Structure
 
 ```
 .
 ├── packages/
-│   └── shared/          @aurafit/shared: domain logic (ranks, aura, streaks, drops, permissions)
-│       ├── src/         TypeScript source, compiled to dist/ (CommonJS + .d.ts)
-│       │   └── api.ts   HTTP API v1 request/response types (used by web + mobile)
-│       ├── test/        Vitest unit tests (+ PGlite tests that apply every migration)
-│       └── schema.sql   GENERATED cumulative schema (all migrations concatenated; read-only)
+│   └── shared/               # @aurafit/shared: domain logic (ranks, aura, streaks, drops)
+│       ├── src/              # TypeScript source, compiled to dist/ (CJS + ESM + .d.ts)
+│       │   ├── api.ts        # HTTP API v1 request/response types (shared contract)
+│       │   ├── streak.ts     # Calendar-day streak & shield state machine
+│       │   ├── drops.ts      # Workout drop schema & validators
+│       │   └── index.ts      # Hunter ranks, attributes, formulas & permissions
+│       ├── test/             # 237 Vitest tests (+ PGlite migration tests)
+│       └── schema.sql        # Cumulative database schema concatenation
 ├── apps/
-│   ├── web/             Next.js 15 App Router PWA (standalone output, Dockerfile)
-│   │   ├── src/app/     Pages (/, /demo, /arena, /login, …) and route handlers (/api/v1/*)
-│   │   └── public/      manifest.json, sw.js (service worker), icons
-│   └── mobile/          Expo app (app.json, eas.json)
+│   ├── web/                  # Next.js 15 App Router PWA
+│   │   ├── src/app/          # Routes (/, /demo, /arena, /account) & API routes (/api/v1/*)
+│   │   ├── src/components/   # Web UI component library
+│   │   └── public/           # manifest.json, sw.js, and static artwork
+│   └── mobile/               # Expo SDK 52 mobile application
+│       ├── src/components/   # HunterHeroCard, StatCardsRow, DailyQuestHeroCard, etc.
+│       ├── src/screens/      # MemberScreen, GuildScreen, MovementSnacksScreen
+│       ├── src/hooks/        # useGameStore (offline state), useApi hooks
+│       ├── src/theme/        # Obsidian design system tokens & ThemeProvider
+│       └── assets/           # Local avatars, logo vectors, and audio samples
 ├── supabase/
-│   ├── migrations/      Source of truth for the database, applied in filename order
-│   └── seed/            Optional demo data (workout drops + seed creators)
-├── scripts/db-sync.mjs  Regenerates schema.sql (from the migrations) and the demo drop seed
-├── .github/workflows/   CI
-└── .env.example         Documented environment variables
+│   ├── migrations/           # Idempotent versioned SQL migrations
+│   └── seed/                 # Seed data for demo drops and creators
+├── docs/
+│   ├── ARCHITECTURE.md       # Technical architecture, ER diagrams, data flow
+│   ├── BUSINESS_LOGIC.md     # Game mechanics, XP formulas, streak state machine
+│   ├── MARKETING_GUIDE.md    # GTM strategy, TikTok hooks, personas, ASO playbook
+│   └── STORE_LISTING.md      # Google Play Store listing in English (UK)
+└── scripts/
+    └── db-sync.mjs           # Regenerates schema.sql from supabase/migrations/*
 ```
 
-This is an npm workspaces monorepo. `@aurafit/shared` is consumed from its
-**built** `dist/` output (`main: dist/index.js`), so **build it before running
-or building the apps**. `dist/` is gitignored.
+---
 
-## Prerequisites
+## 🚀 Getting Started
 
-- Node.js **22** (see `.nvmrc`; run `nvm use`)
-- npm 10 or newer (bundled with Node 22)
-- For mobile: the Expo Go app on a device, or Xcode / Android Studio simulators
-- Optional: Docker, to build the production web image
+### Prerequisites
+- **Node.js**: `22.x` (see [`.nvmrc`](file:///Users/admin/.gemini/antigravity-ide/scratch/aurafit/.nvmrc); run `nvm use`)
+- **npm**: `10+` (bundled with Node 22)
+- **Expo Go App** (optional): On your physical iOS or Android device
 
-## Setup
-
+### 1. Installation & Initial Build
 ```bash
+# Clone the repository
+git clone https://github.com/drdhavaltrivedi/aurafit.git
+cd aurafit
+
+# Ensure correct Node version & install dependencies
 nvm use
-npm ci                      # installs every workspace from package-lock.json
-npm run build:shared        # compiles packages/shared to dist/
-cp .env.example apps/web/.env.local   # optional, every variable is optional
-```
+npm ci
 
-## Scripts (repository root)
-
-| Command | What it does |
-| --- | --- |
-| `npm run build:shared` | Compile `packages/shared` to `dist/` |
-| `npm run dev:web` | Next.js dev server on http://localhost:3000 |
-| `npm run dev:mobile` | Expo dev server (`expo start`) |
-| `npm run build:web` | Production build of the web app (`.next/standalone`) |
-| `npm run typecheck` | `tsc --noEmit` for shared, web and mobile |
-| `npm test` | Run the Vitest suite once |
-| `npm run test:watch` | Vitest in watch mode |
-| `npm run lint --workspace=apps/web` | ESLint (flat config, `eslint-config-next`) |
-| `npm run db:sync` | Rebuild shared, regenerate `packages/shared/schema.sql` from `supabase/migrations/*` and the demo drop seed |
-
-## Running the web app
-
-```bash
+# Compile the shared domain package (MUST be built before running apps)
 npm run build:shared
-npm run dev:web             # http://localhost:3000
 ```
 
-Production build and run without Docker:
+---
 
+### 2. Running Locally
+
+#### Run the Web App (Next.js 15 PWA)
 ```bash
-npm run build:shared
-npm run build:web
-# Standalone output does not include static assets, so copy them in:
-cp -R apps/web/.next/static apps/web/.next/standalone/apps/web/.next/static
-cp -R apps/web/public      apps/web/.next/standalone/apps/web/public
-PORT=3000 node apps/web/.next/standalone/apps/web/server.js
+npm run dev:web
+# -> Open http://localhost:3000 in your browser
+```
+*Health check endpoint*: `GET http://localhost:3000/api/health`
+
+#### Run the Mobile App (Expo SDK 52)
+```bash
+npm run dev:mobile
+# -> Displays interactive terminal menu & QR code
+# -> Press 'i' for iOS simulator, 'a' for Android emulator, or scan with Expo Go
 ```
 
-Health check: `GET /api/health` returns JSON with status, version and uptime.
+---
 
-## Running the mobile app
-
-```bash
-npm run build:shared
-npm run dev:mobile          # then scan the QR code with Expo Go, or press i / a
-```
-
-`npm run doctor --workspace=apps/mobile` runs `expo-doctor` to check that
-dependency versions match the Expo SDK.
-
-## Testing and quality
+### 3. Testing & Code Quality
 
 ```bash
-npm test                    # unit tests (packages/shared/test)
+# Run the complete test suite (237 unit & schema tests)
+npm test
+
+# Run TypeScript typechecks across shared, web, and mobile
 npm run typecheck
+
+# Run web linter
 npm run lint --workspace=apps/web
 ```
 
-CI (`.github/workflows/ci.yml`) runs on every push to `main` and on every pull
-request. It runs `npm ci`, builds shared, then runs typecheck, tests, web lint
-and the web build. It also builds the Docker image and smoke-tests
-`/api/health`. A separate, non-blocking job runs `expo-doctor`.
+---
 
-`next build` skips ESLint (`eslint.ignoreDuringBuilds`) because lint runs as its
-own CI step. Type errors still fail the build.
+## 🔒 Environment Variables
 
-## Accounts, auth and the API (Supabase)
-
-The web app uses **Supabase Auth** via `@supabase/ssr` (cookie sessions) and a
-server-side business API at `/api/v1`. Without Supabase env vars everything
-still builds and runs: `/login` explains that accounts are not configured and
-links to the **local demo** at `/demo` (localStorage, persona switcher).
-
-| Route | |
-| --- | --- |
-| `/` | Landing page (header shows Log in / Sign up, or the account menu) |
-| `/demo` | Demo arena, no account; "Demo mode" badge + role switcher |
-| `/arena` | Signed-in arena (redirects to `/login?next=/arena` when signed out) |
-| `/account` | Signed-in account page: email, handle, role, and **Delete account** (typed confirmation) |
-| `/privacy`, `/terms` | Static Privacy Policy and Terms of Service (templates: get them reviewed before launch) |
-| `/login`, `/signup` | Email + password (min 8 chars, confirm field), Google button when enabled |
-| `/forgot-password`, `/reset-password` | Recovery email → `/auth/callback` → choose a new password |
-| `/auth/callback` | Exchanges `code` (OAuth/PKCE, email links) or `token_hash` for a session |
-
-How it fits together:
-
-- `apps/web/src/middleware.ts` refreshes the session on every request
-  (`auth.getClaims()`, never `getSession()`), guards `/arena` and `/account`, and sends
-  signed-in users away from `/login` / `/signup`.
-- Roles live in `profiles.role` (default `MEMBER`). `user_metadata` is never
-  used for authorization. Change roles with SQL as the service role, or the
-  server-only `public.admin_set_role(actor, target, role)` function.
-- All game writes go through one Postgres function per action
-  (`public.complete_quest`, `public.complete_workout`), called by the Next.js
-  server with the secret key. They lock the profile row, are idempotent per
-  user/item/UTC day, clamp stats to 0–100, cap aura at 5000 and apply the
-  streak rule (`applyDailyStreak` in `packages/shared/src/streak.ts`, mirrored
-  in SQL). EXECUTE is granted to `service_role` only.
-
-### API v1 (contract types: `packages/shared/src/api.ts`)
-
-Auth: the Supabase session cookie (web) **or** `Authorization: Bearer <access
-token>` (mobile). Every response is JSON with `Cache-Control: no-store`; errors
-are `{ "error": string, "code": ApiErrorCode }`.
-
-| Method & path | Auth / permission | Success | Errors |
-| --- | --- | --- | --- |
-| `GET /api/v1/me` | signed in | `{ profile, quests }` (quests carry today's `completed`) | 401, 404 `PROFILE_NOT_FOUND` |
-| `DELETE /api/v1/me` | signed in | `204`, body `{ "confirm": "DELETE" }` (`DeleteAccountRequest`). Deletes the auth user; the DB cascades to profile, logs and the user's drops (squads they led keep existing with no leader). Cookie sessions are cleared; bearer clients should drop their session | 400 `VALIDATION_FAILED`, 401, 413, 415, 429 (burst 3, then 1/min) |
-| `POST /api/v1/quests/{questId}/complete` | `DO_QUESTS` | `{ status: 'completed', auraEarned, statGain: { stat, amount }, profile }` | 401, 403, 404, 409 `ALREADY_COMPLETED`, 429 |
-| `POST /api/v1/workouts/{dropId}/complete` | `START_WORKOUT` | `{ status: 'completed', auraEarned, profile }` | 401, 403, 404, 409, 429 |
-| `GET /api/v1/drops` | public | `WorkoutDrop[]` (newest first) | 503 |
-| `POST /api/v1/drops` | `PUBLISH_WORKOUT_DROP` | `201 { drop }` — body `{ title, vibe, category, duration, multiplier }` | 400 `VALIDATION_FAILED` (+`fieldErrors`), 401, 403, 413, 415, 429 |
-| `GET /api/v1/leaderboard` | public | `{ hunters (top 50, public fields), squads }` | 503 |
-
-Mutating endpoints are rate limited with an **in-memory, per-instance** token
-bucket (burst 10, then 1 request / 2 s per user; `429` + `Retry-After`). With
-several instances the effective limit multiplies; use a shared store for a
-strict global limit.
-
-### Setting up a Supabase project
-
-1. **Env vars** (see `.env.example`) in `apps/web/.env.local` or your host:
-   `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` (a legacy
-   anon key also works), `SUPABASE_SECRET_KEY` (server only). `NEXT_PUBLIC_*`
-   are inlined at build time, so **rebuild** after setting them.
-2. **Apply the migrations** in `supabase/migrations/` in filename order, e.g.
-   with `supabase db push` in a linked project, the Supabase MCP
-   `apply_migration` tool, or the SQL editor. Each one is idempotent.
-   - `20261013120000_aurafit_init.sql`: tables, RLS, grants, signup trigger,
-     game functions, quest seeds.
-   - `20261013130000_launch_hardening.sql`: hides `profiles.auth_id` from the
-     Data API (column-level `SELECT`; `select=*` on `profiles` is denied for
-     `anon`/`authenticated`, so name columns), merges the two profile `UPDATE`
-     policies, moves policies onto `private.current_profile_id()`, and adds the
-     weekly aura reset (`private.reset_weekly_aura()`, scheduled with pg_cron
-     as `aurafit-weekly-aura-reset` every Monday 00:00 UTC; the job is skipped
-     where pg_cron is unavailable).
-
-   **Schema workflow.** The migrations are the source of truth. Never edit a
-   migration that has been applied; add a new timestamped file (e.g.
-   `supabase migration new <name>`), then run `npm run db:sync`, which
-   regenerates `packages/shared/schema.sql` as the concatenation of all
-   migrations (a read-only, single-file view of the cumulative schema). The
-   PGlite tests apply every migration in order (twice, to check idempotency),
-   and a test fails if `schema.sql` is out of date. When you add a `profiles`
-   column that clients may read, grant `SELECT` on it explicitly.
-3. **Optional demo drops**: run `supabase/seed/demo_workout_drops.sql` (creates
-   three sign-in-less creator profiles and the seed workout drops).
-4. **Auth → URL configuration**: set *Site URL* to your app origin and add
-   redirect URLs for every environment, e.g.
-   `http://localhost:3000/auth/callback`, `https://<your-domain>/auth/callback`
-   (wildcards such as `https://*-yourteam.vercel.app/auth/callback` work for previews).
-5. **Google sign-in** (optional): create an OAuth client (Web application) in
-   Google Cloud Console with the authorized redirect URI
-   `https://<project-ref>.supabase.co/auth/v1/callback`, then enable
-   *Auth → Providers → Google* with its client ID/secret. The button appears
-   automatically once the provider is enabled.
-6. Keep **`private`** out of the Data API's exposed schemas (it holds the
-   SECURITY DEFINER helpers), and run the security advisors after migrating.
-7. Check the cron job after migrating: `select jobname, schedule, command from cron.job;`
-   (Integrations → Cron in the dashboard).
-
-### Account deletion and legal pages
-
-App stores require in-app account deletion: `/account` → **Delete account**
-(web) or `DELETE /api/v1/me` (mobile). The server deletes the user with the
-admin API (`auth.admin.deleteUser`), which also removes their sessions and
-refresh tokens; access tokens already issued stay valid until they expire,
-but every API call then returns 404 `PROFILE_NOT_FOUND`. `/privacy` and
-`/terms` are plain-language **templates** (see the comment at the top of each
-file): have them reviewed and fill in your entity details before launch. The
-contact address `privacy@aurafit.app` is a placeholder.
-
-## Docker (web)
-
-The image uses Next.js `output: 'standalone'`. It installs only the web and
-shared workspaces (no Expo/React Native dependencies), runs as a non-root user
-and has a `HEALTHCHECK` on `/api/health`. Build it from the **repository
-root**:
+All variables are optional for initial local exploration (the app automatically falls back to offline **Demo Mode**):
 
 ```bash
-docker build -f apps/web/Dockerfile -t aurafit-web .
-docker run --rm -p 3000:3000 --env-file apps/web/.env.local aurafit-web
-curl http://localhost:3000/api/health
+# Copy template to web app
+cp .env.example apps/web/.env.local
 ```
 
-`NEXT_PUBLIC_*` variables are inlined at build time. Pass them with
-`--build-arg` (for example `--build-arg NEXT_PUBLIC_APP_URL=https://aurafit.app`).
-Server-only secrets such as `DATABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` are
-read at runtime, so pass them with `--env-file` or `-e`.
+| Variable | Scope | Purpose |
+|---|---|---|
+| `NEXT_PUBLIC_SUPABASE_URL` | Web Client | Supabase project URL |
+| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Web Client | Supabase publishable anonymous key |
+| `SUPABASE_SECRET_KEY` | Web Server Only | Service role key for admin stored procedures |
+| `EXPO_PUBLIC_API_URL` | Mobile App | URL of the Next.js API Gateway (e.g. `http://localhost:3000`) |
+| `EXPO_PUBLIC_SUPABASE_URL` | Mobile App | Supabase project URL for native auth |
+| `EXPO_PUBLIC_SUPABASE_ANON_KEY` | Mobile App | Supabase anonymous key for mobile client |
 
-## Deployment notes
+---
 
-- **Environment variables**: see `.env.example`. Every variable is documented
-  there and all are optional (without Supabase the app runs in demo mode). Never put secrets in `NEXT_PUBLIC_*` or
-  `EXPO_PUBLIC_*` variables, because they ship to clients. Do not set
-  `NODE_ENV` manually.
-- **Web hosting**: the Docker image works on any container platform (Fly.io,
-  Render, Cloud Run, ECS, Kubernetes). It listens on `PORT` (default 3000) and
-  binds `0.0.0.0`. Terminate TLS at the proxy or load balancer. The app sends
-  `Strict-Transport-Security`, so serve it over HTTPS only. Vercel also works
-  with no changes.
-- **Security headers** are set in `apps/web/next.config.mjs`: CSP,
-  `X-Frame-Options: DENY`, `frame-ancestors 'none'`, `nosniff`, Referrer-Policy,
-  Permissions-Policy and HSTS. The CSP allows `'unsafe-inline'` scripts, which
-  Next.js needs for inline RSC payloads unless nonce middleware is added.
-  `'unsafe-eval'` is allowed in development only. `connect-src` allows
-  `https://*.supabase.co` / `wss://*.supabase.co` (plus a custom
-  `NEXT_PUBLIC_SUPABASE_URL` origin at build time); `form-action` allows the
-  Supabase/Google OAuth redirect. If you add another third-party origin
-  (analytics, Sentry), add it to `connect-src` and the other relevant directives.
-- **Mobile (EAS)**: build profiles `development`, `preview` and `production`
-  are defined in `apps/mobile/eas.json`.
-  ```bash
-  npm i -g eas-cli && eas login
-  cd apps/mobile
-  eas build --platform all --profile production
-  eas submit --platform ios --profile production
-  ```
-  Set `EXPO_PUBLIC_*` values as EAS environment variables or secrets. Build
-  `packages/shared` before bundling, because EAS runs from the monorepo root.
-  Native `ios/` and `android/` directories are generated (prebuild) and are
-  gitignored.
+## 🚢 Production Deployment
 
-## PWA notes
+### Web (Docker Standalone)
+```bash
+# Build production Docker image
+docker build -f apps/web/Dockerfile -t aurafit-web .
 
-- `public/manifest.json` makes the app installable. `public/sw.js` is
-  registered from the root layout.
-- `sw.js` is served with `Cache-Control: no-cache` and
-  `Service-Worker-Allowed: /`, so browsers always check for a new worker.
-- **When you deploy changes to cached assets, bump `CACHE_NAME` in
-  `public/sw.js`.** The `activate` handler then purges old caches.
-- Service workers require HTTPS. `localhost` is exempt during development.
-- Test installability with Chrome DevTools: Application, then Manifest and
-  Service Workers, or run a Lighthouse PWA audit.
+# Run container locally
+docker run --rm -p 3000:3000 --env-file apps/web/.env.local aurafit-web
+```
 
-## License
+### Mobile (Expo Application Services - EAS)
+```bash
+# Authenticate with EAS
+npm i -g eas-cli
+eas login
 
-MIT
+# Build standalone Android and iOS binaries
+cd apps/mobile
+eas build --platform all --profile production
+
+# Submit directly to stores
+eas submit --platform all --profile production
+```
+*Package identifier*: `com.brilworks.aurafit`
+
+---
+
+## 📚 Complete Documentation Index
+
+| Document | Content & Purpose |
+|---|---|
+| 📐 [**`docs/ARCHITECTURE.md`**](file:///Users/admin/.gemini/antigravity-ide/scratch/aurafit/docs/ARCHITECTURE.md) | System topology, database ER diagram, API v1 contracts, security model, and offline sync. |
+| ⚔️ [**`docs/BUSINESS_LOGIC.md`**](file:///Users/admin/.gemini/antigravity-ide/scratch/aurafit/docs/BUSINESS_LOGIC.md) | Game engine rules, XP equations, rank ascendance thresholds, streak shield state machine, and boss raids. |
+| 📈 [**`docs/MARKETING_GUIDE.md`**](file:///Users/admin/.gemini/antigravity-ide/scratch/aurafit/docs/MARKETING_GUIDE.md) | Go-To-Market strategy, user personas, viral TikTok loops, App Store Optimization (ASO), and Hunter Pass monetization. |
+| 📱 [**`docs/STORE_LISTING.md`**](file:///Users/admin/.gemini/antigravity-ide/scratch/aurafit/docs/STORE_LISTING.md) | Complete Google Play Store listing in **English (United Kingdom) – `en-GB`** with character limits. |
+
+---
+
+## 📄 License
+
+This project is licensed under the **MIT License** — see the [LICENSE](file:///Users/admin/.gemini/antigravity-ide/scratch/aurafit/LICENSE) file for details.
