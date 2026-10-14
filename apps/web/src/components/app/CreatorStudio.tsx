@@ -5,7 +5,7 @@ import { Card, CardHeader } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { StatGrid, StatTile } from '@/components/ui/StatTile';
-import { formatCompact, formatNumber } from '@/lib/format';
+import { formatCompact, formatNumber, plural } from '@/lib/format';
 import { SampleDataBadge } from './SampleDataBadge';
 
 interface CreatorStudioProps {
@@ -58,7 +58,7 @@ export function CreatorStudio({ mode, user, drops, canPublish, canViewAnalytics,
             <StatGrid label="Creator analytics (sample data)">
               <StatTile label="Squad subscribers" value="320" hint="+18% this week" />
               <StatTile label="Monthly recurring (MRR)" value="$2,450" tone="blue" hint="$7.99 / squad pass" hintTone="blue" />
-              <StatTile label="Routine completions" value={formatNumber(totals.completions)} tone="pink" hint={`${myDrops.length} published drops`} />
+              <StatTile label="Routine completions" value={formatNumber(totals.completions)} tone="pink" hint={`${plural(myDrops.length, 'published drop')}`} />
               <StatTile label="Total likes" value={formatCompact(totals.likes)} tone="accent" hint="Across your drops" hintTone="accent" />
             </StatGrid>
           </div>
@@ -97,14 +97,14 @@ export function CreatorStudio({ mode, user, drops, canPublish, canViewAnalytics,
                     </Badge>
                   </div>
                   <p className="text-xs text-secondary">
-                    {drop.durationMinutes} min · {drop.exercises.length} moves · {drop.auraMultiplier}× Aura
+                    {drop.durationMinutes} min · {drop.exercises.length === 1 ? '1 move' : `${drop.exercises.length} moves`} · {drop.auraMultiplier}× Aura
                   </p>
                 </div>
                 <div className="row-item__side">
                   <div className="text-right">
-                    <div className="text-sm fw-800 text-accent">{formatNumber(drop.completionsCount)} finishes</div>
+                    <div className="text-sm fw-800 text-accent">{plural(drop.completionsCount, 'finish', 'finishes')}</div>
                     <div className="text-xs text-muted">
-                      <Heart aria-hidden="true" className="icon-inline" /> {formatCompact(drop.likesCount)} likes
+                      <Heart aria-hidden="true" className="icon-inline" /> {formatCompact(drop.likesCount)} {drop.likesCount === 1 ? 'like' : 'likes'}
                     </div>
                   </div>
                   <div className="btn-row">

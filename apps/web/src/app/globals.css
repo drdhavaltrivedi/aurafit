@@ -70,10 +70,10 @@
 
   --text-primary: #ffffff;
   --text-secondary: #94a3b8;
-  --text-muted: #64748b;
+  --text-muted: #8391a7; /* >= 5.3:1 on every dark surface (#64748b was 3.6:1) */
 
-  --accent-primary: #8b5cf6; /* fills */
-  --accent-primary-hover: #7c3aed;
+  --accent-primary: #7c3aed; /* fills (white text 5.7:1; #8b5cf6 was 4.2:1) */
+  --accent-primary-hover: #6d28d9;
   --accent-fg: #a78bfa; /* text on surfaces */
   --accent-subtle: rgba(139, 92, 246, 0.16);
   --accent-glow: rgba(139, 92, 246, 0.4);
@@ -81,7 +81,7 @@
 
   --blue-fg: #38bdf8;
   --blue-subtle: rgba(56, 189, 248, 0.15);
-  --blue-fill: #0284c7;
+  --blue-fill: #0369a1; /* white text 5.9:1 */
   --emerald-fg: #34d399;
   --emerald-subtle: rgba(52, 211, 153, 0.13);
   --emerald-fill: #047857;
@@ -437,6 +437,18 @@ a {
     display: inline-flex !important;
   }
   .show-below-md {
+    display: none !important;
+  }
+}
+/* Header extras (aura chip, demo badge) only fit next to the full nav from 1024px. */
+.hide-below-lg {
+  display: none !important;
+}
+@media (min-width: 1024px) {
+  .hide-below-lg {
+    display: inline-flex !important;
+  }
+  .show-below-lg {
     display: none !important;
   }
 }
@@ -894,6 +906,33 @@ a {
     display: none;
   }
 }
+/* Phones: tighten the header so logo + nav + toggles + account fit in 358px. */
+@media (max-width: 479px) {
+  .site-header__inner,
+  .site-header__start {
+    gap: var(--space-2);
+  }
+  .site-header__actions {
+    gap: var(--space-1);
+  }
+  .site-header .segmented__item {
+    min-width: 0;
+    padding: 0 var(--space-3);
+  }
+  .site-header__actions > .btn--ghost {
+    padding-inline: var(--space-3);
+  }
+}
+@media (max-width: 379px) {
+  .site-header__actions > .btn--icon {
+    width: 40px;
+    min-width: 40px;
+    min-height: 40px;
+  }
+  .site-header__actions > .btn--ghost {
+    padding-inline: var(--space-2);
+  }
+}
 
 .segmented {
   display: inline-flex;
@@ -928,7 +967,7 @@ a {
   border-radius: var(--radius-full);
 }
 
-/* Role switcher: header variant (>= 768px) */
+/* Role switcher: header variant (>= 1280px; it does not fit next to the nav below that) */
 .role-switcher {
   display: flex;
 }
@@ -974,7 +1013,7 @@ a {
   border-radius: var(--radius-full);
 }
 
-/* Role switcher: bottom nav variant (< 768px) */
+/* Role switcher: bottom nav variant (< 1280px) */
 .role-switcher--bottom {
   position: fixed;
   inset: auto 0 0 0;
@@ -1003,7 +1042,7 @@ a {
   background: var(--accent-subtle);
 }
 
-@media (min-width: 768px) {
+@media (min-width: 1280px) {
   .role-switcher--header {
     display: inline-flex;
   }
@@ -1012,8 +1051,8 @@ a {
   }
 }
 
-/* Reserve space for the bottom nav on phones */
-@media (max-width: 767px) {
+/* Reserve space for the bottom nav below 1280px */
+@media (max-width: 1279px) {
   body:has(.role-switcher--bottom) {
     padding-bottom: calc(var(--bottom-nav-h) + var(--safe-bottom));
   }
@@ -1974,7 +2013,8 @@ select.input {
 
 .toast-region {
   position: fixed;
-  top: calc(var(--space-3) + env(safe-area-inset-top, 0px));
+  /* Below the sticky header so toasts never cover header controls. */
+  top: calc(64px + var(--space-3) + env(safe-area-inset-top, 0px));
   left: 50%;
   z-index: var(--z-toast);
   width: min(100% - 2 * var(--gutter), 480px);
@@ -2246,6 +2286,18 @@ select.input {
   font-size: var(--text-sm);
   font-weight: 600;
   cursor: pointer;
+}
+.account-menu__handle {
+  display: none; /* the avatar alone below 1024px keeps the header on one line */
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+@media (min-width: 1024px) {
+  .account-menu__handle {
+    display: block;
+  }
 }
 .account-menu__trigger:focus-visible {
   outline: 2px solid var(--border-focus);
@@ -2536,13 +2588,15 @@ select.input {
   color: var(--text-muted);
 }
 .account__details dd {
+  margin: 0; /* drop the UA 40px indent (it forced long handles to break mid-word on phones) */
   color: var(--text-primary);
   font-weight: 600;
   overflow-wrap: anywhere;
 }
 @media (min-width: 640px) {
   .account__details {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    /* Email and handle can be long; the role badge is short. */
+    grid-template-columns: minmax(0, 3fr) minmax(0, 3fr) minmax(0, 1fr);
   }
 }
 .danger-zone {
@@ -2559,4 +2613,11 @@ select.input {
 }
 .btn-row--end {
   justify-content: flex-end;
+}
+
+/* Tablet / small laptop: keep the bottom role switcher compact and centred. */
+@media (min-width: 768px) and (max-width: 1279px) {
+  .role-switcher--bottom {
+    padding-inline: max(var(--space-2), calc((100% - 560px) / 2));
+  }
 }

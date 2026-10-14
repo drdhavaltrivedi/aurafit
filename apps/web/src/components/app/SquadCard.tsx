@@ -9,7 +9,7 @@ export function SquadCard({ squad }: { squad: Squad | undefined }) {
   if (!squad) {
     return (
       <Card as="section" aria-labelledby="squad-title">
-        <CardHeader titleId="squad-title" eyebrow="Co-op squad battle" title="No squad yet" subtitle="Join a squad to unlock weekly boss raids." />
+        <CardHeader titleId="squad-title" eyebrow="Co-op squad battle" title="Squads are coming soon" subtitle="Team up with friends for weekly boss raids and shared streaks." />
       </Card>
     );
   }

@@ -66,7 +66,7 @@ export function SiteHeader({
 
         <div className="site-header__actions">
           {page === 'demo' && (
-            <Badge tone="orange" outline size="sm" title="Progress is saved in this browser only">
+            <Badge tone="orange" outline size="sm" className="hide-below-lg" title="Progress is saved in this browser only">
               Demo mode
             </Badge>
           )}
@@ -74,7 +74,7 @@ export function SiteHeader({
             <RoleSwitcher variant="header" activeRole={activeRole} onChange={onRoleChange} />
           )}
           {inArena && auraPoints !== undefined && (
-            <span className="aura-chip hide-below-md" title="Aura points">
+            <span className="aura-chip hide-below-lg" title="Aura points">
               <Sparkles aria-hidden="true" className="aura-chip__icon" />
               <span className="sr-only">Aura points: </span>
               {formatNumber(auraPoints)}

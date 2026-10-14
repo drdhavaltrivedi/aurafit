@@ -44,7 +44,9 @@ export function AccountMenu({ viewer }: { viewer: Viewer }) {
         onClick={() => setOpen((o) => !o)}
       >
         <Avatar src={viewer.avatarUrl} alt="" name={viewer.username || viewer.handle} size={32} />
-        <span className="hide-below-md">{viewer.handle}</span>
+        <span className="account-menu__handle" aria-hidden="true">
+          {viewer.handle}
+        </span>
         <span className="sr-only">Account menu for {viewer.handle}</span>
         <ChevronDown aria-hidden="true" size={16} />
       </button>

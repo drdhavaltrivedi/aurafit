@@ -105,7 +105,7 @@ export function ArenaView({ state }: { state: AuraFitState }) {
           return;
         }
         await navigator.clipboard.writeText(`${text}: ${url}`);
-        toast.show('Drop link copied to clipboard.', 'success');
+        toast.show('Share text and AuraFit link copied to clipboard.', 'success');
       } catch (err) {
         if (err instanceof DOMException && err.name === 'AbortError') return;
         toast.show('Could not share this drop. Copy the page URL instead.', 'error');
@@ -138,7 +138,7 @@ export function ArenaView({ state }: { state: AuraFitState }) {
   return (
     <div className="container arena">
       <h1 className="sr-only">AuraFit Arena</h1>
-      <RoleBanner user={activeUser} role={activeRole} />
+      <RoleBanner user={activeUser} role={activeRole} demo={state.mode === 'demo'} />
 
       {showMember && (
         <div className="dashboard">

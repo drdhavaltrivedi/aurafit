@@ -4,10 +4,11 @@ import { Badge } from '@/components/ui/Badge';
 import { ROLE_META } from '@/lib/roles';
 import { formatNumber } from '@/lib/format';
 
-export function RoleBanner({ user, role }: { user: UserProfile; role: UserRole }) {
+/** `demo`: local demo persona (the header's "Demo mode" badge is hidden below 1024px, so repeat it here). */
+export function RoleBanner({ user, role, demo = false }: { user: UserProfile; role: UserRole; demo?: boolean }) {
   const meta = ROLE_META[role];
   return (
-    <section className="role-banner" aria-label="Signed-in account">
+    <section className="role-banner" aria-label={demo ? 'Demo persona' : 'Signed-in account'}>
       <div className="role-banner__who">
         <Badge tone={meta.tone} outline>
           {meta.short}
@@ -18,7 +19,12 @@ export function RoleBanner({ user, role }: { user: UserProfile; role: UserRole }
         </div>
       </div>
       <div className="role-banner__meta">
-        <span className="aura-chip show-below-md">
+        {demo && (
+          <Badge tone="orange" outline size="sm" className="show-below-lg" title="Progress is saved in this browser only">
+            Demo mode
+          </Badge>
+        )}
+        <span className="aura-chip show-below-lg">
           <Sparkles aria-hidden="true" className="aura-chip__icon" />
           <span className="sr-only">Aura points: </span>
           {formatNumber(user.auraPoints)}

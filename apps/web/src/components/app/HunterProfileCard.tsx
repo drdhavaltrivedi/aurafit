@@ -35,7 +35,7 @@ export function HunterProfileCard({ user, rankInfo }: { user: UserProfile; rankI
             {user.handle} · Level {user.level}
           </p>
         </div>
-        <Avatar src={user.avatarUrl || '/hunter-avatar.jpg'} alt={`${user.username}'s avatar`} name={user.username} size={64} shape="rounded" ring priority />
+        <Avatar src={user.avatarUrl} alt={`${user.username}'s avatar`} name={user.username} size={64} shape="rounded" ring priority />
       </div>
 
       <div className="panel">
