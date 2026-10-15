@@ -53,3 +53,6 @@ Thumbs.db
 
 # Claude Code personal settings
 .claude/settings.local.json
+
+# Firebase service-account private keys (upload to EAS, never commit)
+*-firebase-adminsdk-*.json

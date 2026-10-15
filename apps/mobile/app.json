@@ -20,7 +20,8 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#17181A"
       },
-      "package": "com.brilworks.aurafit"
+      "package": "com.brilworks.aurafit",
+      "googleServicesFile": "./google-services.json"
     },
     "web": {
       "favicon": "./assets/favicon.png"
