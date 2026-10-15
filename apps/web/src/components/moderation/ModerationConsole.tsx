@@ -114,7 +114,7 @@ export function ModerationConsole() {
         }
         subtitle="Every action is recorded in the audit log."
         action={
-          <div className="segmented" role="group" aria-label="Moderation section">
+          <div className="segmented mod-tabs" role="group" aria-label="Moderation section">
             {TABS.map((t) => (
               <button
                 key={t.id}
