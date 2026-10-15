@@ -2,11 +2,10 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { RefreshCw } from 'lucide-react';
-import { INITIAL_SQUADS, rankLabel, type HunterRank, type WorkoutDrop } from '@aurafit/shared';
+import { INITIAL_SQUADS, creatorProfilePath, rankLabel, type HunterRank, type WorkoutDrop } from '@aurafit/shared';
 import type { AuraFitState, ActionResult } from '@/hooks/useAuraFitState';
 import { useToast } from '@/hooks/useToast';
 import { sound } from '@/utils/audio';
-import type { ValidDrop } from '@/lib/drops';
 import { RoleBanner } from './RoleBanner';
 import { HunterProfileCard, type ProfileShare } from './HunterProfileCard';
 import { useShareCard } from '@/components/share/useShareCard';
@@ -16,7 +15,6 @@ import { WorkoutDropList } from './WorkoutDropList';
 import { CreatorStudio } from './CreatorStudio';
 import { AdminConsole } from './AdminConsole';
 import { WorkoutRunner } from './WorkoutRunner';
-import { CreateDropModal } from './CreateDropModal';
 import { ArenaSkeleton } from './ArenaSkeleton';
 import { Card, CardHeader } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -25,7 +23,6 @@ export function ArenaView({ state }: { state: AuraFitState }) {
   const toast = useToast();
   const { activeRole, activeUser, can, hydrated } = state;
   const [activeWorkout, setActiveWorkout] = useState<WorkoutDrop | null>(null);
-  const [createOpen, setCreateOpen] = useState(false);
 
   // Seed squads are demo-only (labelled sample data); signed-in users get the live SquadPanel.
   const squad = useMemo(
@@ -72,7 +69,7 @@ export function ArenaView({ state }: { state: AuraFitState }) {
     [toast, celebrate],
   );
 
-  const { completeQuest, finishWorkout, publishDrop } = state;
+  const { completeQuest, finishWorkout } = state;
 
   // /arena?start=<dropId> (e.g. "Start now" after onboarding) opens that drop's runner once.
   const startHandled = useRef(false);
@@ -116,21 +113,10 @@ export function ArenaView({ state }: { state: AuraFitState }) {
     [finishWorkout, report],
   );
 
-  const handlePublish = useCallback(
-    async (input: ValidDrop) => {
-      const ok = report(await publishDrop(input));
-      if (ok) {
-        sound.playLevelUp();
-        setCreateOpen(false);
-      }
-      return ok;
-    },
-    [publishDrop, report],
-  );
-
   const handleShare = useCallback(
     async (drop: WorkoutDrop) => {
-      const url = `${window.location.origin}/`;
+      // Signed in: link the creator's public page (it lists their live drops); demo: the home page.
+      const url = state.mode === 'server' && drop.creatorHandle ? `${window.location.origin}${creatorProfilePath(drop.creatorHandle)}` : `${window.location.origin}/`;
       const text = `Try "${drop.title}" on AuraFit`;
       try {
         if (navigator.share) {
@@ -144,7 +130,7 @@ export function ArenaView({ state }: { state: AuraFitState }) {
         toast.show('Could not share this drop. Copy the page URL instead.', 'error');
       }
     },
-    [toast],
+    [toast, state.mode],
   );
 
   if (state.loadError) {
@@ -181,20 +167,17 @@ export function ArenaView({ state }: { state: AuraFitState }) {
           </div>
           <div className="dashboard__col">
             <QuestBoard quests={state.quests} canComplete={can('DO_QUESTS')} onComplete={handleCompleteQuest} />
-            <WorkoutDropList drops={state.drops} canStart={can('START_WORKOUT')} onStart={handleStart} />
+            <WorkoutDropList drops={state.drops} canStart={can('START_WORKOUT')} onStart={handleStart} mode={state.mode} viewerId={server ? activeUser.id : undefined} />
           </div>
         </div>
       )}
 
       {showCreator && (
         <CreatorStudio
-          mode={state.mode}
-          user={activeUser}
-          drops={state.drops}
+          state={state}
           canPublish={can('PUBLISH_WORKOUT_DROP')}
           canViewAnalytics={can('VIEW_CREATOR_ANALYTICS')}
           canStart={can('START_WORKOUT')}
-          onCreate={() => setCreateOpen(true)}
           onShare={handleShare}
           onStart={handleStart}
         />
@@ -203,8 +186,6 @@ export function ArenaView({ state }: { state: AuraFitState }) {
       {showAdmin && <AdminConsole mode={state.mode} canViewLeaderboard={can('VIEW_GYM_LEADERBOARD')} />}
 
       {activeWorkout && <WorkoutRunner key={activeWorkout.id} drop={activeWorkout} onClose={() => setActiveWorkout(null)} onFinish={handleFinish} />}
-
-      {can('PUBLISH_WORKOUT_DROP') && <CreateDropModal open={createOpen} onClose={() => setCreateOpen(false)} onSubmit={handlePublish} />}
 
       {canShare && shareCard.dialog}
     </div>

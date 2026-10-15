@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/Badge';
 import { StatGrid, StatTile } from '@/components/ui/StatTile';
 import { formatNumber } from '@/lib/format';
 import { cx } from '@/lib/cx';
+import { ModerationConsole } from '@/components/moderation/ModerationConsole';
 import { SampleDataBadge } from './SampleDataBadge';
 
 interface AdminConsoleProps {
@@ -22,16 +23,14 @@ export function AdminConsole({ mode, canViewLeaderboard }: AdminConsoleProps) {
             <Shield aria-hidden="true" className="icon-inline" /> Platform master access
           </Badge>
           <h2 id="admin-title" className="page-title">
-            Platform overview &amp; anti-cheat
+            Moderation &amp; anti-cheat
           </h2>
-          <div className="empty">
-            <p className="fw-700 text-neutral">Coming soon</p>
-            <p>
-              Platform metrics, gym affiliations and the gym leaderboard will appear here once gyms can join AuraFit. Every quest and
-              workout is already validated and capped on the server.
-            </p>
-          </div>
+          <p className="text-secondary text-sm">
+            Review reports, check suspicious aura gains and manage accounts. Platform metrics and the gym leaderboard arrive once gyms can
+            join AuraFit.
+          </p>
         </Card>
+        <ModerationConsole />
       </div>
     );
   }

@@ -5,6 +5,7 @@ import { getRepository, type GameRepository, type ProfileRow } from '@/lib/data'
 import { createTokenVerifier } from '@/lib/supabase/admin';
 import { isAuthConfigured } from '@/lib/supabase/env';
 import { createClient as createCookieClient } from '@/lib/supabase/server';
+import { denySuspended } from '@/lib/moderation/guard';
 import { apiError, internalError, notConfigured } from './http';
 import { mutationLimiter, type RateLimiter } from './rate-limit';
 
@@ -84,8 +85,10 @@ export async function requireUser(request: Request): Promise<RequireUserResult> 
   return { ok: true, user: { authId: claims.sub, email: claims.email, profile, repo, via } };
 }
 
-/** 403 response when the user's DB role lacks `permission`, else null. */
+/** 403 when the account is suspended (SUSPENDED) or its DB role lacks `permission` (FORBIDDEN), else null. */
 export function forbidUnless(user: AuthedUser, permission: UserPermission): Response | null {
+  const suspended = denySuspended(user);
+  if (suspended) return suspended;
   return hasPermission(user.profile.role, permission)
     ? null
     : apiError(403, 'FORBIDDEN', `Your role (${user.profile.role}) lacks the ${permission} permission.`);

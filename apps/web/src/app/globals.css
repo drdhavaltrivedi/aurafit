@@ -2727,3 +2727,98 @@ select.input {
     padding-inline: max(var(--space-2), calc((100% - 560px) / 2));
   }
 }
+
+/* Report link on workout drops (server mode) */
+.drop__report {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  min-height: 32px;
+  padding: 0 var(--space-1);
+  border: 0;
+  background: none;
+  color: var(--text-secondary);
+  font: inherit;
+  cursor: pointer;
+}
+.drop__report:hover {
+  color: var(--text-primary);
+  text-decoration: underline;
+}
+.drop__report:focus-visible {
+  outline: 2px solid var(--border-focus);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+
+/* Admin moderation console */
+.mod-search {
+  display: flex;
+  gap: var(--space-2);
+}
+.mod-search .input {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.mod-user {
+  width: 100%;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+.mod-user:hover:not(:disabled) {
+  border-color: var(--border-focus);
+}
+.mod-user:disabled {
+  cursor: default;
+  opacity: 0.7;
+}
+.mod-user:focus-visible {
+  outline: 2px solid var(--border-focus);
+  outline-offset: 2px;
+}
+.mod-role {
+  width: auto;
+  min-height: 36px;
+  padding-block: 0;
+}
+.mod-log {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-sm);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+}
+.mod-log__flag {
+  margin-left: var(--space-2);
+}
+
+/* Inline form error (dialogs; shared by creator tools and moderation) */
+.form-alert {
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-md);
+  background: var(--danger-subtle);
+  color: var(--danger-fg);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  gap: var(--space-3);
+}
+.link-button {
+  align-self: flex-start;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--accent-fg);
+  font: inherit;
+  text-decoration: underline;
+  cursor: pointer;
+}
+.link-button:focus-visible {
+  outline: 2px solid var(--border-focus);
+  outline-offset: 2px;
+}

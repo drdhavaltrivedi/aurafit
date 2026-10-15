@@ -29,6 +29,9 @@ export interface ProfileRow {
   fitness_goal: FitnessGoal | null;
   fitness_level: FitnessLevel | null;
   onboarded_at: string | null;
+  /** Moderation (20261014140000_moderation.sql): set while an admin has suspended the account. */
+  suspended_at?: string | null;
+  suspension_reason?: string | null;
 }
 
 export interface QuestRow {
@@ -96,7 +99,9 @@ export interface GameRepository {
   getQuest(id: string): Promise<QuestRow | null>;
   listCompletedQuestIds(userId: string, dateKey: string): Promise<string[]>;
   completeQuest(input: CompleteActionInput): Promise<GameActionResult>;
-  listDrops(): Promise<WorkoutDrop[]>;
+  /** Live drops only (publish_at NULL or reached), newest first; optionally one creator's. */
+  listDrops(opts?: { creatorId?: string }): Promise<WorkoutDrop[]>;
+  /** A LIVE drop by id (scheduled drops resolve to null). */
   getDrop(id: string): Promise<WorkoutDrop | null>;
   createDrop(drop: WorkoutDrop): Promise<WorkoutDrop>;
   completeWorkout(input: CompleteActionInput): Promise<GameActionResult>;

@@ -1,5 +1,6 @@
 import type { InviteCodeResponse } from '@aurafit/shared';
 import { internalError, json } from '@/lib/api/http';
+import { denySuspended } from '@/lib/moderation/guard';
 import { SQUAD_ERRORS, squadActionLimiter, squadContext } from '@/lib/squads/http';
 
 export const dynamic = 'force-dynamic';
@@ -11,6 +12,8 @@ export const dynamic = 'force-dynamic';
 export async function POST(request: Request): Promise<Response> {
   const ctx = await squadContext(request, squadActionLimiter);
   if (ctx instanceof Response) return ctx;
+  const suspended = denySuspended(ctx.user);
+  if (suspended) return suspended;
   try {
     const r = await ctx.repo.regenerateInviteCode(ctx.user.profile.id);
     switch (r.status) {

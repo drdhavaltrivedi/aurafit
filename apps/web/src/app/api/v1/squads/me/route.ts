@@ -1,4 +1,5 @@
 import { validateUpdateSquad } from '@aurafit/shared';
+import { denySuspended } from '@/lib/moderation/guard';
 import { internalError } from '@/lib/api/http';
 import { mySquadResponse, readSquadBody, SQUAD_ERRORS, squadContext, validationFailed } from '@/lib/squads/http';
 
@@ -23,6 +24,8 @@ export async function GET(request: Request): Promise<Response> {
 export async function PATCH(request: Request): Promise<Response> {
   const ctx = await squadContext(request);
   if (ctx instanceof Response) return ctx;
+  const suspended = denySuspended(ctx.user);
+  if (suspended) return suspended;
   const read = await readSquadBody(request);
   if (!read.ok) return read.response;
   const v = validateUpdateSquad(read.body);

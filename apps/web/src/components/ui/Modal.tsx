@@ -15,7 +15,7 @@ interface ModalProps {
   description?: ReactNode;
   eyebrow?: ReactNode;
   children: ReactNode;
-  size?: 'sm' | 'md';
+  size?: 'sm' | 'md' | 'lg';
   /** Element to focus first; defaults to the first focusable element. */
   initialFocusRef?: React.RefObject<HTMLElement | null>;
   closeLabel?: string;

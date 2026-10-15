@@ -3,6 +3,7 @@ import { rateLimit, requireUser } from '@/lib/api/auth';
 import { apiError, BodyError, internalError, json, NO_STORE_HEADERS, readJson } from '@/lib/api/http';
 import { accountDeletionLimiter } from '@/lib/api/rate-limit';
 import { rowToProfile, rowToQuest } from '@/lib/data/mappers';
+import { denySuspended } from '@/lib/moderation/guard';
 import { createClient as createCookieClient } from '@/lib/supabase/server';
 
 export const dynamic = 'force-dynamic';
@@ -41,7 +42,7 @@ export async function PATCH(request: Request): Promise<Response> {
   if (!auth.ok) return auth.response;
   const { user } = auth;
 
-  const limited = rateLimit(user);
+  const limited = denySuspended(user) ?? rateLimit(user);
   if (limited) return limited;
 
   let body: unknown;

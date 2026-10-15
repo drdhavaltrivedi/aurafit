@@ -18,6 +18,7 @@ import {
   type UserProfile,
   type UserRole,
   type WorkoutDrop,
+  type CreatorDrop,
 } from '@aurafit/shared';
 import { api } from '@/lib/api-client';
 import type { ValidDrop } from '@/lib/drops';
@@ -50,6 +51,12 @@ export interface AuraFitState {
   completeQuest: (questId: string) => Promise<ActionResult>;
   finishWorkout: (drop: WorkoutDrop) => Promise<ActionResult>;
   publishDrop: (input: ValidDrop) => Promise<ActionResult>;
+  /**
+   * Creator Studio sync: insert/replace a drop in the arena list (scheduled drops are dropped from the
+   * public list in server mode, kept with their publishAt in demo mode), or remove it.
+   */
+  upsertDrop: (drop: CreatorDrop) => void;
+  removeDrop: (id: string) => void;
 }
 
 const rankUp = (before: number, after: number): HunterRank | undefined => {
@@ -123,6 +130,12 @@ export function useDemoAuraFitState(): AuraFitState {
     [activeRole, activeUser, setDrops],
   );
 
+  const demoUpsertDrop = useCallback(
+    (drop: CreatorDrop) => setDrops((prev) => (prev.some((d) => d.id === drop.id) ? prev.map((d) => (d.id === drop.id ? drop : d)) : [drop, ...prev])),
+    [setDrops],
+  );
+  const demoRemoveDrop = useCallback((id: string) => setDrops((prev) => prev.filter((d) => d.id !== id)), [setDrops]);
+
   const reload = useCallback(() => undefined, []);
 
   return {
@@ -140,6 +153,8 @@ export function useDemoAuraFitState(): AuraFitState {
     completeQuest,
     finishWorkout,
     publishDrop,
+    upsertDrop: demoUpsertDrop,
+    removeDrop: demoRemoveDrop,
   };
 }
 
@@ -287,6 +302,16 @@ export function useServerAuraFitState(): AuraFitState {
     return { ok: true, message: `"${res.data.drop.title}" is live for all Hunters!` };
   }, []);
 
+  const upsertDrop = useCallback((drop: CreatorDrop) => {
+    setDrops((prev) => {
+      const rest = prev.filter((d) => d.id !== drop.id);
+      if (drop.status !== 'LIVE') return rest;
+      const { status: _s, publishAt: _p, createdAt: _c, updatedAt: _u, ...plain } = drop;
+      return prev.some((d) => d.id === drop.id) ? prev.map((d) => (d.id === drop.id ? plain : d)) : [plain, ...prev];
+    });
+  }, []);
+  const removeDrop = useCallback((id: string) => setDrops((prev) => prev.filter((d) => d.id !== id)), []);
+
   const reload = useCallback(() => void load(), [load]);
 
   return {
@@ -304,5 +329,7 @@ export function useServerAuraFitState(): AuraFitState {
     completeQuest,
     finishWorkout,
     publishDrop,
+    upsertDrop,
+    removeDrop,
   };
 }

@@ -6,11 +6,16 @@ import { PUBLIC_PROFILE_COLUMNS, rowToPublicProfile, type PublicProfileRow } fro
 import type { CompleteActionInput, DropRow, GameActionResult, GameRepository, ProfileRow, ProfileUpdate, QuestRow } from './types';
 
 const PROFILE_COLUMNS =
-  'id, auth_id, username, handle, role, avatar_url, title, bio, aura_points, rank, level, str_stat, agi_stat, end_stat, rec_stat, streak_days, streak_shields, last_active_date, squad_id, gym_id, total_workouts, weekly_aura_gained, fitness_goal, fitness_level, onboarded_at';
+  'id, auth_id, username, handle, role, avatar_url, title, bio, aura_points, rank, level, str_stat, agi_stat, end_stat, rec_stat, streak_days, streak_shields, last_active_date, squad_id, gym_id, total_workouts, weekly_aura_gained, fitness_goal, fitness_level, onboarded_at, suspended_at, suspension_reason';
 const QUEST_COLUMNS =
   'id, title, subtitle, category, aura_reward, stat_reward_stat, stat_reward_amount, duration_minutes, difficulty, target_count, unit, icon, accent_color, description';
 const DROP_COLUMNS =
   'id, title, tagline, creator_id, vibe_tag, duration_minutes, calories_burn_estimate, aura_multiplier, xp_points, difficulty, category, exercises, cover_from, cover_to, creator_badge, likes_count, completions_count, created_at, creator:profiles!workout_drops_creator_id_fkey(username, handle, avatar_url)';
+
+/** PostgREST `or` filter: live drops (no schedule, or publish_at reached). */
+export function livePublishFilter(now: Date = new Date()): string {
+  return `publish_at.is.null,publish_at.lte.${now.toISOString()}`;
+}
 
 export class RepositoryError extends Error {
   constructor(operation: string, cause: { message?: string; code?: string } | null) {
@@ -71,14 +76,21 @@ export function createSupabaseRepository(db: SupabaseClient): GameRepository {
       return toActionResult(data);
     },
 
-    async listDrops() {
-      const { data, error } = await db.from('workout_drops').select(DROP_COLUMNS).order('created_at', { ascending: false }).limit(100);
+    async listDrops(opts: { creatorId?: string } = {}) {
+      let query = db.from('workout_drops').select(DROP_COLUMNS);
+      // Scheduled drops (20261014130000_creator_tools.sql) stay hidden until publish_at.
+      query = query.or(livePublishFilter());
+      // Drops hidden by a moderator (20261014140000_moderation.sql) never appear in public listings.
+      query = query.eq('moderation_status', 'PUBLISHED');
+      if (opts.creatorId) query = query.eq('creator_id', opts.creatorId);
+      const { data, error } = await query.order('created_at', { ascending: false }).limit(100);
       if (error) fail('listDrops', error);
       return ((data ?? []) as unknown as DropRow[]).map(rowToDrop);
     },
 
     async getDrop(id) {
-      const { data, error } = await db.from('workout_drops').select(DROP_COLUMNS).eq('id', id).maybeSingle();
+      // Live drops only (a scheduled drop cannot be started or completed before publish_at).
+      const { data, error } = await db.from('workout_drops').select(DROP_COLUMNS).eq('id', id).or(livePublishFilter()).eq('moderation_status', 'PUBLISHED').maybeSingle();
       if (error) fail('getDrop', error);
       return data ? rowToDrop(data as unknown as DropRow) : null;
     },
