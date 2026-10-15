@@ -217,7 +217,11 @@ REVOKE ALL ON FUNCTION private.prune_admin_audit_log(INTERVAL) FROM PUBLIC, anon
 DO $$
 BEGIN
     IF EXISTS (SELECT 1 FROM pg_available_extensions WHERE name = 'pg_cron') THEN
-        CREATE EXTENSION IF NOT EXISTS pg_cron WITH SCHEMA pg_catalog;
+        -- Only create when missing: on Supabase, CREATE EXTENSION fires an event trigger that
+        -- re-grants cron schema privileges and fails ("dependent privileges exist") if pg_cron exists.
+        IF NOT EXISTS (SELECT 1 FROM pg_extension WHERE extname = 'pg_cron') THEN
+            CREATE EXTENSION pg_cron WITH SCHEMA pg_catalog;
+        END IF;
         PERFORM cron.schedule(
             'aurafit-admin-audit-retention',
             '30 3 1 * *', -- 03:30 UTC on the 1st of every month

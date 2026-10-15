@@ -50,3 +50,6 @@ Thumbs.db
 .vercel
 .turbo
 .eslintcache
+
+# Claude Code personal settings
+.claude/settings.local.json
