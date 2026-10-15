@@ -439,7 +439,7 @@ function UserDetail({ id, act, setAsk, onBack }: TabProps & { id: string; onBack
 
   return (
     <div className="stack-3">
-      <Button variant="ghost" size="sm" onClick={onBack}>
+      <Button variant="ghost" size="sm" className="mod-back" onClick={onBack}>
         ← All users
       </Button>
       <Status error={error} loading={!data && !error} empty={false} emptyText="" />
@@ -484,7 +484,7 @@ function UserDetail({ id, act, setAsk, onBack }: TabProps & { id: string; onBack
                 <Button size="sm" variant="secondary" onClick={() => void act(moderationApi.unsuspend(id), 'Account unsuspended.', reload)}>
                   Unsuspend
                 </Button>
-              ) : (
+              ) : p.role === 'ADMIN' ? null : (
                 <Button
                   size="sm"
                   variant="danger"
