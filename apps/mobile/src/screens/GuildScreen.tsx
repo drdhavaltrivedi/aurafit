@@ -35,9 +35,12 @@ import { SampleDataTag } from '../components/DataNotice';
 import { ProgressBar } from '../components/ProgressBar';
 import { SectionHeader } from '../components/SectionHeader';
 import { TextField } from '../components/TextField';
+import { useModerationActions } from '../components/moderation/ModerationProvider';
+import { ReportButton } from '../components/moderation/ReportButton';
 import type { PublicHunter } from '../api/types';
 import { siteUrl } from '../config/env';
 import { useSquad, type SquadState } from '../hooks/useSquad';
+import { canReportSquad } from '../lib/moderation';
 import { shortWhen, squadShareContent } from '../lib/squads';
 import { useTheme } from '../theme/ThemeProvider';
 import { MIN_TOUCH_TARGET, fontSize, radius, spacing } from '../theme/tokens';
@@ -597,6 +600,9 @@ function SquadView({ state, squad, onEdit }: { state: SquadState; squad: MySquad
 
 function SquadBoard({ state }: { state: SquadState }) {
   const { colors } = useTheme();
+  // Report other squads (signed in only; hidden until the viewer's own squad is known).
+  const moderation = useModerationActions();
+  const mySquadId = state.squad === undefined ? undefined : (state.squad?.id ?? null);
   return (
     <>
       <SectionHeader icon={Trophy} title="Squad leaderboard" subtitle="This week, since Monday 00:00 UTC" />
@@ -607,27 +613,40 @@ function SquadBoard({ state }: { state: SquadState }) {
       ) : (
         state.board.map((s) => {
           const mine = s.id === state.squad?.id;
+          const reportable = !!moderation && canReportSquad(s.id, mySquadId);
           return (
             <View
               key={s.id}
-              accessible
-              accessibilityLabel={`Number ${s.rank}: ${s.name}${mine ? ' (your squad)' : ''}. ${s.memberCount} of ${s.maxMembers} hunters. ${s.weeklyAura.toLocaleString()} aura this week.`}
               style={[
                 styles.member,
                 { backgroundColor: mine ? colors.primarySubtle : colors.bgSurface, borderColor: mine ? colors.primary : colors.border },
               ]}
             >
-              <Text style={[styles.pos, { color: colors.orange }]}>#{s.rank}</Text>
-              <SquadEmblem icon={s.icon} />
-              <View style={styles.flex}>
-                <Text style={[styles.name, { color: colors.textPrimary }]} numberOfLines={1}>
-                  {s.name} <Text style={{ color: colors.textMuted }}>[{s.tag}]</Text>
-                </Text>
-                <Text style={[styles.muted, { color: colors.textSecondary }]}>
-                  {s.memberCount}/{s.maxMembers} hunters
-                </Text>
+              <View
+                accessible
+                accessibilityLabel={`Number ${s.rank}: ${s.name}${mine ? ' (your squad)' : ''}. ${s.memberCount} of ${s.maxMembers} hunters. ${s.weeklyAura.toLocaleString()} aura this week.`}
+                style={[styles.row, styles.flex]}
+              >
+                <Text style={[styles.pos, { color: colors.orange }]}>#{s.rank}</Text>
+                <SquadEmblem icon={s.icon} />
+                <View style={styles.flex}>
+                  <Text style={[styles.name, { color: colors.textPrimary }]} numberOfLines={1}>
+                    {s.name} <Text style={{ color: colors.textMuted }}>[{s.tag}]</Text>
+                  </Text>
+                  <Text style={[styles.muted, { color: colors.textSecondary }]}>
+                    {s.memberCount}/{s.maxMembers} hunters
+                  </Text>
+                </View>
+                <Text style={[styles.aura, { color: colors.primary }]}>{s.weeklyAura.toLocaleString()}</Text>
               </View>
-              <Text style={[styles.aura, { color: colors.primary }]}>{s.weeklyAura.toLocaleString()}</Text>
+              {reportable ? (
+                <ReportButton
+                  compact
+                  testID={`squad-report-${s.tag}`}
+                  accessibilityLabel={`Report squad ${s.name}`}
+                  onPress={() => moderation?.reportSquad(s)}
+                />
+              ) : null}
             </View>
           );
         })

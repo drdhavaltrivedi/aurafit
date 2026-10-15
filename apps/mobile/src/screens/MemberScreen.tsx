@@ -29,6 +29,7 @@ interface MemberScreenProps {
   dropsLoading?: boolean;
   onCompleteQuest: (questId: string) => void;
   onStartWorkout: (drop: WorkoutDrop) => void;
+  onOpenCreator?: (handle: string) => void;
   /** Optional element rendered above the profile card (e.g. a sync error notice). */
   header?: React.ReactNode;
   refreshControl?: React.ReactElement<RefreshControlProps>;
@@ -48,6 +49,7 @@ export function MemberScreen({
   dropsLoading = false,
   onCompleteQuest,
   onStartWorkout,
+  onOpenCreator,
   header,
   refreshControl,
   onQuickAction,
@@ -114,7 +116,7 @@ export function MemberScreen({
           </View>
         ) : (
           trending.map((drop) => (
-            <WorkoutDropCard key={drop.id} drop={drop} canStart={canStartWorkout} onStart={onStartWorkout} />
+            <WorkoutDropCard key={drop.id} drop={drop} canStart={canStartWorkout} onStart={onStartWorkout} onOpenCreator={onOpenCreator} />
           ))
         )}
         <AppButton label="Browse all workouts" variant="secondary" onPress={onOpenWorkouts} testID="home-browse-workouts" />

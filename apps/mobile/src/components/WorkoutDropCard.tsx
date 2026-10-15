@@ -1,19 +1,22 @@
 import React, { memo } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Timer } from './icons';
 import type { WorkoutDrop } from '@aurafit/shared';
 import { useTheme } from '../theme/ThemeProvider';
 import { fontSize, radius, spacing } from '../theme/tokens';
 import { AppButton } from './AppButton';
 import { AppIcon } from './AppIcon';
+import { DropReportButton } from './moderation/ReportButton';
 
 interface WorkoutDropCardProps {
   drop: WorkoutDrop;
   canStart: boolean;
   onStart: (drop: WorkoutDrop) => void;
+  /** Signed in: the creator name links to their profile. */
+  onOpenCreator?: (handle: string) => void;
 }
 
-export const WorkoutDropCard = memo(function WorkoutDropCard({ drop, canStart, onStart }: WorkoutDropCardProps) {
+export const WorkoutDropCard = memo(function WorkoutDropCard({ drop, canStart, onStart, onOpenCreator }: WorkoutDropCardProps) {
   const { colors } = useTheme();
 
   return (
@@ -32,6 +35,20 @@ export const WorkoutDropCard = memo(function WorkoutDropCard({ drop, canStart, o
         <Text style={[styles.title, { color: colors.textPrimary }]}>{drop.title}</Text>
         <Text style={[styles.tagline, { color: colors.textSecondary }]}>{drop.tagline}</Text>
       </View>
+      {onOpenCreator && drop.creatorHandle ? (
+        <Pressable
+          onPress={() => onOpenCreator(drop.creatorHandle)}
+          testID={`home-drop-creator-${drop.id}`}
+          accessibilityRole="link"
+          accessibilityLabel={`By ${drop.creatorName}. Open creator profile`}
+          hitSlop={{ top: 10, bottom: 10, left: 4, right: 4 }}
+          style={({ pressed }) => [styles.creator, { opacity: pressed ? 0.6 : 1 }]}
+        >
+          <Text style={[styles.creatorText, { color: colors.primary }]} numberOfLines={1}>
+            by {drop.creatorName}
+          </Text>
+        </Pressable>
+      ) : null}
       <View style={[styles.footer, { borderTopColor: colors.border }]}>
         <View style={styles.metaRow} accessible={false} importantForAccessibility="no-hide-descendants">
           <AppIcon icon={Timer} size={fontSize.caption + 2} color={colors.textSecondary} />
@@ -39,15 +56,27 @@ export const WorkoutDropCard = memo(function WorkoutDropCard({ drop, canStart, o
             {drop.durationMinutes}m • {drop.exercises.length} moves
           </Text>
         </View>
-        {canStart ? (
-          <AppButton testID={`drop-start-${drop.id}`} label="Start" accessibilityLabel={`Start workout: ${drop.title}`} onPress={() => onStart(drop)} />
-        ) : null}
+        <View style={styles.actions}>
+          {/* Signed-in only; hidden in demo mode and on the viewer's own drops. */}
+          <DropReportButton drop={drop} />
+          {canStart ? (
+            <AppButton testID={`drop-start-${drop.id}`} label="Start" accessibilityLabel={`Start workout: ${drop.title}`} onPress={() => onStart(drop)} />
+          ) : null}
+        </View>
       </View>
     </View>
   );
 });
 
 const styles = StyleSheet.create({
+  creator: {
+    alignSelf: 'flex-start',
+    marginTop: -spacing.xs,
+  },
+  creatorText: {
+    fontSize: fontSize.caption,
+    fontWeight: '700',
+  },
   card: {
     borderRadius: radius.md + 2,
     padding: spacing.md + 2,
@@ -90,6 +119,11 @@ const styles = StyleSheet.create({
     borderTopWidth: StyleSheet.hairlineWidth,
     paddingTop: spacing.sm,
     gap: spacing.sm,
+  },
+  actions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
   },
   metaRow: {
     flexDirection: 'row',

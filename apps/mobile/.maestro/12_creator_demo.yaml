@@ -1,0 +1,91 @@
+# Creator tools in DEMO mode (no backend writes): labelled sample analytics, create a drop with the
+# editor (validation, exercise, publish), edit it, delete it with the confirm step, then open a
+# creator profile by tapping a creator name in the Workouts tab.
+appId: host.exp.Exponent
+name: Creator demo
+---
+- runFlow: subflows/start.yaml
+- tapOn:
+    id: "welcome-demo"
+- runFlow: subflows/skip_intros.yaml
+- tapOn:
+    id: "role-CREATOR"
+- extendedWaitUntil:
+    visible: "Creator Studio"
+    timeout: 15000
+- assertVisible: "Sample data\\..*"
+- tapOn:
+    id: "creator-range-30d"
+- assertVisible: "Daily completions · last 30 days \\(sample data\\)"
+- takeScreenshot: 12_creator_demo_studio
+# Create
+- tapOn:
+    id: "creator-new-drop"
+- assertVisible: "Demo mode: saved on this device only."
+- tapOn:
+    id: "drop-editor-save"
+- assertVisible: "Check the highlighted fields.*"
+- tapOn:
+    id: "drop-title"
+- inputText: "Maestro Core Blast"
+- scrollUntilVisible:
+    element:
+      id: "drop-exercise-0-name"
+    centerElement: true
+- waitForAnimationToEnd
+- tapOn:
+    id: "drop-exercise-0-name"
+- waitForAnimationToEnd
+- inputText: "Dead Bugs"
+- scrollUntilVisible:
+    element:
+      id: "drop-exercise-0-muscle"
+    centerElement: true
+- waitForAnimationToEnd
+- tapOn:
+    id: "drop-exercise-0-muscle"
+- waitForAnimationToEnd
+- inputText: "Deep Core"
+- scrollUntilVisible:
+    element:
+      id: "drop-exercise-0-reps"
+    centerElement: true
+- waitForAnimationToEnd
+- tapOn:
+    id: "drop-exercise-0-reps"
+- waitForAnimationToEnd
+- inputText: "3 x 10"
+- takeScreenshot: 12_creator_demo_editor
+- tapOn:
+    id: "drop-editor-save"
+- extendedWaitUntil:
+    visible: "\"Maestro Core Blast\" is live for all Hunters!"
+    timeout: 5000
+- scrollUntilVisible:
+    element: "Delete Maestro Core Blast"
+    centerElement: true
+# Delete it again (confirm step)
+- tapOn: "Delete Maestro Core Blast"
+- assertVisible: "Delete \"Maestro Core Blast\"\\?"
+- tapOn: "Delete drop"
+- extendedWaitUntil:
+    visible: "\"Maestro Core Blast\" was deleted."
+    timeout: 5000
+# Creator profile from a drop card
+- tapOn:
+    id: "tab-workouts"
+- scrollUntilVisible:
+    element:
+      id: "drop-creator-drop_phonk_1"
+- tapOn:
+    id: "drop-creator-drop_phonk_1"
+- extendedWaitUntil:
+    visible:
+      id: "follower-count"
+    timeout: 5000
+- assertVisible: "Sign in to follow creators."
+- takeScreenshot: 12_creator_demo_profile
+- tapOn:
+    id: "screen-back"
+- tapOn:
+    id: "tab-home"

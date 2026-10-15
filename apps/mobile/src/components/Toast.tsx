@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { AccessibilityInfo, Pressable, StyleSheet, Text } from 'react-native';
-import { Check } from './icons';
+import { Check, Info } from './icons';
 import { AppIcon } from './AppIcon';
 import { useTheme } from '../theme/ThemeProvider';
 import { fontSize, radius, spacing } from '../theme/tokens';
@@ -10,7 +10,12 @@ export interface ToastMessage {
   text: string;
   /** Optional action button (e.g. "Share card" after a rank-up). */
   action?: { label: string; onPress: () => void };
+  /** 'error' for failures (e.g. a rejected moderation action); defaults to success. */
+  tone?: 'success' | 'error';
 }
+
+/** Destructive fill (same as AppButton's danger); white text on it is ~6:1. */
+const ERROR_FILL = '#B91C1C';
 
 const DURATION_MS = 3000;
 /** Toasts with an action stay longer so there is time to tap it. */
@@ -23,7 +28,7 @@ export function Toast({ toast, onDismiss }: { toast: ToastMessage | null; onDism
   useEffect(() => {
     if (!toast) return;
     AccessibilityInfo.announceForAccessibility(toast.text);
-    const id = setTimeout(onDismiss, toast.action ? ACTION_DURATION_MS : DURATION_MS);
+    const id = setTimeout(onDismiss, toast.action || toast.tone === 'error' ? ACTION_DURATION_MS : DURATION_MS);
     return () => clearTimeout(id);
   }, [toast, onDismiss]);
 
@@ -37,9 +42,9 @@ export function Toast({ toast, onDismiss }: { toast: ToastMessage | null; onDism
       accessibilityRole="alert"
       accessibilityLabel={toast.text}
       accessibilityHint="Tap to dismiss"
-      style={[styles.toast, { backgroundColor: colors.emeraldStrong }]}
+      style={[styles.toast, { backgroundColor: toast.tone === 'error' ? ERROR_FILL : colors.emeraldStrong }]}
     >
-      <AppIcon icon={Check} size={18} color="#FFFFFF" strokeWidth={3} />
+      <AppIcon icon={toast.tone === 'error' ? Info : Check} size={18} color="#FFFFFF" strokeWidth={3} />
       <Text style={styles.text}>{toast.text}</Text>
       {toast.action ? (
         <Pressable

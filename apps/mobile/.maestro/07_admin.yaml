@@ -1,4 +1,5 @@
-# ADMIN: live top hunters from the API + "Coming soon" gym card (no sample gyms).
+# ADMIN: moderation console (reports, flags, users, audit) + switch to the creator studio.
+# Read-only: opens every tab and a user detail, never hides, suspends or changes roles.
 # Env: EMAIL, PASSWORD (an ADMIN account)
 appId: host.exp.Exponent
 name: Admin
@@ -6,15 +7,49 @@ name: Admin
 - runFlow: subflows/start.yaml
 - runFlow: subflows/login.yaml
 - extendedWaitUntil:
-    visible: "Top Hunters"
+    visible: "Every action is recorded in the audit log."
     timeout: 30000
 - extendedWaitUntil:
-    visible: "Number 1: .*"
+    visible:
+      id: "admin-tab-reports"
+    timeout: 10000
+- takeScreenshot: 07_admin_reports
+- tapOn:
+    id: "admin-tab-flags"
+- takeScreenshot: 07_admin_flags
+- tapOn:
+    id: "admin-tab-users"
+- extendedWaitUntil:
+    visible:
+      id: "admin-user-search"
+    timeout: 15000
+- takeScreenshot: 07_admin_users
+- tapOn:
+    id: "admin-user-@admin"
+- extendedWaitUntil:
+    visible:
+      id: "admin-user-detail"
+    timeout: 15000
+- assertVisible: "All users"
+- takeScreenshot: 07_admin_user_detail
+- tapOn:
+    id: "admin-user-back"
+- tapOn:
+    id: "admin-tab-audit"
+- extendedWaitUntil:
+    visible:
+      id: "admin-audit"
+    timeout: 15000
+- takeScreenshot: 07_admin_audit
+# Admins publish too: the Home switch opens the creator studio.
+- tapOn:
+    id: "admin-view-studio"
+- extendedWaitUntil:
+    visible: "Creator Studio"
     timeout: 20000
-- scrollUntilVisible:
-    element: "Gym leaderboard & affiliations.*Coming soon.*"
-- assertNotVisible: "Sample data\\..*"
-- takeScreenshot: 07_admin_home
+- takeScreenshot: 07_admin_studio
+- tapOn:
+    id: "admin-view-moderation"
 - tapOn:
     id: "header-account"
 - assertVisible: "Role: Admin"

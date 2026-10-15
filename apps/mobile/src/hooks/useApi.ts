@@ -4,6 +4,7 @@ import type { WorkoutDrop } from '@aurafit/shared';
 import { api, isApiError, type ApiClient } from '../api';
 import { markQuestCompleted, optimisticCompleteQuest, optimisticCompleteWorkout } from '../api/optimistic';
 import type { CompleteQuestResponse, CompleteWorkoutResponse, LeaderboardResponse, MeResponse } from '../api/types';
+import { isSuspendedError, notifySuspended, suspendedErrorText } from '../lib/moderation';
 
 export interface QueryState<T> {
   data: T | null;
@@ -23,6 +24,12 @@ export function errorMessage(err: unknown): string {
     if (err.code === 'PROFILE_NOT_FOUND') return 'Your hunter profile is still being set up. Try again in a moment.';
     if (err.code === 'RATE_LIMITED') return 'Slow down a little — try again in a moment.';
     if (err.status === 401) return 'Your session expired. Please log in again.';
+    if (isSuspendedError(err)) {
+      // Suspended accounts get 403 SUSPENDED on every game mutation: show why (and refresh the banner).
+      const text = suspendedErrorText(err);
+      notifySuspended(text);
+      return text;
+    }
     if (err.status === 403) return "You don't have access to this.";
     return err.message;
   }

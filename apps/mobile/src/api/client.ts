@@ -19,12 +19,15 @@ import type {
 export class ApiError extends Error {
   readonly status: number;
   readonly code: ApiErrorCode;
+  /** Per-field validation messages from a 400 VALIDATION_FAILED body (e.g. `title`, `exercises.2.name`). */
+  readonly fieldErrors?: Record<string, string>;
 
-  constructor(status: number, code: ApiErrorCode, message: string) {
+  constructor(status: number, code: ApiErrorCode, message: string, fieldErrors?: Record<string, string>) {
     super(message);
     this.name = 'ApiError';
     this.status = status;
     this.code = code;
+    if (fieldErrors) this.fieldErrors = fieldErrors;
   }
 }
 
@@ -71,7 +74,12 @@ async function toApiError(res: Response): Promise<ApiError> {
   const code = typeof obj.code === 'string' && obj.code ? obj.code : (STATUS_CODES[res.status] ?? 'HTTP_ERROR');
   const message =
     typeof obj.error === 'string' && obj.error ? obj.error : `Request failed with status ${res.status}`;
-  return new ApiError(res.status, code, message);
+  const fe = obj.fieldErrors;
+  const fieldErrors =
+    fe && typeof fe === 'object' && !Array.isArray(fe)
+      ? Object.fromEntries(Object.entries(fe as Record<string, unknown>).filter((e): e is [string, string] => typeof e[1] === 'string'))
+      : undefined;
+  return new ApiError(res.status, code, message, fieldErrors);
 }
 
 export function createApiClient(options: ApiClientOptions) {

@@ -3727,3 +3727,15 @@ GRANT EXECUTE ON FUNCTION public.admin_flagged_users(UUID, TIMESTAMPTZ, INT, INT
 GRANT EXECUTE ON FUNCTION public.admin_clear_flag(UUID, UUID, TEXT) TO service_role;
 GRANT EXECUTE ON FUNCTION public.admin_revert_log(UUID, UUID, TEXT, UUID, TEXT) TO service_role;
 GRANT EXECUTE ON FUNCTION public.admin_audit_entries(UUID, TEXT, TEXT, TEXT, INT, TIMESTAMPTZ, UUID) TO service_role;
+
+-- >>> migration: 20261015100000_squad_member_deleted_definer.sql
+-- Account deletion for squad members (applies on top of 20261014140000_moderation.sql).
+--
+-- Supabase Auth deletes users as supabase_auth_admin; the auth.users -> profiles cascade then fires
+-- trg_profiles_squad_member_deleted, which (as SECURITY INVOKER) ran with that role's privileges and
+-- failed on public.squads ("Database error deleting user"). Squad members could not delete their
+-- account. Like private.handle_new_user (also fired by Auth), the function now runs as its owner.
+-- search_path stays '' and every name is schema-qualified; EXECUTE stays revoked from API roles.
+
+ALTER FUNCTION private.squad_member_deleted() SECURITY DEFINER;
+REVOKE ALL ON FUNCTION private.squad_member_deleted() FROM PUBLIC, anon, authenticated;

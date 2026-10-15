@@ -68,6 +68,10 @@ name: Squads
             visible: "Close"
           commands:
             - tapOn: "Close"
+      # Newer iOS share sheets have no Close button: tap the dimmed area above the sheet.
+      - tapOn:
+          point: "50%,30%"
+      - waitForAnimationToEnd
 
 # Deep link to a join confirmation (any valid code; we are already in a squad, so it explains).
 # Expo Go only routes exp:// links; a dev/store build also handles aurafit://join/<CODE>.

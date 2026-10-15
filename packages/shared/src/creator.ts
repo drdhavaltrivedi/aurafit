@@ -477,18 +477,20 @@ export function sampleCreatorAnalytics(drops: readonly CreatorDrop[], range: Ana
   const series: CreatorAnalyticsPoint[] = Array.from({ length: days }, (_, i) => {
     const t = today - (days - 1 - i) * 86_400_000;
     const wave = Math.round(18 + 10 * Math.sin(i / 1.7) + ((i * 7) % 5) * 2);
-    return { date: day(new Date(t)), completions: drops.length === 0 ? 0 : Math.max(0, wave) };
+    return { date: day(new Date(t)), completions: drops.some((d) => d.status === 'LIVE' && d.completionsCount > 0) ? Math.max(0, wave) : 0 };
   });
   const completions = series.reduce((s, p) => s + p.completions, 0);
   const live = drops.filter((d) => d.status === 'LIVE');
-  const weights = live.map((_, i) => live.length - i);
+  // Only drops that already have completions get sample activity: a drop created a moment ago shows zeros.
+  const active = live.filter((d) => d.completionsCount > 0);
+  const weights = active.map((_, i) => active.length - i);
   const weightSum = weights.reduce((a, b) => a + b, 0) || 1;
   let assigned = 0;
   const perDrop = drops.map((d) => {
-    const idx = live.indexOf(d);
+    const idx = active.indexOf(d);
     let c = 0;
     if (idx >= 0) {
-      c = idx === live.length - 1 ? completions - assigned : Math.floor((completions * weights[idx]) / weightSum);
+      c = idx === active.length - 1 ? completions - assigned : Math.floor((completions * weights[idx]) / weightSum);
       assigned += c;
     }
     return {

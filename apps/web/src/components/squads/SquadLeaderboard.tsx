@@ -1,7 +1,9 @@
 'use client';
 
-import { Trophy } from 'lucide-react';
+import { useState } from 'react';
+import { Flag, Trophy } from 'lucide-react';
 import type { SquadLeaderboardEntry } from '@aurafit/shared';
+import { ReportDialog } from '@/components/moderation/ReportDialog';
 import { Card, CardHeader } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { AppIcon } from '@/components/ui/AppIcon';
@@ -14,10 +16,21 @@ interface Props {
   error: string | null;
   mySquadId?: string | null;
   onRetry: () => void;
+  /**
+   * Server mode, once the viewer's own squad is known: adds a Report action to every squad the
+   * viewer is not a member of (POST /api/v1/reports, targetType SQUAD).
+   */
+  reportable?: boolean;
+}
+
+/** Whether a board row gets the Report action (never the viewer's own squad). */
+export function canReportBoardSquad(squadId: string, mySquadId: string | null | undefined, reportable: boolean): boolean {
+  return reportable && !!squadId && squadId !== mySquadId;
 }
 
 /** Public weekly squad leaderboard (no member details). */
-export function SquadLeaderboard({ squads, loading, error, mySquadId, onRetry }: Props) {
+export function SquadLeaderboard({ squads, loading, error, mySquadId, onRetry, reportable = false }: Props) {
+  const [reporting, setReporting] = useState<SquadLeaderboardEntry | null>(null);
   return (
     <Card as="section" aria-labelledby="squad-board-title" id="squad-leaderboard">
       <CardHeader
@@ -69,10 +82,21 @@ export function SquadLeaderboard({ squads, loading, error, mySquadId, onRetry }:
                   </span>
                 </div>
                 <span className="squad-board__aura">{formatNumber(s.weeklyAura)} aura</span>
+                {canReportBoardSquad(s.id, mySquadId, reportable) && (
+                  <Button variant="ghost" size="sm" icon aria-label={`Report squad ${s.name}`} title="Report squad" onClick={() => setReporting(s)}>
+                    <Flag aria-hidden="true" />
+                  </Button>
+                )}
               </li>
             );
           })}
         </ol>
+      )}
+      {reportable && (
+        <ReportDialog
+          target={reporting && { type: 'SQUAD', id: reporting.id, label: `${reporting.name} [${reporting.tag}]` }}
+          onClose={() => setReporting(null)}
+        />
       )}
     </Card>
   );

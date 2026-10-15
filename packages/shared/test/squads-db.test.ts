@@ -460,7 +460,7 @@ describe('privileges and RLS', () => {
     await as(null);
   });
 
-  it('all squad functions are SECURITY INVOKER with a pinned search_path', async () => {
+  it('squad functions are SECURITY INVOKER (except the Auth-fired delete trigger) with a pinned search_path', async () => {
     await as(null);
     const { rows } = await db.query<{ proname: string; prosecdef: boolean; proconfig: string[] | null }>(
       `SELECT proname, prosecdef, proconfig FROM pg_proc
@@ -470,7 +470,9 @@ describe('privileges and RLS', () => {
     );
     expect(rows).toHaveLength(15);
     for (const r of rows) {
-      expect(r.prosecdef, r.proname).toBe(false);
+      // Fired by the auth.users -> profiles cascade, which Supabase Auth runs as supabase_auth_admin
+      // (no access to public.squads): like private.handle_new_user it must run as its owner.
+      expect(r.prosecdef, r.proname).toBe(r.proname === 'squad_member_deleted');
       expect(r.proconfig, r.proname).toContain('search_path=""');
     }
   });

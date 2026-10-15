@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Alert, BackHandler, RefreshControl, StyleSheet, View } from 'react-native';
 import { hasPermission, rankLabel, type HunterRank, type Quest, type UserProfile, type UserRole, type WorkoutDrop } from '@aurafit/shared';
 import { AppHeader } from '../components/AppHeader';
+import { ModerationProvider, SuspensionBanner } from '../components/moderation/ModerationProvider';
 import { BottomTabBar, type MainTabKey } from '../components/BottomTabBar';
 import { SampleDataTag } from '../components/DataNotice';
 import { Toast, type ToastMessage } from '../components/Toast';
@@ -10,12 +11,16 @@ import { useActivityFeed } from '../hooks/useActivityFeed';
 import { useNotificationRouting } from '../hooks/useNotificationRouting';
 import { usePushRegistration } from '../hooks/usePushRegistration';
 import { useSquadJoinLink } from '../hooks/useSquadJoinLink';
+import { useCreatorLink } from '../hooks/useCreatorLink';
 import { useShareCard } from '../hooks/useShareCard';
 import { diffProfileEvents } from '../lib/activity';
 import type { ProfilePatch } from '../lib/profile';
 import { AchievementsScreen } from '../screens/AchievementsScreen';
+import { spacing } from '../theme/tokens';
 import { AdminScreen } from '../screens/AdminScreen';
+import { Segmented } from '../screens/admin/AdminParts';
 import { CreatorScreen } from '../screens/CreatorScreen';
+import { CreatorProfileScreen } from '../screens/CreatorProfileScreen';
 import { EditProfileScreen } from '../screens/EditProfileScreen';
 import { GuildScreen } from '../screens/GuildScreen';
 import { HunterCardScreen } from '../screens/HunterCardScreen';
@@ -62,14 +67,31 @@ export interface ShellModel {
   initialWorkoutId?: string | null;
 }
 
-type Overlay = 'settings' | 'notifications' | 'editProfile' | 'hunterCard' | 'leaderboard' | 'achievements';
+type AdminView = 'moderation' | 'studio';
+const ADMIN_VIEWS: ReadonlyArray<{ value: AdminView; label: string }> = [
+  { value: 'moderation', label: 'Moderation' },
+  { value: 'studio', label: 'Creator studio' },
+];
+
+type Overlay = 'settings' | 'notifications' | 'editProfile' | 'hunterCard' | 'leaderboard' | 'achievements' | 'creator';
 
 export function MainShell({ model }: { model: ShellModel }) {
+  // Moderation (signed in only): report actions, the suspension banner and its toast, around every screen.
+  return (
+    <ModerationProvider enabled={!model.demo} viewerId={model.user.id}>
+      <MainShellContent model={model} />
+    </ModerationProvider>
+  );
+}
+
+function MainShellContent({ model }: { model: ShellModel }) {
   const { colors } = useTheme();
   const { demo, role, user, quests, drops } = model;
   const activity = useActivityFeed(model.activityScope);
   const [tab, setTab] = useState<MainTabKey>('home');
   const [overlays, setOverlays] = useState<Overlay[]>([]);
+  /** Admins publish drops too: their Home switches between moderation and the creator studio. */
+  const [adminView, setAdminView] = useState<AdminView>('moderation');
   const [activeWorkout, setActiveWorkout] = useState<WorkoutDrop | null>(null);
   const [toast, setToast] = useState<ToastMessage | null>(null);
   const overlay = overlays[overlays.length - 1] ?? null;
@@ -116,6 +138,16 @@ export function MainShell({ model }: { model: ShellModel }) {
       setJoinCode(code);
     }, [])
   );
+  // Creator profiles: tapping a creator name, the studio's "Public page", or aurafit://c/<handle>.
+  const [creatorHandle, setCreatorHandle] = useState<string | null>(null);
+  const openCreator = useCallback(
+    (handle: string) => {
+      setCreatorHandle(handle);
+      setOverlays((s) => [...s.filter((o) => o !== 'creator'), 'creator']);
+    },
+    []
+  );
+  useCreatorLink(openCreator);
   const dismissToast = useCallback(() => setToast(null), []);
 
   // Android back: close the top overlay, then return to Home, then let the OS exit.
@@ -289,6 +321,22 @@ export function MainShell({ model }: { model: ShellModel }) {
   if (overlay === 'achievements') {
     return <AchievementsScreen user={user} demo={demo} onBack={close} />;
   }
+  if (overlay === 'creator' && creatorHandle) {
+    return (
+      <CreatorProfileScreen
+        key={creatorHandle}
+        handle={creatorHandle}
+        demo={demo}
+        drops={drops}
+        canStart={hasPermission(role, 'START_WORKOUT')}
+        onBack={close}
+        onStartWorkout={(d) => {
+          setOverlays([]);
+          startWorkout(d);
+        }}
+      />
+    );
+  }
 
   const canDoQuests = hasPermission(role, 'DO_QUESTS');
   const canStart = hasPermission(role, 'START_WORKOUT');
@@ -302,6 +350,7 @@ export function MainShell({ model }: { model: ShellModel }) {
         unreadCount={activity.unread}
       />
       {model.topSlot}
+      <SuspensionBanner />
       <View style={styles.body}>
         {tab === 'home' && role === 'MEMBER' ? (
           <MemberScreen
@@ -313,6 +362,7 @@ export function MainShell({ model }: { model: ShellModel }) {
             dropsLoading={model.dropsLoading}
             onCompleteQuest={onCompleteQuest}
             onStartWorkout={startWorkout}
+            onOpenCreator={demo ? undefined : openCreator}
             header={model.homeHeader}
             refreshControl={refreshControl}
             onQuickAction={onQuickAction}
@@ -324,15 +374,17 @@ export function MainShell({ model }: { model: ShellModel }) {
         ) : null}
         {tab === 'home' && role === 'CREATOR' ? (
           demo ? (
-            <CreatorScreen role={role} sample />
+            <CreatorScreen role={role} sample canStart={canStart} onStartWorkout={startWorkout} onOpenCreator={openCreator} onToast={showToast} />
           ) : (
             <CreatorScreen
               role={role}
               sample={false}
               profile={user}
-              drops={drops}
-              dropsLoading={model.dropsLoading}
-              dropsError={model.dropsError}
+              canStart={canStart}
+              onStartWorkout={startWorkout}
+              onOpenCreator={openCreator}
+              onDropsChanged={model.refresh?.onRefresh}
+              onToast={showToast}
             />
           )
         ) : null}
@@ -340,14 +392,25 @@ export function MainShell({ model }: { model: ShellModel }) {
           demo ? (
             <AdminScreen role={role} sample />
           ) : (
-            <AdminScreen
-              role={role}
-              sample={false}
-              hunters={model.leaderboard.hunters}
-              huntersLoading={model.leaderboard.loading}
-              huntersError={model.leaderboard.error}
-              onRetry={model.leaderboard.refetch}
-            />
+            <View style={styles.body}>
+              <View style={styles.adminSwitch}>
+                <Segmented label="Admin home" options={ADMIN_VIEWS} value={adminView} onChange={setAdminView} testIDPrefix="admin-view" />
+              </View>
+              {adminView === 'studio' ? (
+                <CreatorScreen
+                  role={role}
+                  sample={false}
+                  profile={user}
+                  canStart={canStart}
+                  onStartWorkout={startWorkout}
+                  onOpenCreator={openCreator}
+                  onDropsChanged={model.refresh?.onRefresh}
+                  onToast={showToast}
+                />
+              ) : (
+                <AdminScreen role={role} sample={false} />
+              )}
+            </View>
           )
         ) : null}
         {tab === 'quests' ? (
@@ -371,6 +434,8 @@ export function MainShell({ model }: { model: ShellModel }) {
             dropsLoading={model.dropsLoading}
             dropsError={model.dropsError}
             refreshControl={refreshControl}
+            followFilter={!demo}
+            onOpenCreator={openCreator}
           />
         ) : null}
         {tab === 'guild' ? (
@@ -423,5 +488,9 @@ export function alertAlreadyClaimed() {
 const styles = StyleSheet.create({
   body: {
     flex: 1,
+  },
+  adminSwitch: {
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.md,
   },
 });

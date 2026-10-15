@@ -1,4 +1,6 @@
-# CREATOR: Creator Studio shows only real figures plus a "Coming soon" card (no fake revenue).
+# CREATOR (signed in): Creator Studio with real analytics (range selector, chart), the creator's drops
+# with status badges, the drop editor (opened and closed WITHOUT saving: this flow never writes to the
+# backend), and the public creator page with its follower count.
 # Env: EMAIL, PASSWORD (a CREATOR account)
 appId: host.exp.Exponent
 name: Creator
@@ -8,12 +10,40 @@ name: Creator
 - extendedWaitUntil:
     visible: "Creator Studio"
     timeout: 30000
-- assertVisible: "Drops Published: 0"
-- assertVisible: "Subscribers & revenue.*Coming soon.*"
+- assertVisible:
+    id: "creator-studio"
 - assertNotVisible: ".*MRR.*"
-- assertNotVisible: ".*\\$2,450.*"
 - assertNotVisible: "Sample data\\..*"
+- assertVisible: "Analytics"
+- tapOn:
+    id: "creator-range-30d"
+- assertVisible: "Last 30 days \\(UTC\\).*"
+- tapOn:
+    id: "creator-range-7d"
+- assertVisible: "Your drops"
 - takeScreenshot: 07_creator_home
+# Drop editor: open, check validation, close without saving.
+- tapOn:
+    id: "creator-new-drop"
+- assertVisible: "New workout drop"
+- tapOn:
+    id: "drop-editor-save"
+- assertVisible: "Check the highlighted fields.*"
+- takeScreenshot: 07_creator_editor_errors
+- tapOn:
+    id: "drop-editor-close"
+- assertNotVisible: "New workout drop"
+# Public page
+- tapOn:
+    id: "creator-public-page"
+- extendedWaitUntil:
+    visible:
+      id: "follower-count"
+    timeout: 15000
+- assertVisible: "This is your creator page."
+- takeScreenshot: 07_creator_public_page
+- tapOn:
+    id: "screen-back"
 - tapOn:
     id: "header-theme-toggle"
 - takeScreenshot: 07_creator_home_toggled_theme

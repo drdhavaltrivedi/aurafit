@@ -339,7 +339,14 @@ function LiveSquadPanel({ refreshKey }: { refreshKey?: number }) {
         </Card>
       )}
 
-      <SquadLeaderboard squads={board} loading={boardLoading} error={boardError} mySquadId={squad?.id} onRetry={() => void loadBoard()} />
+      <SquadLeaderboard
+        squads={board}
+        loading={boardLoading}
+        error={boardError}
+        mySquadId={squad?.id}
+        onRetry={() => void loadBoard()}
+        reportable={squad !== undefined}
+      />
 
       <CreateSquadModal
         open={dialog === 'create'}

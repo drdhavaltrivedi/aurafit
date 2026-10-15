@@ -1,15 +1,21 @@
-import React from 'react';
-import { ActivityIndicator, FlatList, StyleSheet, Text, View } from 'react-native';
+import React, { useCallback, useRef, useState } from 'react';
+import { Alert, FlatList, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { INITIAL_GYM_LEADERBOARD, hasPermission, type GymLeaderboardEntry, type UserRole } from '@aurafit/shared';
-import { Shield, Swords } from '../components/icons';
-import { AppButton } from '../components/AppButton';
+import { Shield, ShieldAlert } from '../components/icons';
 import { Avatar } from '../components/Avatar';
-import { FormMessage } from '../components/AuthLayout';
-import { ComingSoonCard, SampleDataTag } from '../components/DataNotice';
+import { SampleDataTag } from '../components/DataNotice';
+import { useModerationActions } from '../components/moderation/ModerationProvider';
+import { ReasonSheet, type ReasonAsk } from '../components/moderation/ReasonSheet';
 import { SectionHeader } from '../components/SectionHeader';
 import type { PublicHunter } from '../api/types';
+import { errorMessage } from '../hooks/useApi';
 import { useTheme } from '../theme/ThemeProvider';
 import { fontSize, radius, spacing } from '../theme/tokens';
+import { type Act, type TabProps, Segmented } from './admin/AdminParts';
+import { AuditTab } from './admin/AuditTab';
+import { FlagsTab } from './admin/FlagsTab';
+import { ReportsTab } from './admin/ReportsTab';
+import { UsersTab } from './admin/UsersTab';
 
 function GymRow({ gym }: { gym: GymLeaderboardEntry }) {
   const { colors } = useTheme();
@@ -66,19 +72,14 @@ export function HunterRow({ hunter, position, isYou = false }: { hunter: PublicH
 interface AdminScreenProps {
   role: UserRole;
   /**
-   * Demo mode: the seeded gym leaderboard, labelled as sample data. Server mode (`false`): only the live
-   * hunters leaderboard from the API; gym data is not available yet and says so.
+   * Demo mode: the seeded gym leaderboard, labelled as sample data. Server mode (`false`): the real
+   * moderation console (reports, aura flags, users, audit log) for roles with AUDIT_ANTI_CHEAT.
    */
   sample: boolean;
-  /** Live top hunters from /api/v1/leaderboard (server mode only). */
-  hunters?: PublicHunter[];
-  huntersLoading?: boolean;
-  huntersError?: string | null;
-  onRetry?: () => void;
 }
 
 export function AdminScreen(props: AdminScreenProps) {
-  return props.sample ? <SampleAdmin role={props.role} /> : <LiveAdmin {...props} />;
+  return props.sample ? <SampleAdmin role={props.role} /> : <LiveAdmin role={props.role} />;
 }
 
 function SampleAdmin({ role }: { role: UserRole }) {
@@ -105,6 +106,9 @@ function SampleAdmin({ role }: { role: UserRole }) {
             }
           />
           <SampleDataTag />
+          <Text style={{ color: colors.textSecondary, fontSize: fontSize.caption + 1 }}>
+            Sign in with an admin account to moderate reports, aura flags and users.
+          </Text>
         </View>
       }
       ListEmptyComponent={
@@ -114,53 +118,74 @@ function SampleAdmin({ role }: { role: UserRole }) {
   );
 }
 
-function LiveAdmin({ hunters = [], huntersLoading = false, huntersError = null, onRetry }: AdminScreenProps) {
+type Tab = 'reports' | 'flags' | 'users' | 'audit';
+const TABS: ReadonlyArray<{ value: Tab; label: string }> = [
+  { value: 'reports', label: 'Reports' },
+  { value: 'flags', label: 'Flags' },
+  { value: 'users', label: 'Users' },
+  { value: 'audit', label: 'Audit' },
+];
+
+/** Real admin moderation (server mode). Every action is recorded in the audit log by the server. */
+function LiveAdmin({ role }: { role: UserRole }) {
   const { colors } = useTheme();
-  const top = hunters.slice(0, 10);
+  const moderation = useModerationActions();
+  const [tab, setTab] = useState<Tab>('reports');
+  const [ask, setAsk] = useState<ReasonAsk | null>(null);
+  const [refreshKey, setRefreshKey] = useState(0);
+  const notifyRef = useRef(moderation?.notify);
+  notifyRef.current = moderation?.notify;
+
+  const act = useCallback<Act>(async (run, success, after) => {
+    const notify = notifyRef.current ?? ((text: string) => Alert.alert('Moderation', text));
+    try {
+      const result = await run();
+      notify(typeof success === 'function' ? success(result) : success, 'success');
+      after?.();
+      return true;
+    } catch (err) {
+      notify(errorMessage(err), 'error');
+      return false;
+    }
+  }, []);
+
+  if (!hasPermission(role, 'AUDIT_ANTI_CHEAT')) {
+    return (
+      <View style={styles.content}>
+        <SectionHeader icon={ShieldAlert} title="Moderation" subtitle="Admins only" />
+        <Text style={{ color: colors.textSecondary, fontSize: fontSize.body }}>Your account doesn't have moderation access.</Text>
+      </View>
+    );
+  }
+
+  const props: TabProps = { act, ask: setAsk, refreshKey, viewerId: moderation?.viewerId ?? null };
 
   return (
-    <FlatList
-      data={top}
-      keyExtractor={(h) => h.id}
-      renderItem={({ item, index }) => <HunterRow hunter={item} position={index + 1} />}
-      contentContainerStyle={styles.content}
-      showsVerticalScrollIndicator={false}
-      ListHeaderComponent={
-        <View style={styles.header}>
-          <SectionHeader icon={Swords} title="Top Hunters" subtitle="Live global leaderboard" />
-          {huntersError ? (
-            <>
-              <FormMessage tone="error" message={huntersError} />
-              {onRetry ? <AppButton label="Try again" variant="secondary" onPress={onRetry} /> : null}
-            </>
-          ) : null}
-        </View>
-      }
-      ListEmptyComponent={
-        huntersError ? null : huntersLoading ? (
-          <ActivityIndicator color={colors.primary} accessibilityLabel="Loading leaderboard" />
-        ) : (
-          <Text style={{ color: colors.textSecondary, fontSize: fontSize.body }}>No hunters on the board yet.</Text>
-        )
-      }
-      ListFooterComponent={
-        <View style={styles.footer}>
-          <ComingSoonCard
-            title="Gym leaderboard & affiliations"
-            body="Gym rankings, active squads and affiliation management will appear here once gyms can join AuraFit."
-          />
-        </View>
-      }
-    />
+    <>
+      <ScrollView
+        testID="admin-console"
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+        refreshControl={
+          <RefreshControl refreshing={false} onRefresh={() => setRefreshKey((k) => k + 1)} tintColor={colors.primary} colors={[colors.primaryStrong]} />
+        }
+      >
+        <SectionHeader icon={ShieldAlert} iconColor={colors.orange} title="Moderation" subtitle="Every action is recorded in the audit log." />
+        <Segmented label="Moderation section" options={TABS} value={tab} onChange={setTab} testIDPrefix="admin-tab" />
+        {tab === 'reports' ? <ReportsTab {...props} /> : null}
+        {tab === 'flags' ? <FlagsTab {...props} /> : null}
+        {tab === 'users' ? <UsersTab {...props} /> : null}
+        {tab === 'audit' ? <AuditTab refreshKey={refreshKey} /> : null}
+      </ScrollView>
+      <ReasonSheet ask={ask} onClose={() => setAsk(null)} />
+    </>
   );
 }
 
 const styles = StyleSheet.create({
   header: {
     gap: spacing.sm + 2,
-  },
-  footer: {
-    marginTop: spacing.md,
   },
   content: {
     padding: spacing.lg,
