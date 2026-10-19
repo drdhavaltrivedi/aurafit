@@ -9,7 +9,7 @@
     "userInterfaceStyle": "automatic",
     "scheme": "aurafit",
     "ios": {
-      "supportsTablet": true,
+      "supportsTablet": false,
       "bundleIdentifier": "com.brilworks.aurafit",
       "config": {
         "usesNonExemptEncryption": false
