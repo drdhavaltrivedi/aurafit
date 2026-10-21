@@ -34,7 +34,7 @@ The platform is designed as an **npm workspaces monorepo** with a single shared 
 ## ✅ Feature Status (October 2026)
 
 Everything below is live in production on the web (https://aurafit-alpha-one.vercel.app) and in the
-Android production build (1.0.0, version code 3). The iOS build is pending (see [Release Status](#-release-status)).
+Android production build (1.0.0, version code 3) and the iOS build on App Store Connect (1.0.0, build 8; see [Release Status](#-release-status)).
 
 | Feature | Web | Mobile | Highlights |
 |---|:-:|:-:|---|
@@ -281,7 +281,8 @@ AuraFit ships with **10 official zero-equipment bodyweight routines** authored b
 │   ├── ARCHITECTURE.md       # Technical architecture, ER diagrams, data flow
 │   ├── BUSINESS_LOGIC.md     # Game mechanics, XP formulas, streak state machine
 │   ├── MARKETING_GUIDE.md    # GTM strategy, TikTok hooks, personas, ASO playbook
-│   └── STORE_LISTING.md      # Google Play Store listing in English (UK)
+│   ├── STORE_LISTING.md      # Google Play Store listing in English (UK)
+│   └── app-store/            # App Store Connect kit: screenshots (iPhone 6.9"/6.3", iPad 13"), header banners, listing text
 └── scripts/
     └── db-sync.mjs           # Regenerates schema.sql from supabase/migrations/*
 ```
@@ -416,7 +417,8 @@ on the next run).
      referenced from `app.json`; the FCM V1 service-account key is uploaded to EAS
      (`eas credentials -p android` → production → Google Service Account → FCM V1).
      Never commit the service-account key (`*-firebase-adminsdk-*.json` is gitignored).
-   - **iOS:** let `eas credentials` / the first `eas build -p ios` create the APNs key.
+   - **iOS (done):** APNs key `N2R6MZ3LBF` (Brilworks team `K7Y5QY6LMX`) is assigned to the app in EAS. The team is at
+     Apple's limit of 2 push keys, so reuse an existing key instead of generating a new one.
    - Expo Go on Android and simulators cannot receive remote push; the app says so and keeps the local reminder.
 
 `CRON_SECRET` is configured in Vercel and in the Vault, and the hourly job is confirmed returning `200`.
@@ -452,11 +454,13 @@ eas login
 # Build standalone Android and iOS binaries
 cd apps/mobile
 eas build --platform android --profile production
-eas build --platform ios --profile production   # interactive: Apple ID login + 2FA
+eas build --platform ios --profile production --non-interactive --auto-submit
 
-# Submit directly to stores
-eas submit --platform all --profile production
+# Submit an existing build
+eas submit --platform ios --profile production --id <buildId>
 ```
+An App Store Connect API key is stored in EAS and `ascAppId` (`6824422797`) is set in `eas.json`, so iOS builds
+and uploads run without an Apple ID login or 2FA code. Build numbers auto-increment remotely.
 *Package identifier*: `com.brilworks.aurafit`
 
 ---
@@ -467,7 +471,7 @@ eas submit --platform all --profile production
 |---|---|
 | **Web** | ✅ Live: https://aurafit-alpha-one.vercel.app |
 | **Android** | ✅ Production `.aab` built (1.0.0, version code 3, includes Firebase push). Next: upload in Play Console |
-| **iOS** | ⏳ First build pending (Apple ID login with 2FA; App Store Connect app to be created) |
+| **iOS** | ✅ Build 8 (1.0.0, iPhone-only) uploaded to App Store Connect (app id `6824422797`, TestFlight group "Team"). Next: select build 8 on the version page, finish the listing with [`docs/app-store`](docs/app-store), add a review demo account and a support page, rename the app ("AuraFit" is taken; temporary "AuraFit (55cbd6)") and submit for review |
 
 ### Roadmap
 - **Next:** custom email sender (needed before Supabase's built-in sign-up email limit is hit)
@@ -485,6 +489,7 @@ eas submit --platform all --profile production
 | ⚔️ [**`docs/BUSINESS_LOGIC.md`**](docs/BUSINESS_LOGIC.md) | Game engine rules, XP equations, rank ascendance thresholds, streak shield state machine, and boss raids. |
 | 📈 [**`docs/MARKETING_GUIDE.md`**](docs/MARKETING_GUIDE.md) | Go-To-Market strategy, user personas, viral TikTok loops, App Store Optimization (ASO), and Hunter Pass monetization. |
 | 📱 [**`docs/STORE_LISTING.md`**](docs/STORE_LISTING.md) | Complete Google Play Store listing in **English (United Kingdom) – `en-GB`** with character limits. |
+| 🍎 [**`docs/app-store/`**](docs/app-store/README.md) | App Store Connect kit: screenshots for every required size, header banners, listing text, age rating, App Privacy answers and the errors we hit. |
 
 ---
 
