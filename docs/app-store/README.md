@@ -93,7 +93,7 @@ Terms of Use: https://aurafit-alpha-one.vercel.app/terms
 |---|---|
 | Marketing URL | `https://aurafit-alpha-one.vercel.app` |
 | Privacy Policy URL (App Privacy page) | `https://aurafit-alpha-one.vercel.app/privacy` |
-| Support URL | Needs a page with contact details. The site has no `/support` page yet, so add one with the support email first |
+| Support URL | `https://aurafit-alpha-one.vercel.app/support` (contact: digital@brilworks.com) |
 | Copyright | `2026 Brilworks Technology Private Limited` |
 
 ## App information

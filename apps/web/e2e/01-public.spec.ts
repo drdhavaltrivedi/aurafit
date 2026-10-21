@@ -132,6 +132,7 @@ test.describe('static & auth pages', () => {
   for (const [path, heading] of [
     ['/privacy', /Privacy/],
     ['/terms', /Terms/],
+    ['/support', /Support/],
     ['/login', /Welcome back/],
     ['/signup', /.+/],
     ['/forgot-password', /.+/],

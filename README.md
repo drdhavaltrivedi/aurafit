@@ -471,7 +471,7 @@ and uploads run without an Apple ID login or 2FA code. Build numbers auto-increm
 |---|---|
 | **Web** | ✅ Live: https://aurafit-alpha-one.vercel.app |
 | **Android** | ✅ Production `.aab` built (1.0.0, version code 3, includes Firebase push). Next: upload in Play Console |
-| **iOS** | ✅ Build 8 (1.0.0, iPhone-only) uploaded to App Store Connect (app id `6824422797`, TestFlight group "Team"). Next: select build 8 on the version page, finish the listing with [`docs/app-store`](docs/app-store), add a review demo account and a support page, rename the app ("AuraFit" is taken; temporary "AuraFit (55cbd6)") and submit for review |
+| **iOS** | ✅ Build 8 (1.0.0, iPhone-only) uploaded to App Store Connect (app id `6824422797`, TestFlight group "Team"). Next: select build 8 on the version page, finish the listing with [`docs/app-store`](docs/app-store), add a review demo account, rename the app ("AuraFit" is taken; temporary "AuraFit (55cbd6)") and submit for review |
 
 ### Roadmap
 - **Next:** custom email sender (needed before Supabase's built-in sign-up email limit is hit)

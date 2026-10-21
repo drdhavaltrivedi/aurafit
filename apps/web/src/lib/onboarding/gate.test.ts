@@ -12,7 +12,7 @@ describe('onboarding gate', () => {
     expect(onboardingRedirect('/arena', { onboarded: true })).toBeNull();
   });
 
-  it.each(['/onboarding', '/account', '/api/v1/me', '/auth/callback', '/privacy', '/terms', '/login', '/signup'])(
+  it.each(['/onboarding', '/account', '/api/v1/me', '/auth/callback', '/privacy', '/terms', '/support', '/login', '/signup'])(
     'exempts %s',
     (path) => {
       expect(isOnboardingExempt(path)).toBe(true);

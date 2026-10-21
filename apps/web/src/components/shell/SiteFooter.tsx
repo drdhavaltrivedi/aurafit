@@ -1,6 +1,6 @@
 import Link from 'next/link';
 
-export const CONTACT_EMAIL = 'privacy@aurafit.app';
+export const CONTACT_EMAIL = 'digital@brilworks.com';
 
 /** `status`: storage note for arena pages ('synced' = account, 'demo' = this browser). */
 export function SiteFooter({ status }: { status?: 'synced' | 'demo' }) {
@@ -16,6 +16,7 @@ export function SiteFooter({ status }: { status?: 'synced' | 'demo' }) {
         <nav aria-label="Legal" className="site-footer__links">
           <Link href="/privacy">Privacy</Link>
           <Link href="/terms">Terms</Link>
+          <Link href="/support">Support</Link>
           <a href={`mailto:${CONTACT_EMAIL}`}>Contact</a>
         </nav>
       </div>
