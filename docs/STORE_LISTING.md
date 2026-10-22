@@ -81,7 +81,7 @@ Do not add: other brands or franchise names, "best"/"#1"/"top" claims, emoji, or
 |---|---|
 | Collects or shares required user data types? | Yes |
 | All user data encrypted in transit? | Yes (HTTPS everywhere) |
-| Account creation methods | Username and password (email + password); OAuth (Sign in with Google) |
+| Account creation methods | Username and password only (email + password). Add OAuth only if `EXPO_PUBLIC_ENABLE_GOOGLE_AUTH=true` is set for the production build |
 | Delete account URL | `https://aurafit-alpha-one.vercel.app/delete-account` |
 | Delete some data without deleting the account? | No (optional question) |
 | Independent security review / UPI badges | Skip |
