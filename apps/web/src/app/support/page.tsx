@@ -81,7 +81,7 @@ export default function SupportPage() {
         <p>
           In the app, tap the settings gear at the top right → <strong>Delete account</strong>, or on the web go to <Link href="/account">Account</Link>.
           This permanently removes your account and data. If you can no longer sign in, email {mail} from the address on your account.
-          See the <Link href="/privacy">Privacy Policy</Link> for details.
+          See <Link href="/delete-account">what is deleted and what is kept</Link>.
         </p>
       </LegalSection>
     </LegalPage>

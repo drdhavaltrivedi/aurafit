@@ -20,6 +20,7 @@ export const ONBOARDING_EXEMPT_PREFIXES = [
   '/privacy',
   '/terms',
   '/support',
+  '/delete-account',
 ] as const;
 
 const matches = (path: string, prefix: string) => path === prefix || path.startsWith(`${prefix}/`);

@@ -133,6 +133,7 @@ test.describe('static & auth pages', () => {
     ['/privacy', /Privacy/],
     ['/terms', /Terms/],
     ['/support', /Support/],
+    ['/delete-account', /Delete your AuraFit account/],
     ['/login', /Welcome back/],
     ['/signup', /.+/],
     ['/forgot-password', /.+/],
