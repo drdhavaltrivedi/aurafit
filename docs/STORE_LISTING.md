@@ -72,3 +72,29 @@ Do not add: other brands or franchise names, "best"/"#1"/"top" claims, emoji, or
 - **Category:** Health & Fitness
 - **Website:** https://aurafit-alpha-one.vercel.app
 - **Privacy policy:** https://aurafit-alpha-one.vercel.app/privacy
+
+## Data safety form (Play Console → App content → Data safety)
+
+**Data collection and security**
+
+| Question | Answer |
+|---|---|
+| Collects or shares required user data types? | Yes |
+| All user data encrypted in transit? | Yes (HTTPS everywhere) |
+| Account creation methods | Username and password (email + password); OAuth (Sign in with Google) |
+| Delete account URL | `https://aurafit-alpha-one.vercel.app/delete-account` |
+| Delete some data without deleting the account? | No (optional question) |
+| Independent security review / UPI badges | Skip |
+
+**Data types:** all are *collected*, none *shared*, none *processed ephemerally*. Users can request deletion.
+
+| Category → type | Required? | Purposes |
+|---|---|---|
+| Personal info → Email address | Required | App functionality, Account management |
+| Personal info → Name (display name) | Required | App functionality, Account management |
+| Personal info → User IDs | Required | App functionality, Account management |
+| Health and fitness → Fitness info (workouts, quests, stats) | Required | App functionality |
+| App activity → Other user-generated content (drops, squads, reports) | Optional | App functionality |
+| Device or other IDs (push token) | Optional | App functionality |
+
+No location, contacts, photos, financial info, messages, ads or analytics SDKs.
